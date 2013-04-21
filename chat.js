@@ -90,7 +90,6 @@ var ChatJs = function() {
 		} );
 
 		// Prepare the text window
-		this._firstTime = true; // Prevent the welcome text from displaying twice
 		this.textPanel = Ext.create( 'Ext.panel.Panel', {
 			region: 'center'
 			,border: true
@@ -108,14 +107,7 @@ var ChatJs = function() {
 				,this.sendButton
 			]
 			,listeners: {
-				// Display welcome text
-				afterlayout: function() {
-					if ( this._firstTime === true ) {
-						this.addText( '<b>Welcome to ChatJS.</b>' );
-						this._firstTime = false;
-					}
-				}.bind( this )
-				,resize: function() {
+				resize: function() {
 					// Scroll to bottom
 					this.textPanel.body.scroll( 'b', Infinity );
 
@@ -134,6 +126,7 @@ var ChatJs = function() {
 			,maximizable: true
 			,minimizable: false
 			,resizable: true
+			,constrainHeader: true
 			,height: 500
 			,width: 800
 			,layout: 'border'
@@ -145,8 +138,24 @@ var ChatJs = function() {
 
 		// Show
 		this.chatWindow.show();
+
+		// Mask, until a connection is made
+		this.chatWindow.mask();
 	}.bind( this ) );
 };
+
+/**
+ * Method used for handling a successful connection.
+ * @function
+ */
+ChatJs.prototype.connectHandler = function() {
+	// Unmask the window
+	this.chatWindow.unmask();
+
+	// Display welcome text
+	this.addText( '<b>Welcome to ChatJS.</b>' );
+	this._firstTime = false;
+}
 
 /**
  * Method used for handling an incoming message.

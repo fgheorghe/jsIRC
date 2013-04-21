@@ -92,6 +92,8 @@ var Example = new Client( {
 		,newClient: ChatApplication.newClientHandler
 		// Client list handler
 		,clientList: ChatApplication.clientListMessageHandler
+		// Connection handler
+		,connect: ChatApplication.connectHandler
 	}
 } );
 
