@@ -40,16 +40,23 @@ var ChatJs = function() {
 	// Create the UI as soon as ExtJS is ready
 	Ext.onReady( function() {
 		// Prepare the client list
-		this.clientList = Ext.create( 'Ext.grid.Panel', {
-			region: 'west'
-			,width: 180
-			,columns: [
-				{ header: 'Client Id',  dataIndex: 'id', flex: 1 }
-			]
-			,store: Ext.create( 'Ext.data.Store', {
-				fields: [ 'id' ]
-				,data: []
+		this.clientList = Ext.create( 'Ext.tree.Panel', {
+			store: Ext.create( 'Ext.data.TreeStore', {
+				data: {
+					children: []
+				}
 			} )
+			,width: 180
+			,minWidth: 180
+			,resizable: true
+			,frame: false
+			,border: true
+			,lines: false
+			,hideHeaders: true
+			,collapsible: true
+			,rootVisible: false
+			,region: 'east'
+			,title: 'Users'
 		} );
 
 		// Handle a text sending UI action
@@ -76,20 +83,29 @@ var ChatJs = function() {
 			}
 		} );
 
+		// Send button
+		this.sendButton = Ext.create( 'Ext.button.Button', {
+			text: 'Send'
+			,handler: handleSendText.bind( this )
+		} );
+
 		// Prepare the text window
 		this._firstTime = true; // Prevent the welcome text from displaying twice
 		this.textPanel = Ext.create( 'Ext.panel.Panel', {
 			region: 'center'
-			,border: false
+			,border: true
+			,frame: false
+			,title: 'Messages'
+			,bodyStyle: {
+				padding: '5px'
+			}
 			,autoScroll: true
-			,html: '<div style="height: 900px;">&nbsp;</div>'
+			// Start adding text from the bottom
+			,html: '<div style="height: 3000px;">&nbsp;</div>'
 			,bbar: [
 				this.textField
 				, '-'
-				, Ext.create( 'Ext.button.Button', {
-					text: 'Send'
-					,handler: handleSendText.bind( this )
-				} )
+				,this.sendButton
 			]
 			,listeners: {
 				// Display welcome text
@@ -99,6 +115,15 @@ var ChatJs = function() {
 						this._firstTime = false;
 					}
 				}.bind( this )
+				,resize: function() {
+					// Scroll to bottom
+					this.textPanel.body.scroll( 'b', Infinity );
+
+					// Resize text field
+					this.textField.setWidth(
+						this.textPanel.getWidth() - this.sendButton.getWidth() - 11
+					);
+				}.bind( this )
 			}
 		} );
 
@@ -106,9 +131,9 @@ var ChatJs = function() {
 		this.chatWindow = Ext.create( 'Ext.window.Window', {
 			title: 'ChatJS'
 			,closable: false
-			,maximizable: false
+			,maximizable: true
 			,minimizable: false
-			,resizable: false
+			,resizable: true
 			,height: 500
 			,width: 800
 			,layout: 'border'
@@ -143,7 +168,8 @@ ChatJs.prototype.clientListMessageHandler = function( data ) {
 	this._clientList = data.ids;
 
 	// Reload UI list
-	this.clientList.getStore().loadRawData( data.ids );
+	this.clientList.getRootNode().removeAll( false );
+	this.clientList.getRootNode().appendChild( data.ids );
 }
 
 /**

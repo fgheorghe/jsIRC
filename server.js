@@ -138,7 +138,7 @@ ChatApplication.prototype.clientListHandler = function( data, socket ) {
 	var clientIds = [];
 	for ( var socketId in this._clientSockets ) {
 		if ( this._clientSockets[socketId] ) {
-			clientIds.push( { id: socketId } );
+			clientIds.push( { text: socketId, leaf: true } );
 		}
 	}
 	socket.emit( 'clientList', { ids: clientIds } );
