@@ -181,6 +181,9 @@ ChatJs.prototype.addText = function( text ) {
 	// Get DOM component
 	var obj = Ext.get( 'messageArea' );
 
+	// Apply extra formats
+	text = Ext.util.Format.nl2br( text );
+
 	this.textPanel.body.insertHtml( "beforeEnd", text + '<br>' );
 	this.textPanel.body.scroll( 'b', Infinity );
 }
