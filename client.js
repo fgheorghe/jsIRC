@@ -94,6 +94,12 @@ var Example = new Client( {
 		,clientList: ChatApplication.clientListMessageHandler
 		// Connection handler
 		,connect: ChatApplication.connectHandler
+		// Ok name handler
+		,okName: ChatApplication.okNameHandler
+		// Name in use handler
+		,nameInUse: ChatApplication.nameInUseHandler
+		// Disconnect handler
+		,disconnect: ChatApplication.disconnectHandler
 	}
 } );
 

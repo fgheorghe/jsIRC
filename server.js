@@ -110,6 +110,12 @@ Server.prototype.init = function() {
 var ChatApplication = function() {
 	// Prepare the client object (storing socket objects, by id)
 	this._clientSockets = {};
+
+	// Prepare the client names object
+	this._clientNames = {};
+
+	// Store names as an array, for faster search
+	this._clientArray = [];
 };
 
 /**
@@ -120,12 +126,6 @@ var ChatApplication = function() {
 ChatApplication.prototype.clientConnectionHandler = function( socket ) {
 	// Push data to the client
 	this._clientSockets[socket.id] = socket;
-
-	// Notify others, by routing the 'newClient' event, along with a socket id
-	this.emitEvent( 'newClient', { id: socket.id }, socket );
-
-	// Send a list of client ids to the new client
-	this.clientListHandler( {}, socket );
 }
 
 /**
@@ -135,13 +135,13 @@ ChatApplication.prototype.clientConnectionHandler = function( socket ) {
  * @function
  */
 ChatApplication.prototype.clientListHandler = function( data, socket ) {
-	var clientIds = [];
-	for ( var socketId in this._clientSockets ) {
-		if ( this._clientSockets[socketId] ) {
-			clientIds.push( { text: socketId, leaf: true } );
+	var clientNames = [];
+	for ( var socketId in this._clientNames ) {
+		if ( this._clientNames[socketId] ) {
+			clientNames.push( { text: this._clientNames[socketId], leaf: true } );
 		}
 	}
-	socket.emit( 'clientList', { ids: clientIds } );
+	socket.emit( 'clientList', { ids: clientNames } );
 }
 
 /**
@@ -151,8 +151,8 @@ ChatApplication.prototype.clientListHandler = function( data, socket ) {
  * @function
  */
 ChatApplication.prototype.clientMessageHandler = function( data, socket ) {
-	// Notify others, by routing the 'clientMessage' event, along with a socket id and text value
-	this.emitEvent( 'clientMessage', { id: socket.id, text: data.text }, socket );
+	// Notify others, by routing the 'clientMessage' event, along with a client name and text value
+	this.emitEvent( 'clientMessage', { name: this._clientNames[socket.id], text: data.text }, socket );
 }
 
 /**
@@ -165,8 +165,45 @@ ChatApplication.prototype.clientDisconnectHandler = function( data, socket ) {
 	// Remove from sockets objects, to ignore it upon next notification
 	this._clientSockets[socket.id] = false;
 
-	// Notify existing clients, by routing the 'disconnectingClient' event, along with a socket id
-	this.emitEvent( 'disconnectingClient', { id: socket.id }, socket );
+	// Notify existing clients, by routing the 'disconnectingClient' event, along with a client name
+	// If this user had a name
+	if ( this._clientArray.indexOf( this._clientNames[socket.id] ) !== -1 ) {
+		this.emitEvent( 'disconnectingClient', { name: this._clientNames[socket.id] }, socket );
+
+		// Remove from the name array
+		this._clientArray.splice( this._clientArray.indexOf( this._clientNames[socket.id] ), 1 );
+	}
+
+	// Remove from name object as well
+	this._clientNames[socket.id] = false;
+}
+
+/**
+ * Method used for setting the client name, if not in use.
+ * If not in use, reply with an okName message.
+ * If in use, reply with a nameInUse event.
+ * @param {Object} data Data object. Always null for a disconnecting client.
+ * @param {Object} socket Socket object, storing the client data.
+ * @function
+ */
+ChatApplication.prototype.setNameHandler = function( data, socket ) {
+	// Check if exists
+	if ( this._clientArray.indexOf( data.name ) !== -1 ) {
+		// Emit a name in use
+		socket.emit( 'nameInUse', {} );
+	} else {
+		// Store in name list
+		this._clientNames[socket.id] = data.name;
+
+		// And name array
+		this._clientArray.push( data.name );
+
+		// Emit an okName event
+		socket.emit( 'okName', {} );
+		
+		// Notify others, by routing the 'newClient' event, along with the new client's name
+		this.emitEvent( 'newClient', { name: data.name }, socket );
+	}
 }
 
 /**
@@ -212,6 +249,8 @@ ChatServer = new Server( {
 		,clientMessage: ChatApp.clientMessageHandler
 		// Client list handler
 		,clientList: ChatApp.clientListHandler
+		// Client setName event handler
+		,setName: ChatApp.setNameHandler
 	}
 	// Connection handler
 	,connectionHandler: ChatApp.clientConnectionHandler

@@ -37,6 +37,9 @@ var ChatJs = function() {
 	// Client instance
 	this.client = {};
 
+	// The current user's name
+	this.myName = null;
+
 	// Create the UI as soon as ExtJS is ready
 	Ext.onReady( function() {
 		// Prepare the client list
@@ -62,7 +65,7 @@ var ChatJs = function() {
 		// Handle a text sending UI action
 		var handleSendText = function() {
 			if ( this.textField.getValue() ) {
-				this.addText( "<b>Me:</b> " + Ext.htmlEncode( this.textField.getValue() ) );
+				this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( this.textField.getValue() ) );
 
 				// Emit event
 				this.client.emit( 'clientMessage', { text: this.textField.getValue() } );
@@ -145,16 +148,96 @@ var ChatJs = function() {
 };
 
 /**
+ * Handler for an 'okName' event.
+ * @function
+ */
+ChatJs.prototype.okNameHandler = function() {
+	// Focus the input field
+	this.textField.focus( false, 200 );
+
+	// Unmask the window
+	this.chatWindow.unmask();
+
+	// Request a new list of clients
+	this.client.emit( 'clientList', {} );
+
+	// Display welcome text
+	this.addText( '<b>Welcome to ChatJS.</b>' );
+}
+
+/**
+ * Method used for handling a lost connection.
+ * @function
+ */
+ChatJs.prototype.disconnectHandler = function() {
+	// Just display an error window
+	Ext.Msg.show( {
+		title: 'Error'
+		,msg: 'Connection lost. Please reload the page.'
+		,closable: false
+		,width: 255
+	} );
+}
+
+/**
+ * Handler for an 'nameInUse' event.
+ * @function
+ */
+ChatJs.prototype.nameInUseHandler = function() {
+	// Show an error message, then the prompt asking for a new name
+	Ext.Msg.show( {
+		title: 'Name'
+		,msg: 'Name is already in use. Please input a different name.'
+		,buttons: Ext.Msg.OK
+		,width: 350
+		,modal: false
+		,closable: false
+		,fn: function() {
+			// Display the prompt again
+			this.createNamePrompt();
+		}.bind( this )
+	} );
+}
+
+/**
+ * Method used for creating the name prompt.
+ * @function
+ */
+ChatJs.prototype.createNamePrompt = function() {
+	this.namePrompt = Ext.Msg.show( {
+		title: 'Name'
+		,msg: 'Please enter your name:'
+		,width: 300
+		,hideModel: 'hide'
+		,buttons: Ext.Msg.OK
+		,prompt: true
+		,modal: false
+		,closable: false
+		,fn: function( button, text ) {
+			// Set the name of this client
+			this.client.emit( 'setName', { name: text } );
+			
+			// Store name
+			this.myName = text;
+		}.bind( this )
+		,icon: Ext.window.MessageBox.INFO
+	} );
+}
+
+/**
  * Method used for handling a successful connection.
  * @function
  */
 ChatJs.prototype.connectHandler = function() {
-	// Unmask the window
-	this.chatWindow.unmask();
+	// Ignore if we already went through this process...
+	if ( this._namePromptDisplayed ) {
+		return;
+	}
+	this._namePromptDisplayed = true;
 
-	// Display welcome text
-	this.addText( '<b>Welcome to ChatJS.</b>' );
-	this._firstTime = false;
+	// Request a name for this client
+	// Hidden by an 'okName' event.
+	this.createNamePrompt();
 }
 
 /**
@@ -164,7 +247,7 @@ ChatJs.prototype.connectHandler = function() {
  */
 ChatJs.prototype.clientMessageHandler = function( data ) {
 	// Add text to window
-	this.addText( '<b>' + data.id + ':</b> ' + Ext.htmlEncode( data.text ) );
+	this.addText( '<b>' + data.name + ':</b> ' + Ext.htmlEncode( data.text ) );
 }
 
 /**
@@ -204,7 +287,7 @@ ChatJs.prototype.addText = function( text ) {
  */
 ChatJs.prototype.newClientHandler = function( data ) {
 	// Add text to window
-	this.addText( '<b>Client connected:</b> ' + data.id );
+	this.addText( '<b>Client connected:</b> ' + data.name );
 
 	// Request a new list of clients
 	this.client.emit( 'clientList', {} );
@@ -217,7 +300,7 @@ ChatJs.prototype.newClientHandler = function( data ) {
  */
 ChatJs.prototype.disconnectingClientHandler = function( data ) {
 	// Add text to window
-	this.addText( '<b>Client left:</b> ' + data.id );
+	this.addText( '<b>Client left:</b> ' + data.name );
 
 	// Request a new list of clients
 	this.client.emit( 'clientList', {} );
