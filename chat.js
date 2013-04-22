@@ -338,7 +338,8 @@ ChatJs.prototype.USER = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_MYINFO = function( data ) {
-	console.log( data );
+	// Add text to window
+	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 }
 
 /**
@@ -347,7 +348,8 @@ ChatJs.prototype.RPL_MYINFO = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_CREATED = function( data ) {
-	console.log( data );
+	// Add text to window
+	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 }
 
 /**
@@ -356,7 +358,8 @@ ChatJs.prototype.RPL_CREATED = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_YOURHOST = function( data ) {
-	console.log( data );
+	// Add text to window
+	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 }
 
 /**
@@ -365,5 +368,15 @@ ChatJs.prototype.RPL_YOURHOST = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_WELCOME = function( data ) {
-	console.log( data );
+	// Unmask the window
+	this.chatWindow.unmask();
+
+	// Focus the input field
+	this.textField.focus( false, 200 );
+
+	// Display welcome text
+	this.addText( '<b>Welcome to ChatJS.</b>' );
+
+	// Add text to window
+	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 }
