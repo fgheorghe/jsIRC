@@ -107,13 +107,19 @@ var S = require( 'string' ); // http://stringjs.com/
 
 /** IRC Protocol */
 var IRCProtocol = {
+	// Daemon version
+	VERSION: "0.1"
+	// Server info
+	,ServerInfo: {
+		SERVER_NAME: "grosan.co.uk"
+	}
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
 	 * @return {Object} A new instance of the requested protocol type.
 	 * @function
 	 */
-	init: function( type ) {
+	,init: function( type ) {
 		switch ( type ) {
 			case "server":
 				// Do nothing.
@@ -152,9 +158,9 @@ var IRCProtocol = {
 			,ERR_RESTRICTED: [ 484, "Your connection is restricted!" ]
 			,RPL_WELCOME: [ 001, "Welcome to the Internet Relay Network" ] // <nick>!<user>@<host>
 			// Exceptions:
-			,RPL_YOURHOST: [ 002, "Your host is, running version " ] // Your host is <servername>, running version <ver>
-			,RPL_CREATED: [ 003, "This server was created <date>" ] // This server was created <date>"
-			,RPL_MYINFO: [ 004, "<servername> <version> <available user modes> <available channel modes>" ] // <servername> <version> <available user modes> <available channel modes>
+			,RPL_YOURHOST: [ 002, "" ] // Built by emitIRCWelcome() function.
+			,RPL_CREATED: [ 003, "" ] // Built by emitIRCWelcome() function.
+			,RPL_MYINFO: [ 004, "" ] // Built by emitIRCWelcome() function.
 		}
 	}
 	// Keeps track of the user's IRC state (e.g. nickname, channels, etc).
@@ -222,6 +228,9 @@ IRCProtocol.ClientProtocol = function( parent ) {
 
 	// Array of lower case nicknames, used for checking if a nickname is in use or not
 	this._lcNicknames = [];
+
+	// Store create date
+	this._created = new Date();
 }
 
 /**
@@ -239,30 +248,29 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 	);
 
 	// Send RPL_YOURHOST, with version details
-	// TODO: Build message string
 	this.emitIRCError(
 		socket
 		,'RPL_YOURHOST'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[0]
-		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[1]
+		,"Your host is chatjs, running version " + IRCProtocol.VERSION
 	);
 
 	// Send RPL_CREATED, with the date this server was started
-	// TODO: Build message string
 	this.emitIRCError(
 		socket
 		,'RPL_CREATED'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_CREATED[0]
-		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_CREATED[1]
+		,"This server was created " + this._created
 	);
 
 	// Send RPL_MYINFO, with even more details
-	// TODO: Build message string
+	// <servername> <version> <available user modes> <available channel modes>
+	// TODO: Add modes (user/channel)
 	this.emitIRCError(
 		socket
 		,'RPL_MYINFO'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[0]
-		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[1]
+		,IRCProtocol.ServerInfo.SERVER_NAME + " " + IRCProtocol.VERSION
 	);
 }
 
