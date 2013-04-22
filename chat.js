@@ -217,8 +217,14 @@ ChatJs.prototype.createNamePrompt = function() {
 		,closable: false
 		,fn: function( button, text ) {
 			// Set the name of this client
-			this.client.emit( 'setName', { name: text } );
-			
+			this.client.emit( 'NICK', { nickname: text } );
+			// Set the user details
+			this.client.emit( 'USER', {
+				user: 'user'
+				,mode: 0
+				,realname: 'realname'
+			} );
+
 			// Store name
 			this.myName = text;
 		}.bind( this )
@@ -306,4 +312,58 @@ ChatJs.prototype.disconnectingClientHandler = function( data ) {
 
 	// Request a new list of clients
 	this.client.emit( 'clientList', {} );
+}
+
+/**
+ * Method used for handling nickname related replies.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.NICK = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'user' related replies.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.USER = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'RPL_MYINFO' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_MYINFO = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'RPL_CREATED' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_CREATED = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'RPL_YOURHOST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_YOURHOST = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'RPL_WELCOME' reply, this marks a successful registration event!
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WELCOME = function( data ) {
+	console.log( data );
 }

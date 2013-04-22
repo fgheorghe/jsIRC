@@ -90,11 +90,11 @@ Server.prototype.init = function() {
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
 		// Call a custom connection event handler, if configured
-		if ( typeof this._config.connectionHandler !== "undefined" ) {
+		if ( typeof this._config.connection !== "undefined" ) {
 			// Determine which scope to bind the event handler to
 			var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
 
-			this._config.connectionHandler.bind( scope )( socket );
+			this._config.connection.bind( scope )( socket );
 		}
 
 		// Attach the Application Specific Event handlers
@@ -102,136 +102,350 @@ Server.prototype.init = function() {
 	}.bind( this ) );
 }
 
-/**
- * Chat application.
- * @class Provides message routing, along with other chat functionality.
- * @constructor
- */
-var ChatApplication = function() {
-	// Prepare the client object (storing socket objects, by id)
-	this._clientSockets = {};
+// Load various required libraries:
+var S = require( 'string' ); // http://stringjs.com/
 
-	// Prepare the client names object
-	this._clientNames = {};
-
-	// Store names as an array, for faster search
-	this._clientArray = [];
-};
-
-/**
- * Method used for keeping track of client connections.
- * @param {Object} socket Socket object, storing the client data.
- * @function
- */
-ChatApplication.prototype.clientConnectionHandler = function( socket ) {
-	// Push data to the client
-	this._clientSockets[socket.id] = socket;
-}
-
-/**
- * Method used for handling a client list request.
- * @param {Object} data Data object.
- * @param {Object} socket Socket object, storing the client data.
- * @function
- */
-ChatApplication.prototype.clientListHandler = function( data, socket ) {
-	var clientNames = [];
-	for ( var socketId in this._clientNames ) {
-		if ( this._clientNames[socketId] ) {
-			clientNames.push( { text: this._clientNames[socketId], leaf: true } );
+/** IRC Protocol */
+var IRCProtocol = {
+	/**
+	 * Method used for initialising a requested protocol
+	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
+	 * @return {Object} A new instance of the requested protocol type.
+	 * @function
+	 */
+	init: function( type ) {
+		switch ( type ) {
+			case "server":
+				// Do nothing.
+				break;
+			case "client":
+				// Create a new instance of the client protocol
+				return new this.ClientProtocol();
+				break;
+			default:
+				// Do nothing.
+				break;
 		}
 	}
-	socket.emit( 'clientList', { ids: clientNames } );
-}
-
-/**
- * Method used for handling a client text message event.
- * @param {Object} data Data object. Always null for a disconnecting client.
- * @param {Object} socket Socket object, storing the client data.
- * @function
- */
-ChatApplication.prototype.clientMessageHandler = function( data, socket ) {
-	// Notify others, by routing the 'clientMessage' event, along with a client name and text value
-	this.emitEvent( 'clientMessage', { name: this._clientNames[socket.id], text: data.text }, socket );
-}
-
-/**
- * Method used for keeping track of disconnecting clients.
- * @param {Object} data Data object. Always null for a disconnecting client.
- * @param {Object} socket Socket object, storing the client data.
- * @function
- */
-ChatApplication.prototype.clientDisconnectHandler = function( data, socket ) {
-	// Remove from sockets objects, to ignore it upon next notification
-	this._clientSockets[socket.id] = false;
-
-	// Notify existing clients, by routing the 'disconnectingClient' event, along with a client name
-	// If this user had a name
-	if ( this._clientArray.indexOf( this._clientNames[socket.id] ) !== -1 ) {
-		this.emitEvent( 'disconnectingClient', { name: this._clientNames[socket.id] }, socket );
-
-		// Remove from the name array
-		this._clientArray.splice( this._clientArray.indexOf( this._clientNames[socket.id] ), 1 );
-	}
-
-	// Remove from name object as well
-	this._clientNames[socket.id] = false;
-}
-
-/**
- * Method used for setting the client name, if not in use.
- * If not in use, reply with an okName message.
- * If in use, reply with a nameInUse event.
- * @param {Object} data Data object. Always null for a disconnecting client.
- * @param {Object} socket Socket object, storing the client data.
- * @function
- */
-ChatApplication.prototype.setNameHandler = function( data, socket ) {
-	// Check if exists
-	if ( this._clientArray.indexOf( data.name ) !== -1 ) {
-		// Emit a name in use
-		socket.emit( 'nameInUse', {} );
-	} else {
-		// Store in name list
-		this._clientNames[socket.id] = data.name;
-
-		// And name array
-		this._clientArray.push( data.name );
-
-		// Emit an okName event
-		socket.emit( 'okName', {} );
-		
-		// Notify others, by routing the 'newClient' event, along with the new client's name
-		this.emitEvent( 'newClient', { name: data.name }, socket );
-	}
-}
-
-/**
- * Method used for emitting events, to all clients.
- * @param {String} eventName Event name.
- * @param {Object} data Data object to push to clients.
- * @param {Object} ignoreSocket Optional socket object to ignore. Used when sending messages to all users, except the specified socket user.
- */
-ChatApplication.prototype.emitEvent = function( eventName, data, ignoreSocket ) {
-	// Loop all existing connections
-	var me = this;
-	Object.keys( this._clientSockets ).forEach( function( socketId ) {
-		// Verify if we must ignore a socket
-		if ( typeof ignoreSocket !== "undefined" ) {
-			// Verify if that socket is the current one
-			if ( me._clientSockets[socketId] && me._clientSockets[socketId].id == ignoreSocket.id ) {
-				return; // Ignore
+	// Client Protocol Numeric Replies
+	// Stored in array, having the numeric value as first index, and the text value as second index.
+	// Values that are indended to be returned within the string, are returned as a data object.
+	// E.g.: "<nick/channel> :Nick/channel is temporarily unavailable" would be returned as:
+	// { num: NICK.ERR_UNAVAILRESOURCE, msg: "Nick/channel is temporarily unavailable",  value: "<nick/channel>" }
+	// Such response strings have their place holders removed, with a comment alongside each string.
+	// With few exceptions, noted below, where messages are constructed dynamically
+	,NumericReplyConstants: {
+		Client: {
+			NICK: {
+				ERR_NONICKNAMEGIVEN: [ 431, "No nickname given" ]
+				,ERR_ERRONEUSNICKNAME: [ 432, "Erroneous nickname" ] // <nick>
+				,ERR_NICKNAMEINUSE: [ 433, "Nickname is already in use" ] // <nick>
+				,ERR_NICKCOLLISION: [ 436, "Nickname collision KILL" ] // <user>@<host>
+			}
+			,USER: {
+				ERR_ALREADYREGISTRED: [ 462, "Unauthorized command (already registered)" ]
 			}
 		}
-
-		// Emit event
-		if ( me._clientSockets[socketId] ) {
-			me._clientSockets[socketId].emit( eventName, data );
+		,CommonNumericReplies: {
+			ERR_UNAVAILRESOURCE: [ 437, "Nick/channel is temporarily unavailable" ] // <nick/channel>
+			,ERR_NEEDMOREPARAMS: [ 461, "Not enough parameters" ] // <command>
+			,ERR_RESTRICTED: [ 484, "Your connection is restricted!" ]
+			,RPL_WELCOME: [ 001, "Welcome to the Internet Relay Network" ] // <nick>!<user>@<host>
+			// Exceptions:
+			,RPL_YOURHOST: [ 002, "Your host is, running version " ] // Your host is <servername>, running version <ver>
+			,RPL_CREATED: [ 003, "This server was created <date>" ] // This server was created <date>"
+			,RPL_MYINFO: [ 004, "<servername> <version> <available user modes> <available channel modes>" ] // <servername> <version> <available user modes> <available channel modes>
 		}
-	} );
+	}
+	// Keeps track of the user's IRC state (e.g. nickname, channels, etc).
+	,IrcState: {
+		Client: function() {
+			this._nickname = false; // Stores nickname, string
+			this._user = false; // Stores 'user' command data, object as per command parameters
+
+			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
+
+			// Method used for setting the nickname
+			this.setNickname = function( nickname ) {
+				this._nickname = nickname;
+			}
+
+			// Method used for getting the nickname
+			this.getNickname = function() {
+				return this._nickname;
+			}
+
+			// Method used for setting the user data
+			this.setUser = function( user ) {
+				this._user = user;
+			}
+
+			// Method used for getting the user data
+			this.getUser = function() {
+				return this._user;
+			}
+
+			// Method used for checking if a user is registered or not (sent valid nickname and user properties)
+			this.isRegistered = function() {
+				return this.getUser() !== false && this.getNickname() !== false;
+			}
+
+			// Method used for checking/setting if we sent the 'RPL_WELCOME' message to this user or not
+			this.replyWelcomeSent = function( value ) {
+				if ( typeof value === "undefined" ) {
+					// Getting
+					return this._welcome_reply;
+				} else {
+					// Setting
+					this._welcome_reply = value;
+				}
+			}
+
+			return this;
+		}
+	}
+	// Other constants
+	,OtherConstants: {
+		NICK_LENGTH: 8 // Max nickname characters (9, since the count starts from 0)
+		// TODO: Implement proper patterns.
+		,NICK_PATTERN: /^[a-zA-Z0-9]+$/ // Nickname pattern, as per RFC
+	}
+};
+
+/** IRC Client Protocol Implementation, based RFC2812: http://tools.ietf.org/html/rfc2812 */
+IRCProtocol.ClientProtocol = function( parent ) {
+	// NOTE: These two _MUST_ be synchronised
+	// Prepare sockets array
+	this._clientSockets = [];
+	// Prepare socket id array
+	this._clientSocketIds = [];
+
+	// Array of lower case nicknames, used for checking if a nickname is in use or not
+	this._lcNicknames = [];
 }
 
-var ChatApp = new ChatApplication();
+/**
+ * Method used for sending the welcome messages for this user.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
+	// Send RPL_WELCOME
+	this.emitIRCError(
+		socket
+		,'RPL_WELCOME'
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_WELCOME[0]
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_WELCOME[1]
+	);
+
+	// Send RPL_YOURHOST, with version details
+	// TODO: Build message string
+	this.emitIRCError(
+		socket
+		,'RPL_YOURHOST'
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[0]
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[1]
+	);
+
+	// Send RPL_CREATED, with the date this server was started
+	// TODO: Build message string
+	this.emitIRCError(
+		socket
+		,'RPL_CREATED'
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_CREATED[0]
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_CREATED[1]
+	);
+
+	// Send RPL_MYINFO, with even more details
+	// TODO: Build message string
+	this.emitIRCError(
+		socket
+		,'RPL_MYINFO'
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[0]
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[1]
+	);
+}
+
+/**
+ * Method used for emitting an IRC response to a socket.
+ * @param {Object} socket Socket object.
+ * @param {String} type Response type (e.g. NICK for a nickname event reply)
+ * @param {Object} data Data object.
+ */
+IRCProtocol.ClientProtocol.prototype.emitIRCReply = function( socket, type, data ) {
+	// Return response
+	socket.emit( type, data );
+}
+
+/**
+ * Method used for emitting a client error (or valid reply of other kind).
+ * @param {Object} socket Socket object.
+ * @param {String} type Response type (e.g. NICK for a nickname event reply)
+ * @param {Integer} num Error number.
+ * @param {String} msg Error message string.
+ * @param {String} value Error message value (optional), to include extra text.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.emitIRCError = function( socket, type, num, msg, value ) {
+	// Construct respose.
+	var response = {
+		num: num
+		,msg: msg
+	};
+
+	// Add a value, if requested
+	if ( typeof value !== "undefined" ) {
+		response.value = value;
+	}
+
+	// Return response
+	this.emitIRCReply( socket, type, response );
+}
+
+/**
+ * New connection handler. Stores the client's socket data.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
+	// Store the socket for this client
+	this._clientSockets.push( socket );
+
+	// Store the array of socket ids, in this array, in order to find the socket position in the above array
+	this._clientSocketIds.push( socket.id );
+
+	// Attach IRC state object, used for performing various checks
+	socket.Client = new IRCProtocol.IrcState.Client();
+}
+
+/**
+ * Client disconnect handler. Removes the socket from the socket list, and notifies users if this client has been authenticated.
+ * @param {Object} data Data object. Undefined for a disconnecting client.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
+	// Find socket position, by id
+	var position = this._clientSocketIds.indexOf( socket.id );
+
+	// Remove from socket array
+	this._clientSockets.splice( position, 1 );
+	// Remove id from socket id array
+	this._clientSocketIds.splice( position, 1 );
+}
+
+/**
+ * Client NICK command.
+ * @param {Object} data Data object, with the required 'nickname' property.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
+	// Verify the nick data is present:
+	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s == "" ) {
+		// Issue an ERR_NONICKNAMEGIVEN error.
+		this.emitIRCError(
+			socket
+			,'NICK'
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[0]
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[1]
+		);
+		return;
+	}
+
+	// Begin nickname validation.
+	var nickname = S( data.nickname ).trim().toString();
+
+	// Length or pattern
+	if ( nickname.length > IRCProtocol.OtherConstants.NICK_LENGTH || !IRCProtocol.OtherConstants.NICK_PATTERN.test( nickname ) ) {
+		// Issue an ERR_ERRONEUSNICKNAME error.
+		this.emitIRCError(
+			socket
+			,'NICK'
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[0]
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[1]
+			// Include the faulty nickname
+			,nickname
+		);
+		return;
+	}
+
+	// Verify if already in use
+	if ( this._lcNicknames.indexOf( nickname.toLowerCase() ) !== -1 ) {
+		// Issue an ERR_NICKNAMEINUSE error.
+		this.emitIRCError(
+			socket
+			,'NICK'
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[0]
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[1]
+			// Include the faulty nickname
+			,nickname
+		);
+		return;
+	}
+
+	// TODO: Service unavailable...
+
+	// Nickname appears to be ok...
+	// Store in the list of nicknames
+	this._lcNicknames.push( nickname.toLowerCase() );
+
+	// Set the client's nickname
+	socket.Client.setNickname( nickname );
+
+	// TODO: Optimise this check (redundant)...
+	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
+
+	if ( socket.Client.isRegistered() && !socket.Client.replyWelcomeSent() ) {
+		// Set to true, and issue the welcome stream of messages
+		socket.Client.replyWelcomeSent( true );
+
+		// Notify the user
+		this.emitIRCWelcome( socket );
+	}
+}
+
+/**
+ * Client USER command.
+ * @param {Object} data Data object, with the required 'user', 'mode' and 'realname' parameters.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
+	// Validate required properties
+	if ( typeof data.user === "undefined" || typeof data.mode === "undefined" || typeof data.realname === "undefined" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitError(
+			socket
+			,'USER'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+			// Include the faulty nickname
+			,'USER'
+		);
+		return;
+	}
+
+	// TODO: Add proper user and realname validation.
+	// TODO: Add proper mode validation (and functionality).
+
+	// Set the user values
+	socket.Client.setUser( data );
+
+	// TODO: Optimise this check (redundant)...
+	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
+
+	if ( socket.Client.isRegistered() && !socket.Client.replyWelcomeSent() ) {
+		// Set to true, and issue the welcome stream of messages
+		socket.Client.replyWelcomeSent( true );
+
+		// Notify the user
+		this.emitIRCWelcome( socket );
+	}
+}
+
+// Create a new instance of the IRC Protocol implementation.
+var IRCClient = IRCProtocol.init( 'client' );
 
 // Create server
 ChatServer = new Server( {
@@ -239,19 +453,16 @@ ChatServer = new Server( {
 	,socket: { // Socket configuration
 		log: false // Disable loggings
 	}
-	// Set the scope to the instance of ChatApp
-	,scope: ChatApp
+	// Set the scope to the instance of 'irc'
+	,scope: IRCClient
 	// Add event handlers
 	,events: {
-		// Disconnecting client event
-		disconnect: ChatApp.clientDisconnectHandler
-		// Message event handler
-		,clientMessage: ChatApp.clientMessageHandler
-		// Client list handler
-		,clientList: ChatApp.clientListHandler
-		// Client setName event handler
-		,setName: ChatApp.setNameHandler
+		// Disconnecting client
+		disconnect: IRCClient.disconnect
+		// IRC Client Connection Registration Commands (Events)
+		,NICK: IRCClient.NICK
+		,USER: IRCClient.USER
 	}
-	// Connection handler
-	,connectionHandler: ChatApp.clientConnectionHandler
+	// New connection handler
+	,connection: IRCClient.connection
  } ).init();
