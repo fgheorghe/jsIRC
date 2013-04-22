@@ -84,23 +84,10 @@ var Example = new Client( {
 	,scope: ChatApplication
 	// Example event handlers, not bound to any scope
 	,events: {
-		// Client message handler
-		clientMessage: ChatApplication.clientMessageHandler
-		// Client disconnection handler
-		,disconnectingClient: ChatApplication.disconnectingClientHandler
-		// Connecting clients handler
-		,newClient: ChatApplication.newClientHandler
-		// Client list handler
-		,clientList: ChatApplication.clientListMessageHandler
 		// Connection handler
-		,connect: ChatApplication.connectHandler
-		// Ok name handler
-		,okName: ChatApplication.okNameHandler
-		// Name in use handler
-		,nameInUse: ChatApplication.nameInUseHandler
+		connect: ChatApplication.connectHandler
 		// Disconnect handler
 		,disconnect: ChatApplication.disconnectHandler
-
 		// Nickname related reply handler
 		,NICK: ChatApplication.NICK
 		// User related reply handler

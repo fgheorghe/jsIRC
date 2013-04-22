@@ -150,24 +150,6 @@ var ChatJs = function() {
 };
 
 /**
- * Handler for an 'okName' event.
- * @function
- */
-ChatJs.prototype.okNameHandler = function() {
-	// Focus the input field
-	this.textField.focus( false, 200 );
-
-	// Unmask the window
-	this.chatWindow.unmask();
-
-	// Request a new list of clients
-	this.client.emit( 'clientList', {} );
-
-	// Display welcome text
-	this.addText( '<b>Welcome to ChatJS.</b>' );
-}
-
-/**
  * Method used for handling a lost connection.
  * @function
  */
@@ -249,30 +231,6 @@ ChatJs.prototype.connectHandler = function() {
 }
 
 /**
- * Method used for handling an incoming message.
- * @param {Object} data Data object.
- * @function
- */
-ChatJs.prototype.clientMessageHandler = function( data ) {
-	// Add text to window
-	this.addText( '<b>' + data.name + ':</b> ' + Ext.htmlEncode( data.text ) );
-}
-
-/**
- * Method used for handling a client list event.
- * @param {Object} data Data object.
- * @function
- */
-ChatJs.prototype.clientListMessageHandler = function( data ) {
-	// Store the list of clients, for later use
-	this._clientList = data.ids;
-
-	// Reload UI list
-	this.clientList.getRootNode().removeAll( false );
-	this.clientList.getRootNode().appendChild( data.ids );
-}
-
-/**
  * Method used for appending text.
  * @param {String} text String to add to window.
  * @function
@@ -288,31 +246,7 @@ ChatJs.prototype.addText = function( text ) {
 	this.textPanel.body.scroll( 'b', Infinity );
 }
 
-/**
- * Method used for handling a new client connection.
- * @param {Object} data Data object.
- * @function
- */
-ChatJs.prototype.newClientHandler = function( data ) {
-	// Add text to window
-	this.addText( '<b>Client connected:</b> ' + data.name );
-
-	// Request a new list of clients
-	this.client.emit( 'clientList', {} );
-}
-
-/**
- * Method used for handling a disconnecting client event.
- * @param {Object} data Data object.
- * @function
- */
-ChatJs.prototype.disconnectingClientHandler = function( data ) {
-	// Add text to window
-	this.addText( '<b>Client left:</b> ' + data.name );
-
-	// Request a new list of clients
-	this.client.emit( 'clientList', {} );
-}
+/** IRC Client Protocol Handlers */
 
 /**
  * Method used for handling nickname related replies.
