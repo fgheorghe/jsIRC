@@ -197,7 +197,7 @@ var IRCProtocol = {
 			}
 
 			// Method used for checking/setting if we sent the 'RPL_WELCOME' message to this user or not
-			this.replyWelcomeSent = function( value ) {
+			this.welcomeSent = function( value ) {
 				if ( typeof value === "undefined" ) {
 					// Getting
 					return this._welcome_reply;
@@ -404,9 +404,9 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	// TODO: Optimise this check (redundant)...
 	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
 
-	if ( socket.Client.isRegistered() && !socket.Client.replyWelcomeSent() ) {
+	if ( socket.Client.isRegistered() && !socket.Client.welcomeSent() ) {
 		// Set to true, and issue the welcome stream of messages
-		socket.Client.replyWelcomeSent( true );
+		socket.Client.welcomeSent( true );
 
 		// Notify the user
 		this.emitIRCWelcome( socket );
@@ -443,9 +443,9 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 	// TODO: Optimise this check (redundant)...
 	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
 
-	if ( socket.Client.isRegistered() && !socket.Client.replyWelcomeSent() ) {
+	if ( socket.Client.isRegistered() && !socket.Client.welcomeSent() ) {
 		// Set to true, and issue the welcome stream of messages
-		socket.Client.replyWelcomeSent( true );
+		socket.Client.welcomeSent( true );
 
 		// Notify the user
 		this.emitIRCWelcome( socket );
