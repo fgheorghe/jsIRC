@@ -66,11 +66,17 @@ var ChatJs = function() {
 
 		// Handle a text sending UI action
 		var handleSendText = function() {
-			if ( this.textField.getValue() ) {
-				this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( this.textField.getValue() ) );
+			// Check if the user tries sending a command (string starting with a /).
+			if ( this.textField.getValue().toString().charAt( 0 ) === "/" ) {
+				// Parse command
+				this.parseCommand( this.textField.getValue().toString() );
+			} else {
+				if ( this.textField.getValue() ) {
+					this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( this.textField.getValue() ) );
 
-				// Emit event
-				this.client.emit( 'clientMessage', { text: this.textField.getValue() } );
+					// Emit event
+					this.client.emit( 'clientMessage', { text: this.textField.getValue() } );
+				}
 			}
 			this.textField.setValue( "" );
 		}
@@ -148,6 +154,41 @@ var ChatJs = function() {
 		this.chatWindow.mask();
 	}.bind( this ) );
 };
+
+/**
+ * Parse a command, prepare parameters, and send it.
+ * @param {String} text String to parse.
+ * @function
+ */
+ChatJs.prototype.parseCommand = function( text ) {
+	// Trim command
+	text = Ext.util.Format.trim( text );
+
+	// Get the command name
+	var commandPattern = /\/([A-Za-z]+)/i
+		,parameters = text.split( " " ).slice( 1 )
+		,command = commandPattern.exec( text )[1].toLowerCase()
+		,data = {};
+
+	switch ( command ) {
+		case "whois":
+			// Construct a whois command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.target = parameters[0];
+				// Optional mask
+				if ( parameters.length > 2 ) {
+					data.mask = parameters.slice( 1 );
+				} else if ( parameters.length === 2 ) {
+					data.mask = parameters[1];
+				}
+				this.client.emit( command.toUpperCase(), data );
+			}
+			break;
+		default:
+			// TODO:
+	}
+}
 
 /**
  * Method used for handling a lost connection.

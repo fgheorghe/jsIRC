@@ -151,7 +151,20 @@ var IRCProtocol = {
 			,USER: {
 				ERR_ALREADYREGISTRED: [ 462, "Unauthorized command (already registered)" ]
 			}
+			,WHOIS: {
+				ERR_NOSUCHSERVER: [ 402, "No such server" ] // <server name> :
+				,RPL_WHOISUSER: [ 403, "<nick> <user> <host> * :<real name>" ]
+				,RPL_WHOISCHANNELS: [ 319, "<nick> :*( ( \"@\" / \"+\" ) <channel> \" \" )" ]
+				,RPL_AWAY: [ 301, "<nick> :<away message>" ]
+				,RPL_WHOISIDLE: [ 317, "<nick> <integer> :seconds idle" ]
+				,RPL_ENDOFWHOIS: [ 318, "<nick> :End of WHOIS list" ]
+				,ERR_NONICKNAMEGIVEN: [ 431, "No nickname given" ]
+				,RPL_WHOISSERVER: [ 312, "<nick> <server> :<server info>" ]
+				,RPL_WHOISOPERATOR: [ 313, "<nick> :is an IRC operator" ]
+				,ERR_NOSUCHNICK: [ 401, "<nickname> :No such nick/channel" ]
+			}
 		}
+		// TODO: Reorder
 		,CommonNumericReplies: {
 			ERR_UNAVAILRESOURCE: [ 437, "Nick/channel is temporarily unavailable" ] // <nick/channel>
 			,ERR_NEEDMOREPARAMS: [ 461, "Not enough parameters" ] // <command>
@@ -452,6 +465,28 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 	}
 }
 
+/**
+ * Client WHOIS command.
+ * @param {Object} data Data object, with either the target and mask (optional) parameters. Mask can be either array, or scalar.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
+	// Verify command parameters
+	if ( typeof data.target === "undefined" ) {
+		// Issue an ERR_NONICKNAMEGIVEN error.
+		socket.emitIRCError(
+			socket
+			,'WHOIS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NONICKNAMEGIVEN[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NONICKNAMEGIVEN[1]
+		);
+	}
+
+	// TODO: Add mas functionality
+	console.log( data );
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -470,6 +505,8 @@ ChatServer = new Server( {
 		// IRC Client Connection Registration Commands (Events)
 		,NICK: IRCClient.NICK
 		,USER: IRCClient.USER
+		// User based queries
+		,WHOIS: IRCClient.WHOIS
 	}
 	// New connection handler
 	,connection: IRCClient.connection
