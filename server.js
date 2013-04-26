@@ -436,13 +436,11 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 	// Validate required properties
 	if ( typeof data.user === "undefined" || typeof data.mode === "undefined" || typeof data.realname === "undefined" ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
-		this.emitError(
+		this.emitIRCError(
 			socket
 			,'USER'
 			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
 			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
-			// Include the faulty nickname
-			,'USER'
 		);
 		return;
 	}
