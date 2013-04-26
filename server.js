@@ -158,7 +158,6 @@ var IRCProtocol = {
 				,RPL_AWAY: [ 301, "<nick> :<away message>" ]
 				,RPL_WHOISIDLE: [ 317, "<nick> <integer> :seconds idle" ]
 				,RPL_ENDOFWHOIS: [ 318, "<nick> :End of WHOIS list" ]
-				,ERR_NONICKNAMEGIVEN: [ 431, "No nickname given" ]
 				,RPL_WHOISSERVER: [ 312, "<nick> <server> :<server info>" ]
 				,RPL_WHOISOPERATOR: [ 313, "<nick> :is an IRC operator" ]
 				,ERR_NOSUCHNICK: [ 401, "<nickname> :No such nick/channel" ]
@@ -347,12 +346,19 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 	// Find socket position, by id
-	var position = this._clientSocketIds.indexOf( socket.id );
+	var socketPosition = this._clientSocketIds.indexOf( socket.id );
+	// Find nickname position, if the user registered
+	if ( socket.Client.getNickname() ) {
+		var nicknamePosition = this._lcNicknames.indexOf( socket.Client.getNickname().toLowerCase() );
+
+		// Remove nickname from list
+		this._lcNicknames.splice( nicknamePosition, 1 );
+	}
 
 	// Remove from socket array
-	this._clientSockets.splice( position, 1 );
+	this._clientSockets.splice( socketPosition, 1 );
 	// Remove id from socket id array
-	this._clientSocketIds.splice( position, 1 );
+	this._clientSocketIds.splice( socketPosition, 1 );
 }
 
 /**
@@ -367,7 +373,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 		// Issue an ERR_NONICKNAMEGIVEN error.
 		this.emitIRCError(
 			socket
-			,'NICK'
+			,'ERR_NONICKNAMEGIVEN'
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[0]
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[1]
 		);
@@ -382,7 +388,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 		// Issue an ERR_ERRONEUSNICKNAME error.
 		this.emitIRCError(
 			socket
-			,'NICK'
+			,'ERR_ERRONEUSNICKNAME'
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[0]
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[1]
 			// Include the faulty nickname
@@ -396,7 +402,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 		// Issue an ERR_NICKNAMEINUSE error.
 		this.emitIRCError(
 			socket
-			,'NICK'
+			,'ERR_NICKNAMEINUSE'
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[0]
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[1]
 			// Include the faulty nickname
@@ -438,7 +444,7 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
-			,'USER'
+			,'ERR_NEEDMOREPARAMS'
 			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
 			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
 		);
@@ -473,15 +479,15 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 	// Verify command parameters
 	if ( typeof data.target === "undefined" ) {
 		// Issue an ERR_NONICKNAMEGIVEN error.
-		socket.emitIRCError(
+		this.emitIRCError(
 			socket
-			,'WHOIS'
-			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NONICKNAMEGIVEN[0]
-			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NONICKNAMEGIVEN[1]
+			,'ERR_NONICKNAMEGIVEN'
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[0]
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[1]
 		);
 	}
 
-	// TODO: Add mas functionality
+	// TODO: Add mask functionality
 	console.log( data );
 }
 

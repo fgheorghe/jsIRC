@@ -88,16 +88,17 @@ var Example = new Client( {
 		connect: ChatApplication.connectHandler
 		// Disconnect handler
 		,disconnect: ChatApplication.disconnectHandler
-		// Nickname related reply handler
-		,NICK: ChatApplication.NICK
-		// User related reply handler
-		,USER: ChatApplication.USER
 		// Welcome message. This marks the user is now registered with the server
 		,RPL_WELCOME: ChatApplication.RPL_WELCOME
 		// Server info events, usually received upon successul registration
 		,RPL_YOURHOST: ChatApplication.RPL_YOURHOST
 		,RPL_CREATED: ChatApplication.RPL_CREATED
 		,RPL_MYINFO: ChatApplication.RPL_MYINFO
+		// TODO: Implement
+		,ERR_NONICKNAMEGIVEN: ChatApplication.ERR_NONICKNAMEGIVEN
+// 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
+		,ERR_NICKNAMEINUSE: ChatApplication.ERR_NICKNAMEINUSE
+// 		,ERR_NEEDMOREPARAMS: ChatApplication.ERR_NEEDMOREPARAMS
 	}
 } );
 

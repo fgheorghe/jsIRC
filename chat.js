@@ -176,14 +176,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			if ( parameters.length >= 1 ) {
 				// Target
 				data.target = parameters[0];
-				// Optional mask
-				if ( parameters.length > 2 ) {
-					data.mask = parameters.slice( 1 );
-				} else if ( parameters.length === 2 ) {
-					data.mask = parameters[1];
-				}
-				this.client.emit( command.toUpperCase(), data );
 			}
+
+			// Optional mask
+			if ( parameters.length > 2 ) {
+				data.mask = parameters.slice( 1 );
+			} else if ( parameters.length === 2 ) {
+				data.mask = parameters[1];
+			}
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
 			break;
 		default:
 			// TODO:
@@ -201,26 +203,6 @@ ChatJs.prototype.disconnectHandler = function() {
 		,msg: 'Connection lost. Please reload the page.'
 		,closable: false
 		,width: 255
-	} );
-}
-
-/**
- * Handler for an 'nameInUse' event.
- * @function
- */
-ChatJs.prototype.nameInUseHandler = function() {
-	// Show an error message, then the prompt asking for a new name
-	Ext.Msg.show( {
-		title: 'Name'
-		,msg: 'Name is already in use. Please input a different name.'
-		,buttons: Ext.Msg.OK
-		,width: 350
-		,modal: false
-		,closable: false
-		,fn: function() {
-			// Display the prompt again
-			this.createNamePrompt();
-		}.bind( this )
 	} );
 }
 
@@ -290,20 +272,31 @@ ChatJs.prototype.addText = function( text ) {
 /** IRC Client Protocol Handlers */
 
 /**
- * Method used for handling nickname related replies.
- * @param {Object} data Data object.
+ * Handler for an 'ERR_NICKNAMEINUSE' event.
  * @function
  */
-ChatJs.prototype.NICK = function( data ) {
-	console.log( data );
+ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
+	// Show an error message, then the prompt asking for a new name
+	Ext.Msg.show( {
+		title: 'Nickame'
+		,msg: 'Nickame is already in use. Please input a different nickame.'
+		,buttons: Ext.Msg.OK
+		,width: 380
+		,modal: false
+		,closable: false
+		,fn: function() {
+			// Display the prompt again
+			this.createNamePrompt();
+		}.bind( this )
+	} );
 }
 
 /**
- * Method used for handling 'user' related replies.
+ * Method used for handling 'ERR_NONICKNAMEGIVEN' event.
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.USER = function( data ) {
+ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
 	console.log( data );
 }
 
