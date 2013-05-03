@@ -297,7 +297,48 @@ ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
-	console.log( data );
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_NOSUCHNICK' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NOSUCHNICK = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFWHOIS' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFWHOIS = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] End of WHOIS list' );
+}
+
+/**
+ * Method used for handling 'RPL_WHOISUSER' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WHOISUSER = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] (' + Ext.htmlEncode( data.user ) + '@' + Ext.htmlEncode( data.host ) + '): '  + Ext.htmlEncode( data.realname ) );
+}
+
+/**
+ * Method used for handling 'RPL_WHOISSERVER' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WHOISSERVER = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.server ) + ' :' + Ext.htmlEncode( data.serverinfo ) );
 }
 
 /**

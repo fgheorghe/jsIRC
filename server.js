@@ -112,6 +112,7 @@ var IRCProtocol = {
 	// Server info
 	,ServerInfo: {
 		SERVER_NAME: "grosan.co.uk"
+		,SERVER_INFO: "Oxford, Oxfordshire, UK, EU"
 	}
 	/**
 	 * Method used for initialising a requested protocol
@@ -180,8 +181,20 @@ var IRCProtocol = {
 		Client: function() {
 			this._nickname = false; // Stores nickname, string
 			this._user = false; // Stores 'user' command data, object as per command parameters
+			this._host = ""; // Stores the user's host
+			this._realname = ""; // Stores the user's real name
 
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
+
+			// Method used for setting the nickname
+			this.setRealname = function( realname ) {
+				this._realname = realname;
+			}
+
+			// Method used for getting the nickname
+			this.getRealname = function() {
+				return this._realname;
+			}
 
 			// Method used for setting the nickname
 			this.setNickname = function( nickname ) {
@@ -201,6 +214,16 @@ var IRCProtocol = {
 			// Method used for getting the user data
 			this.getUser = function() {
 				return this._user;
+			}
+
+			// Method used for getting the user host
+			this.getHost = function() {
+				return this._host;
+			}
+
+			// Method used for setting the user host
+			this.setHost = function( host ) {
+				this._host = host;
 			}
 
 			// Method used for checking if a user is registered or not (sent valid nickname and user properties)
@@ -336,6 +359,9 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
 
 	// Attach IRC state object, used for performing various checks
 	socket.Client = new IRCProtocol.IrcState.Client();
+
+	// Set host
+	socket.Client.setHost( socket.handshake.address.address );
 }
 
 /**
@@ -455,7 +481,10 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 	// TODO: Add proper mode validation (and functionality).
 
 	// Set the user values
-	socket.Client.setUser( data );
+	socket.Client.setUser( data.user );
+
+	// Set the realname
+	socket.Client.setRealname( data.realname );
 
 	// TODO: Optimise this check (redundant)...
 	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
@@ -484,7 +513,64 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 			,'ERR_NONICKNAMEGIVEN'
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[0]
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NONICKNAMEGIVEN[1]
+			,"No nickname given."
 		);
+		return;
+	}
+
+	// Check if the nickname is found in the nickname array. If not, then just return an ERR_NOSUCHNICK event.
+	var nicknamePosition = this._lcNicknames.indexOf( data.target.toLowerCase() );
+	if ( nicknamePosition === -1 ) {
+		// Issue an ERR_NONICKNAMEGIVEN error.
+		this.emitIRCError(
+			socket
+			,'ERR_NOSUCHNICK'
+			,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+			,data.target + " :No such nick/channel"
+		);
+		return;
+	} else {
+		// The user is found! Get data, and return to client.
+		// Get the user socket
+		var clientSocket = this._clientSockets[ nicknamePosition ];
+
+		// Emit WHOIS replies (some are special kind of replies...that require more data to be included)
+		// TODO: Make consistent, and make use of constants
+		// RPL_WHOISUSER
+		socket.emit(
+			'RPL_WHOISUSER'
+			,{
+				nick: clientSocket.Client.getNickname()
+				,user: clientSocket.Client.getUser()
+				,host: clientSocket.Client.getHost()
+				,realname: clientSocket.Client.getRealname()
+			}
+		);
+
+		// TODO: RPL_WHOISCHANNELS
+		// RPL_WHOISSERVER
+		socket.emit(
+			'RPL_WHOISSERVER'
+			,{
+				nick: clientSocket.Client.getNickname()
+				,server: IRCProtocol.ServerInfo.SERVER_NAME
+				,serverinfo: IRCProtocol.ServerInfo.SERVER_INFO
+			}
+		);
+
+		// TODO: RPL_AWAY
+		// TODO: RPL_WHOISIDLE
+
+		// RPL_ENDOFWHOIS
+		// TODO: Perhaps all replies should return a JSON object, rather that _ANY_ string at all (to let the client decide which language to use, or how to display).
+		socket.emit(
+			'RPL_ENDOFWHOIS'
+			,{
+				nick: clientSocket.Client.getNickname()
+			}
+		);
+
+		return;
 	}
 
 	// TODO: Add mask functionality
