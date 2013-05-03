@@ -69,7 +69,7 @@ var ChatJs = function() {
 			// Check if the user tries sending a command (string starting with a /).
 			if ( this.textField.getValue().toString().charAt( 0 ) === "/" ) {
 				// Parse command
-				this.parseCommand( this.textField.getValue().toString() );
+			 	this.parseCommand( this.textField.getValue().toString() );
 			} else {
 				if ( this.textField.getValue() ) {
 					this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( this.textField.getValue() ) );
