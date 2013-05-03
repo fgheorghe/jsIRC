@@ -36,34 +36,17 @@ var ChatJs = function() {
 	// Client id array
 	this._clients = [];
 
+	// 'Array' of channel windows
+	this._channelWindows = {};
+
 	// Client instance
 	this.client = {};
 
-	// The current user's name
-	this.myName = null;
+	// The current nickname
+	this._nickname = null;
 
 	// Create the UI as soon as ExtJS is ready
 	Ext.onReady( function() {
-		// Prepare the client list
-		this.clientList = Ext.create( 'Ext.tree.Panel', {
-			store: Ext.create( 'Ext.data.TreeStore', {
-				data: {
-					children: []
-				}
-			} )
-			,width: 180
-			,minWidth: 180
-			,resizable: true
-			,frame: false
-			,border: true
-			,lines: false
-			,hideHeaders: true
-			,collapsible: true
-			,rootVisible: false
-			,region: 'east'
-			,title: 'Users'
-		} );
-
 		// Handle a text sending UI action
 		var handleSendText = function() {
 			// Check if the user tries sending a command (string starting with a /).
@@ -102,10 +85,8 @@ var ChatJs = function() {
 
 		// Prepare the text window
 		this.textPanel = Ext.create( 'Ext.panel.Panel', {
-			region: 'center'
-			,border: true
+			border: true
 			,frame: false
-			,title: 'Messages'
 			,bodyStyle: {
 				padding: '5px'
 			}
@@ -132,7 +113,7 @@ var ChatJs = function() {
 
 		// Prepare the window
 		this.chatWindow = Ext.create( 'Ext.window.Window', {
-			title: 'ChatJS'
+			title: 'Status'
 			,closable: false
 			,maximizable: true
 			,minimizable: false
@@ -140,10 +121,9 @@ var ChatJs = function() {
 			,constrainHeader: true
 			,height: 500
 			,width: 800
-			,layout: 'border'
+			,layout: 'fit'
 			,items: [
-				this.clientList
-				,this.textPanel
+				this.textPanel
 			]
 		} );
 
@@ -184,6 +164,24 @@ ChatJs.prototype.parseCommand = function( text ) {
 			} else if ( parameters.length === 2 ) {
 				data.mask = parameters[1];
 			}
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
+		case "join":
+			// TODO: Properly handle whitespace!
+			// Construct a join command
+			if ( parameters.length >= 1 ) {
+				// Channel list
+				var channels = parameters[0].split( "," );
+				data.channels = channels;
+			}
+
+			// Key(s)
+			if ( parameters.length >= 2 ) {
+				var keys = parameters[1].split( "," );
+				data.keys = keys;
+			}
+
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
@@ -231,7 +229,7 @@ ChatJs.prototype.createNamePrompt = function() {
 			} );
 
 			// Store name
-			this.myName = text;
+			this._nickname = text;
 		}.bind( this )
 		,icon: Ext.window.MessageBox.INFO
 	} );
@@ -278,7 +276,7 @@ ChatJs.prototype.addText = function( text ) {
 ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
 	// Show an error message, then the prompt asking for a new name
 	Ext.Msg.show( {
-		title: 'Nickame'
+		title: 'Nickname'
 		,msg: 'Nickame is already in use. Please input a different nickame.'
 		,buttons: Ext.Msg.OK
 		,width: 380
@@ -292,11 +290,92 @@ ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
 }
 
 /**
+ * Method used for handling 'JOIN' event, and create a new channel window or update the channel member list.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.JOIN = function( data ) {
+	// Create a new window, if the JOIN command is reffering to the current user AND a window for this channel doesn't exist
+	// TODO: Check if channel window exists!
+	if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && typeof this._channelWindows[data.channel] === "undefined" ) {
+		// Create window
+		this._channelWindows[data.channel] = new ChannelWindow( {
+			channel: data.channel
+		} );
+
+		// Show window
+		this._channelWindows[data.channel].chatWindow.show();
+	} else if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && this._channelWindows[data.channel] ) {
+		// Just focus
+		this._channelWindows[data.channel].chatWindow.focus();
+	}
+}
+
+/**
  * Method used for handling 'ERR_NONICKNAMEGIVEN' event.
  * @param {Object} data Data object.
  * @function
  */
 ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_TOPIC' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_TOPIC = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'RPL_NAMREPLY' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_NAMREPLY = function( data ) {
+	console.log( data.names );
+	// Load list of clients, if a window exists
+	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
+		var names = [];
+		// Convert to tree items
+		for ( var i = 0; i < data.names.length; i++ ) {
+			names.push( {
+				text: data.names[i]
+				,leaf: true
+			} );
+		}
+		this._channelWindows[data.channel].loadClientList( names );
+	}
+}
+
+/**
+ * Method used for handling 'RPL_NOTOPIC' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_NOTOPIC = function( data ) {
+	console.log( data );
+}
+
+/**
+ * Method used for handling 'ERR_NONICKNAMEGIVEN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NEEDMOREPARAMS = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_NOSUCHCHANNEL' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NOSUCHCHANNEL = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }

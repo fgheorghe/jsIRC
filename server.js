@@ -104,6 +104,7 @@ Server.prototype.init = function() {
 
 // Load various required libraries:
 var S = require( 'string' ); // http://stringjs.com/
+var _ = require('lodash'); // http://lodash.com/
 
 /** IRC Protocol */
 var IRCProtocol = {
@@ -163,6 +164,11 @@ var IRCProtocol = {
 				,RPL_WHOISOPERATOR: [ 313, "<nick> :is an IRC operator" ]
 				,ERR_NOSUCHNICK: [ 401, "<nickname> :No such nick/channel" ]
 			}
+			,JOIN: {
+				ERR_NOSUCHCHANNEL: [ 403, "No such channel" ]
+				,RPL_TOPIC: [ 332, "<channel> :<topic>" ]
+				,RPL_NOTOPIC: [ 331, "<channel> :No topic is set" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -176,7 +182,7 @@ var IRCProtocol = {
 			,RPL_MYINFO: [ 004, "" ] // Built by emitIRCWelcome() function.
 		}
 	}
-	// Keeps track of the user's IRC state (e.g. nickname, channels, etc).
+	// Keeps track of the user's/client's IRC state (e.g. nickname, channels, etc).
 	,IrcState: {
 		Client: function() {
 			this._nickname = false; // Stores nickname, string
@@ -244,12 +250,65 @@ var IRCProtocol = {
 
 			return this;
 		}
+		,Channel: function( name ) {
+			// Channel name
+			this._name = name;
+
+			// List of users
+			this._users = [];
+
+			// Topic
+			this._topic = "";
+
+			// Method used for getting the channel name
+			this.getName = function() {
+				return this._name;
+			}
+
+			// Method used for setting a topic
+			this.setTopic = function( topic ) {
+				this._topic = topic;
+			}
+
+			// Method used for getting the topic
+			this.getTopic = function() {
+				return this._topic;
+			}
+
+			// Method used for adding a user
+			this.addUser = function( nickname ) {
+				// Add, if not already added
+				var nicknameAlreadyAdded = _.findIndex( this._users, function( _nickname ) {
+					if ( _nickname.toLowerCase() === nickname.toLowerCase() ) {
+						return true;
+					}
+				} );
+
+				if ( nicknameAlreadyAdded === -1 ) {
+					this._users.push( nickname );
+				}
+
+				console.log( this._users );
+			}
+
+			// Method used for removing a user
+			this.removeUser = function( nickname ) {
+				
+			}
+
+			// Method used for getting users
+			this.getUsers = function() {
+				return this._users;
+			}
+		}
 	}
 	// Other constants
 	,OtherConstants: {
 		NICK_LENGTH: 8 // Max nickname characters (9, since the count starts from 0)
-		// TODO: Implement proper patterns.
+		,CHANNEL_NAME_LENGTH: 49 // (50)
+		// TODO: Implement proper patterns (these are partially implemented)
 		,NICK_PATTERN: /^[a-zA-Z0-9]+$/ // Nickname pattern, as per RFC
+		,CHANNEL_NAME_PATTERN: /^[#&+!][a-zA-Z0-9\-\_]+$/ // Channel name, as per RFC...
 	}
 };
 
@@ -263,6 +322,12 @@ IRCProtocol.ClientProtocol = function( parent ) {
 
 	// Array of lower case nicknames, used for checking if a nickname is in use or not
 	this._lcNicknames = [];
+
+	// NOTE: These two _MUST_ be synchronised
+	// Array of lower case channel names, used for checking if a channel exists
+	this._lcChannelNames = [];
+	// Array of channel objects
+	this._channels = [];
 
 	// Store create date
 	this._created = new Date();
@@ -577,6 +642,100 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 	console.log( data );
 }
 
+/**
+ * Client JOIN command.
+ * @param {Object} data Data object, with the required 'channels' and optional 'keys' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
+	// Validate the command parameters
+	if ( typeof data.channels === "undefined" || data.length === 0 ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,"JOIN :" + IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Parse each channel
+	// TODO: Include key data
+	var channelName = "";
+	for ( var i = 0; i < data.channels.length; i++ ) {
+		channelName = data.channels[i];
+
+		// Validate channel name
+		// ERR_NOSUCHCHANNEL
+		if ( channelName.length > IRCProtocol.OtherConstants.CHANNEL_NAME_LENGTH || !IRCProtocol.OtherConstants.CHANNEL_NAME_PATTERN.test( channelName ) ) {
+			// Return an invalid channel name error (ERR_NOSUCHCHANNEL)
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
+				,channelName + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+			);
+
+			return;
+		}
+		// Check if the channel exists (if not, create and add to list)
+		var channelPosition = this._lcChannelNames.indexOf( channelName.toLowerCase() )
+			,channel;
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+		} else {
+			// Create a new channel, and add to list
+			this._lcChannelNames.push( channelName.toLowerCase() );
+			channel = new IRCProtocol.IrcState.Channel( channelName );
+			this._channels.push( channel );
+		}
+
+		// Add user to channel
+		channel.addUser( socket.Client.getNickname() );
+
+		// JOIN (TODO: Verify!)
+		socket.emit(
+			'JOIN'
+			,{
+				channel: channel.getName()
+				,nickname: socket.Client.getNickname()
+				,servername: IRCProtocol.ServerInfo.SERVER_NAME
+			}
+		);
+		// RPL_TOPIC or RPL_NOTOPIC
+		if ( channel.getTopic() ) {
+			socket.emit(
+				'RPL_TOPIC'
+				,{
+					channel: channel.getName()
+					,topic: channel.getTopic()
+				}
+			);
+		} else {
+			socket.emit(
+				'RPL_NOTOPIC'
+				,{
+					channel: channel.getName()
+				}
+			);
+		}
+
+		// RPL_NAMREPLY
+		socket.emit(
+			'RPL_NAMREPLY'
+			,{
+				channel: channel.getName()
+				,names: channel.getUsers()
+			}
+		);
+	}
+
+	console.log( data );
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -597,6 +756,8 @@ ChatServer = new Server( {
 		,USER: IRCClient.USER
 		// User based queries
 		,WHOIS: IRCClient.WHOIS
+		// Channel join/part commands
+		,JOIN: IRCClient.JOIN
 	}
 	// New connection handler
 	,connection: IRCClient.connection
