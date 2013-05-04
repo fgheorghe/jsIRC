@@ -169,6 +169,14 @@ var IRCProtocol = {
 				,RPL_TOPIC: [ 332, "<channel> :<topic>" ]
 				,RPL_NOTOPIC: [ 331, "<channel> :No topic is set" ]
 			}
+			,PRIVMSG: {
+				ERR_NORECIPIENT: [ 411, "No recipient given (<command>)" ]
+				,ERR_CANNOTSENDTOCHAN: [ 412, "No text to send" ]
+				,ERR_WILDTOPLEVEL: [ 413, "<mask> :No toplevel domain specified" ]
+				,ERR_NOTEXTTOSEND: [ 412, "No text to send" ]
+				,ERR_NOTOPLEVEL: [ 413, "<mask> :No toplevel domain specified" ]
+				,ERR_TOOMANYTARGETS: [ 487, "<target> :<error code> recipients. <abort message>" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -295,24 +303,32 @@ var IRCProtocol = {
 					this._lcUsers.push( socket.Client.getNickname() );
 
 					// Notify clients of a new join
-					for ( var i = 0; i < this._sockets.length; i++ ) {
-						this._sockets[i].emit(
-							'JOIN'
-							,{
-								channel: this.getName()
-								,nickname: socket.Client.getNickname()
-								,user: socket.Client.getUser()
-								,host: socket.Client.getHost()
-								,servername: IRCProtocol.ServerInfo.SERVER_NAME
-							}
-						);
-					}
+					this._broadcastEvent( 'JOIN'
+						,{
+							channel: this.getName()
+							,nickname: socket.Client.getNickname()
+							,user: socket.Client.getUser()
+							,host: socket.Client.getHost()
+							,servername: IRCProtocol.ServerInfo.SERVER_NAME
+						}
+					);
 
 					// Add socket
 					this._sockets.push( socket );
 				}
 
 				console.log( this._users );
+			}
+
+			// Method used for broadcasting an event to all channel clients
+			this._broadcastEvent = function( eventName, data ) {
+				// Notify _ALL_ clients
+				for ( var i = 0; i < this._sockets.length; i++ ) {
+					this._sockets[i].emit(
+						eventName
+						,data
+					);
+				}
 			}
 
 			// Method used for removing a user
@@ -328,18 +344,31 @@ var IRCProtocol = {
 				this._sockets.splice( nicknamePosition, 1 );
 
 				// Notify clients of a part
-				for ( var i = 0; i < this._sockets.length; i++ ) {
-					this._sockets[i].emit(
-						'PART'
-						,{
-							channel: this.getName()
-							,nickname: socket.Client.getNickname()
-							,user: socket.Client.getUser()
-							,host: socket.Client.getHost()
-							,servername: IRCProtocol.ServerInfo.SERVER_NAME
-						}
-					);
-				}
+				this._broadcastEvent( 'PART'
+					,{
+						channel: this.getName()
+						,nickname: socket.Client.getNickname()
+						,user: socket.Client.getUser()
+						,host: socket.Client.getHost()
+						,servername: IRCProtocol.ServerInfo.SERVER_NAME
+					}
+				);
+			}
+
+			// Method used for broadcasting a PRIVMSG command
+			// TODO: Move channel specific command names to their event names
+			this.PRIVMSG = function( message, socket ) {
+				// Notify clients of a message
+				this._broadcastEvent( 'PRIVMSG'
+					,{
+						target: this.getName()
+						,message: message
+						,nickname: socket.Client.getNickname()
+						,user: socket.Client.getUser()
+						,host: socket.Client.getHost()
+						,servername: IRCProtocol.ServerInfo.SERVER_NAME
+					}
+				);
 			}
 
 			// Method used for getting users
@@ -828,6 +857,78 @@ IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
 	}
 }
 
+/**
+ * Client PRIVMSG command.
+ * @param {Object} data Data object, with the required 'target' and 'message' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
+	// Validate the command parameters
+	if ( typeof data.target === "undefined" || !S( data.target ).trim().s ) {
+		// Issue an ERR_NORECIPIENT error.
+		this.emitIRCError(
+			socket
+			,'ERR_NORECIPIENT'
+			,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_NORECIPIENT[0]
+			,"No recipient given (PRIVMSG)"
+		);
+		return;
+	}
+	if ( typeof data.message === "undefined" || !S( data.message ).trim().s ) {
+		// Issue an ERR_NOTEXTTOSEND error.
+		this.emitIRCError(
+			socket
+			,'ERR_NOTEXTTOSEND'
+			,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_NORECIPIENT[0]
+			,"No text to send"
+		);
+		return;
+	}
+
+	// Check if target is a valid nickname or channel
+	// TODO: Handle masks and such.
+	var isChannel = data.target.length <= IRCProtocol.OtherConstants.CHANNEL_NAME_LENGTH && IRCProtocol.OtherConstants.CHANNEL_NAME_PATTERN.test( data.target );
+	var isNickname = data.target.length <= IRCProtocol.OtherConstants.NICK_LENGTH && IRCProtocol.OtherConstants.NICK_PATTERN.test( data.target );
+
+	// If neither, issue a ERR_NOSUCHNICK
+	if ( !isChannel && !isNickname ) {
+		this.emitIRCError(
+			socket
+			,'ERR_NOSUCHNICK'
+			,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+			,data.target + " :No such nick/channel"
+		);
+		return;
+	}
+
+	// Handle channel messages
+	if ( isChannel ) {
+		// Find the channel first
+		var channelPosition = this._lcChannelNames.indexOf( data.target.toLowerCase() );
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+
+			// Broadcast message
+			channel.PRIVMSG( data.message, socket );
+		} else {
+			// Channel not found, issue an ERR_NOSUCHNICK error
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHNICK'
+				,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+				,data.target + " :No such nick/channel"
+			);
+			return;
+		}
+	}
+
+	// TODO: Handle user to user messages
+
+	console.log( data );
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -851,6 +952,8 @@ ChatServer = new Server( {
 		// Channel join/part commands
 		,JOIN: IRCClient.JOIN
 		,PART: IRCClient.PART
+		// Private message
+		,PRIVMSG: IRCClient.PRIVMSG
 	}
 	// New connection handler
 	,connection: IRCClient.connection

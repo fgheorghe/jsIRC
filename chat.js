@@ -48,18 +48,24 @@ var ChatJs = function() {
 	// Create the UI as soon as ExtJS is ready
 	Ext.onReady( function() {
 		// Handle a text sending UI action
-		this.handleSendText = function( textField ) {
+		this.handleSendText = function( textField, recipient ) {
 			var _textField = textField || this.textField;
 			// Check if the user tries sending a command (string starting with a /).
 			if ( _textField.getValue().toString().charAt( 0 ) === "/" ) {
 				// Parse command
 				this.parseCommand( _textField.getValue().toString() );
 			} else {
-				if ( _textField.getValue() ) {
-					this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( _textField.getValue() ) );
+				// If a recipient if set, construct a privmsg command, and call same function again
+				if ( recipient ) {
+					this.parseCommand( "/privmsg " + recipient + " " + _textField.getValue().toString() );
+				} else {
+					// TODO: Remove
+					if ( _textField.getValue() ) {
+						this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( _textField.getValue() ) );
 
-					// Emit event
-					this.client.emit( 'clientMessage', { text: _textField.getValue() } );
+						// Emit event
+						this.client.emit( 'clientMessage', { text: _textField.getValue() } );
+					}
 				}
 			}
 			_textField.setValue( "" );
@@ -143,7 +149,7 @@ var ChatJs = function() {
  */
 ChatJs.prototype.parseCommand = function( text ) {
 	// Trim command
-	text = Ext.util.Format.trim( text );
+	text = Ext.util.Format.trim( text ).toString();
 
 	// Get the command name
 	var commandPattern = /\/([A-Za-z]+)/i
@@ -198,8 +204,25 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "privmsg":
+			// Construct a privmsg command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.target = parameters[0];
+			}
+
+			// Construct a whois command
+			if ( parameters.length >= 2 ) {
+				// Target
+				data.message = text.slice( text.indexOf( data.target ) + data.target.length + 1 );
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
+			break;
 	}
 }
 
@@ -447,6 +470,20 @@ ChatJs.prototype.ERR_NOSUCHNICK = function( data ) {
 }
 
 /**
+ * Method used for handling 'PRIVMSG' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.PRIVMSG = function( data ) {
+	// Find a channel window
+	// TODO: Add private user message
+	// TODO: Handle non existing channel/user windows
+	if ( typeof this._channelWindows[data.target] !== "undefined" ) {
+		this._channelWindows[data.target].addText( "<b>[" + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
+	}
+}
+
+/**
  * Method used for handling 'RPL_ENDOFWHOIS' event.
  * @param {Object} data Data object.
  * @function
@@ -504,6 +541,26 @@ ChatJs.prototype.RPL_CREATED = function( data ) {
 ChatJs.prototype.RPL_YOURHOST = function( data ) {
 	// Add text to window
 	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_NORECIPIENT' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_NOTEXTTOSEND' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NOTEXTTOSEND = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
 
 /**

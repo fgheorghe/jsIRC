@@ -107,6 +107,9 @@ var Example = new Client( {
 		,RPL_NAMREPLY: ChatApplication.RPL_NAMREPLY
 		,JOIN: ChatApplication.JOIN
 		,PART: ChatApplication.PART
+		,ERR_NOTEXTTOSEND: ChatApplication.ERR_NOTEXTTOSEND
+		,ERR_NORECIPIENT: ChatApplication.ERR_NORECIPIENT
+		,PRIVMSG: ChatApplication.PRIVMSG
 		// TODO: Implement
 // 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}

@@ -112,7 +112,7 @@ ChannelWindow.prototype.init = function() {
 		,listeners: {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
-					this._config.parent.handleSendText.bind( this._config.parent )( this.textField );
+					this._config.parent.handleSendText.bind( this._config.parent )( this.textField, this._config.channel );
 				}
 			}.bind( this )
 		}
@@ -121,7 +121,7 @@ ChannelWindow.prototype.init = function() {
 	// Send button
 	this.sendButton = Ext.create( 'Ext.button.Button', {
 		text: 'Send'
-		,handler: this._config.parent.handleSendText.bind( this._config.parent, [ this.textField ] )
+		,handler: this._config.parent.handleSendText.bind( this._config.parent, [ this.textField, this._config.channel ] )
 	} );
 
 	// Prepare the text window
@@ -173,6 +173,9 @@ ChannelWindow.prototype.init = function() {
 
 				// Remove from window array
 				this._config.parent.removeChannelWindow( this._config.channel );
+			}.bind( this )
+			,render: function() {
+				this.textField.focus( false, 200 );
 			}.bind( this )
 		}
 		,items: [
