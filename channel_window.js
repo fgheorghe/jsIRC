@@ -105,23 +105,6 @@ ChannelWindow.prototype.init = function() {
 		this.clientList.getRootNode().removeChild( node, true );
 	}
 
-	// Handle a text sending UI action
-	var handleSendText = function() {
-		// Check if the user tries sending a command (string starting with a /).
-		if ( this.textField.getValue().toString().charAt( 0 ) === "/" ) {
-			// Parse command
-			this.parseCommand( this.textField.getValue().toString() );
-		} else {
-			if ( this.textField.getValue() ) {
-				this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( this.textField.getValue() ) );
-
-				// Emit event
-				this.client.emit( 'clientMessage', { text: this.textField.getValue() } );
-			}
-		}
-		this.textField.setValue( "" );
-	}
-
 	// Text field
 	this.textField = Ext.create( 'Ext.form.field.Text', {
 		width: 560
@@ -129,7 +112,7 @@ ChannelWindow.prototype.init = function() {
 		,listeners: {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
-					handleSendText.bind( this )();
+					this._config.parent.handleSendText.bind( this._config.parent )( this.textField );
 				}
 			}.bind( this )
 		}
@@ -138,7 +121,7 @@ ChannelWindow.prototype.init = function() {
 	// Send button
 	this.sendButton = Ext.create( 'Ext.button.Button', {
 		text: 'Send'
-		,handler: handleSendText.bind( this )
+		,handler: this._config.parent.handleSendText.bind( this._config.parent, [ this.textField ] )
 	} );
 
 	// Prepare the text window

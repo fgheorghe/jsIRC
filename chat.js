@@ -48,20 +48,21 @@ var ChatJs = function() {
 	// Create the UI as soon as ExtJS is ready
 	Ext.onReady( function() {
 		// Handle a text sending UI action
-		var handleSendText = function() {
+		this.handleSendText = function( textField ) {
+			var _textField = textField || this.textField;
 			// Check if the user tries sending a command (string starting with a /).
-			if ( this.textField.getValue().toString().charAt( 0 ) === "/" ) {
+			if ( _textField.getValue().toString().charAt( 0 ) === "/" ) {
 				// Parse command
-			 	this.parseCommand( this.textField.getValue().toString() );
+				this.parseCommand( _textField.getValue().toString() );
 			} else {
-				if ( this.textField.getValue() ) {
-					this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( this.textField.getValue() ) );
+				if ( _textField.getValue() ) {
+					this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( _textField.getValue() ) );
 
 					// Emit event
-					this.client.emit( 'clientMessage', { text: this.textField.getValue() } );
+					this.client.emit( 'clientMessage', { text: _textField.getValue() } );
 				}
 			}
-			this.textField.setValue( "" );
+			_textField.setValue( "" );
 		}
 
 		// Text field
@@ -71,7 +72,7 @@ var ChatJs = function() {
 			,listeners: {
 				keydown: function( field, e, eOpts ) {
 					if ( e.getKey() === 13 ) {
-						handleSendText.bind( this )();
+						this.handleSendText.bind( this )();
 					}
 				}.bind( this )
 			}
@@ -80,7 +81,7 @@ var ChatJs = function() {
 		// Send button
 		this.sendButton = Ext.create( 'Ext.button.Button', {
 			text: 'Send'
-			,handler: handleSendText.bind( this )
+			,handler: this.handleSendText.bind( this )
 		} );
 
 		// Prepare the text window
