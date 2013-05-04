@@ -110,6 +110,8 @@ var Example = new Client( {
 		,ERR_NOTEXTTOSEND: ChatApplication.ERR_NOTEXTTOSEND
 		,ERR_NORECIPIENT: ChatApplication.ERR_NORECIPIENT
 		,PRIVMSG: ChatApplication.PRIVMSG
+		,RPL_WHOISCHANNELS: ChatApplication.RPL_WHOISCHANNELS
+		,QUIT: ChatApplication.QUIT
 		// TODO: Implement
 // 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}

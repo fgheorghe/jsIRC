@@ -95,14 +95,19 @@ ChannelWindow.prototype.init = function() {
 
 	// Method used for removing a user from the list
 	this.removeClient = function( nickname ) {
-		var node = this.clientList.getRootNode().findChildBy( function( _node ) {
+		var node = this.findClient( nickname );
+
+		this.clientList.getRootNode().removeChild( node, true );
+	}
+
+	// Method used for finding if a user is in the window's list
+	this.findClient = function( nickname ) {
+		return this.clientList.getRootNode().findChildBy( function( _node ) {
 			if ( _node.data.text.toLowerCase() === nickname.toLowerCase() ) {
 				return true;
 			}
 			return false;
 		} );
-
-		this.clientList.getRootNode().removeChild( node, true );
 	}
 
 	// Text field

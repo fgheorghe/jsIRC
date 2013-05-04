@@ -197,6 +197,7 @@ var IRCProtocol = {
 			this._user = false; // Stores 'user' command data, object as per command parameters
 			this._host = ""; // Stores the user's host
 			this._realname = ""; // Stores the user's real name
+			this._channels = []; // Stores channels this user has joined
 
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
 
@@ -238,6 +239,24 @@ var IRCProtocol = {
 			// Method used for setting the user host
 			this.setHost = function( host ) {
 				this._host = host;
+			}
+
+			// Method used for adding this user to a channel
+			this.addChannel = function( channelName ) {
+				this._channels.push( channelName );
+			}
+
+			// Method used for getting the user channels
+			this.getChannels = function() {
+				return this._channels;
+			}
+
+			// Method used for removing a channel from a user
+			this.removeChannel = function( channelName ) {
+				var channelPosition = this._channels.indexOf( channelName );
+				if ( channelPosition !== -1 ) {
+					this._channels.splice( channelPosition, 1 );
+				}
 			}
 
 			// Method used for checking if a user is registered or not (sent valid nickname and user properties)
@@ -332,7 +351,7 @@ var IRCProtocol = {
 			}
 
 			// Method used for removing a user
-			this.removeUser = function( socket ) {
+			this.removeUser = function( socket, silent ) {
 				// Remove from lists, and notify users
 				var nicknamePosition = this._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() );
 
@@ -343,16 +362,18 @@ var IRCProtocol = {
 				// Remove socket, from this channel's list
 				this._sockets.splice( nicknamePosition, 1 );
 
-				// Notify clients of a part
-				this._broadcastEvent( 'PART'
-					,{
-						channel: this.getName()
-						,nickname: socket.Client.getNickname()
-						,user: socket.Client.getUser()
-						,host: socket.Client.getHost()
-						,servername: IRCProtocol.ServerInfo.SERVER_NAME
-					}
-				);
+				// Notify clients of a part, except if this is a 'silent' PART (client quit)
+				if ( typeof silent === "undefined" || silent !== true ) {
+					this._broadcastEvent( 'PART'
+						,{
+							channel: this.getName()
+							,nickname: socket.Client.getNickname()
+							,user: socket.Client.getUser()
+							,host: socket.Client.getHost()
+							,servername: IRCProtocol.ServerInfo.SERVER_NAME
+						}
+					);
+				}
 			}
 
 			// Method used for broadcasting a PRIVMSG command
@@ -511,6 +532,47 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
+	// Remove client from channels
+	var channels = socket.Client.getChannels()
+		,users = [];
+	for ( var i = 0; i < channels.length; i++ ) {
+		// Check if the channel exists
+		var channelPosition = this._lcChannelNames.indexOf( channels[i].toLowerCase() )
+			,channel;
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+			channel.removeUser( socket, true );
+		}
+
+		// Construct list of channel users
+		console.log( "asdsad" );
+		users = users.concat( users, channel.getUsers() );
+	}
+
+	// Notify users on all channels that the user has quit
+	// TODO: Optimise
+	var _notified = []; // Lower case array of notofied users, to avoid duplicates
+	for ( var i = 0; i < users.length; i++ ) {
+		// Notify if not already done so
+		if ( _notified.indexOf( users[i].toLowerCase() ) === -1 ) {
+			// Find client socket
+			var nicknamePosition = this._lcNicknames.indexOf( users[i].toLowerCase() );
+			if ( nicknamePosition !== -1 ) {
+				var clientSocket = this._clientSockets[ nicknamePosition ];
+				clientSocket.emit(
+					'QUIT'
+					,{
+						nickname: socket.Client.getNickname()
+						,host: socket.Client.getHost()
+						,user: socket.Client.getUser()
+						,reason: 'Connection closed.'
+					}
+				);
+			}
+		}
+	}
+
 	// Find socket position, by id
 	var socketPosition = this._clientSocketIds.indexOf( socket.id );
 	// Find nickname position, if the user registered
@@ -687,7 +749,17 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 			}
 		);
 
-		// TODO: RPL_WHOISCHANNELS
+		// RPL_WHOISCHANNELS
+		if ( clientSocket.Client.getChannels().length !== 0 ) {
+			socket.emit(
+				'RPL_WHOISCHANNELS'
+				,{
+					nick: clientSocket.Client.getNickname()
+					,channels: clientSocket.Client.getChannels()
+				}
+			);
+		}
+
 		// RPL_WHOISSERVER
 		socket.emit(
 			'RPL_WHOISSERVER'
@@ -809,6 +881,9 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				,names: channel.getUsers()
 			}
 		);
+
+		// Update the user's channel list
+		socket.Client.addChannel( channel.getName() );
 	}
 
 	console.log( data );
@@ -848,6 +923,9 @@ IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
 
 			// And remove the user
 			channel.removeUser( socket );
+
+			// Update the user's channel list
+			socket.Client.removeChannel( channel.getName() );
 
 			// TODO: Remove channel if no users are left
 		} else {

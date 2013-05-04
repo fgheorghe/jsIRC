@@ -514,6 +514,32 @@ ChatJs.prototype.RPL_WHOISSERVER = function( data ) {
 }
 
 /**
+ * Method used for handling 'RPL_WHOISCHANNELS' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WHOISCHANNELS = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.channels.join( " " ) ) );
+}
+
+/**
+ * Method used for handling 'QUIT' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.QUIT = function( data ) {
+	// Remove from all windows
+	// TODO: Handle out of synch quits, and optimize the process
+	for ( var channel in this._channelWindows ) {
+		if ( this._channelWindows[ channel ].findClient( data.nickname ) ) {
+			this._channelWindows[ channel ].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has quit (" + Ext.htmlEncode( data.reason ) + ")" );
+			this._channelWindows[ channel ].removeClient( data.nickname );
+		}
+	}
+}
+
+/**
  * Method used for handling 'RPL_MYINFO' event.
  * @param {Object} data Data object.
  * @function
