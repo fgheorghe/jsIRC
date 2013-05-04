@@ -187,6 +187,9 @@ ChannelWindow.prototype.init = function() {
 				this._config.parent.client.emit( 'PART', {
 					channels: [ this._config.channel ]
 				} );
+
+				// Remove from window array
+				this._config.parent.removeChannelWindow( this._config.channel );
 			}.bind( this )
 		}
 		,items: [

@@ -248,6 +248,22 @@ ChatJs.prototype.createNamePrompt = function() {
 }
 
 /**
+ * Method used for removing a channel window, from the window list.
+ * @param {String} channel Channel name.
+ * @function
+ */
+ChatJs.prototype.removeChannelWindow = function( channel ) {
+	// Find in the list of windows
+	var _newList = {};
+	for ( var key in this._channelWindows ) {
+		if ( key.toLowerCase() !== channel.toLowerCase() ) {
+			_newList[key] = this._channelWindows[key];
+		}
+	}
+	this._channelWindows = _newList;
+}
+
+/**
  * Method used for handling a successful connection.
  * @function
  */
