@@ -257,6 +257,9 @@ var IRCProtocol = {
 			// List of users
 			this._users = [];
 
+			// List of sockets
+			this._sockets = [];
+
 			// Topic
 			this._topic = "";
 
@@ -275,17 +278,37 @@ var IRCProtocol = {
 				return this._topic;
 			}
 
-			// Method used for adding a user
-			this.addUser = function( nickname ) {
+			// Method used for adding a user socket
+			this.addUser = function( socket ) {
 				// Add, if not already added
 				var nicknameAlreadyAdded = _.findIndex( this._users, function( _nickname ) {
-					if ( _nickname.toLowerCase() === nickname.toLowerCase() ) {
+					if ( _nickname.toLowerCase() === socket.Client.getNickname().toLowerCase() ) {
 						return true;
 					}
 				} );
 
+				// Add socket and nickname
 				if ( nicknameAlreadyAdded === -1 ) {
-					this._users.push( nickname );
+					// Add nickname
+					this._users.push( socket.Client.getNickname() );
+
+					// Notify clients of a new join
+					for ( var i = 0; i < this._sockets.length; i++ ) {
+						console.log( "here" );
+						this._sockets[i].emit(
+							'JOIN'
+							,{
+								channel: this.getName()
+								,nickname: socket.Client.getNickname()
+								,user: socket.Client.getUser()
+								,host: socket.Client.getHost()
+								,servername: IRCProtocol.ServerInfo.SERVER_NAME
+							}
+						);
+					}
+
+					// Add socket
+					this._sockets.push( socket );
 				}
 
 				console.log( this._users );
@@ -694,7 +717,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 		}
 
 		// Add user to channel
-		channel.addUser( socket.Client.getNickname() );
+		channel.addUser( socket );
 
 		// JOIN (TODO: Verify!)
 		socket.emit(
@@ -702,9 +725,12 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			,{
 				channel: channel.getName()
 				,nickname: socket.Client.getNickname()
+				,user: socket.Client.getUser()
+				,host: socket.Client.getHost()
 				,servername: IRCProtocol.ServerInfo.SERVER_NAME
 			}
 		);
+
 		// RPL_TOPIC or RPL_NOTOPIC
 		if ( channel.getTopic() ) {
 			socket.emit(

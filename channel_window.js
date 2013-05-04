@@ -42,6 +42,20 @@ var ChannelWindow = function( config ) {
 }
 
 /**
+ * Method used for appending text.
+ * TODO: Clean redundant code!
+ * @param {String} text String to add to window.
+ * @function
+ */
+ChannelWindow.prototype.addText = function( text ) {
+	// Apply extra formats
+	text = Ext.util.Format.nl2br( text );
+
+	this.textPanel.body.insertHtml( "beforeEnd", text + '<br>' );
+	this.textPanel.body.scroll( 'b', Infinity );
+}
+
+/**
  * Method used for initiating the channel window.
  * @param {String} channel Channel name.
  * @function
@@ -71,6 +85,12 @@ ChannelWindow.prototype.init = function() {
 	this.loadClientList = function( list ) {
 		this.clientList.getRootNode().removeAll( false );
 		this.clientList.getRootNode().appendChild( list );
+	}
+
+	// Method used for adding a new user to the list
+	// TODO: Sort by op, voice, non-op etc
+	this.addClient = function( client ) {
+		this.clientList.getRootNode().appendChild( client );
 	}
 
 	// Handle a text sending UI action

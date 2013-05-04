@@ -257,9 +257,6 @@ ChatJs.prototype.connectHandler = function() {
  * @function
  */
 ChatJs.prototype.addText = function( text ) {
-	// Get DOM component
-	var obj = Ext.get( 'messageArea' );
-
 	// Apply extra formats
 	text = Ext.util.Format.nl2br( text );
 
@@ -277,7 +274,7 @@ ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
 	// Show an error message, then the prompt asking for a new name
 	Ext.Msg.show( {
 		title: 'Nickname'
-		,msg: 'Nickame is already in use. Please input a different nickame.'
+		,msg: 'Nickname is already in use. Please input a different nickname.'
 		,buttons: Ext.Msg.OK
 		,width: 380
 		,modal: false
@@ -308,7 +305,17 @@ ChatJs.prototype.JOIN = function( data ) {
 	} else if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && this._channelWindows[data.channel] ) {
 		// Just focus
 		this._channelWindows[data.channel].chatWindow.focus();
+	} else if ( data.nickname.toLowerCase() !== this._nickname.toLowerCase() && this._channelWindows[data.channel] ) {
+		// Append text
+		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has joined " + Ext.htmlEncode( data.channel ) );
+		// Append to user list
+		this._channelWindows[data.channel].addClient( {
+			leaf: true
+			,text: Ext.htmlEncode( data.nickname )
+		} );
 	}
+
+	// TODO: Handle out of synch 'JOIN' reply (display event in status window, if the channel window doesn't exist)
 }
 
 /**
@@ -343,7 +350,7 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 		// Convert to tree items
 		for ( var i = 0; i < data.names.length; i++ ) {
 			names.push( {
-				text: data.names[i]
+				text: Ext.htmlEncode( data.names[i] )
 				,leaf: true
 			} );
 		}
