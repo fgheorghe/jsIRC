@@ -93,6 +93,18 @@ ChannelWindow.prototype.init = function() {
 		this.clientList.getRootNode().appendChild( client );
 	}
 
+	// Method used for removing a user from the list
+	this.removeClient = function( nickname ) {
+		var node = this.clientList.getRootNode().findChildBy( function( _node ) {
+			if ( _node.data.text.toLowerCase() === nickname.toLowerCase() ) {
+				return true;
+			}
+			return false;
+		} );
+
+		this.clientList.getRootNode().removeChild( node, true );
+	}
+
 	// Handle a text sending UI action
 	var handleSendText = function() {
 		// Check if the user tries sending a command (string starting with a /).
@@ -169,6 +181,14 @@ ChannelWindow.prototype.init = function() {
 		,height: 500
 		,width: 800
 		,layout: 'border'
+		,listeners: {
+			close: function() {
+				// Emit a part command
+				this._config.parent.client.emit( 'PART', {
+					channels: [ this._config.channel ]
+				} );
+			}.bind( this )
+		}
 		,items: [
 			this.clientList
 			,this.textPanel

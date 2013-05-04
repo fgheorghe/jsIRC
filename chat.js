@@ -185,6 +185,18 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "part":
+			// TODO: Properly handle whitespace!
+			// Construct a part command
+			if ( parameters.length >= 1 ) {
+				// Channel list
+				var channels = parameters[0].split( "," );
+				data.channels = channels;
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
 	}
@@ -298,6 +310,7 @@ ChatJs.prototype.JOIN = function( data ) {
 		// Create window
 		this._channelWindows[data.channel] = new ChannelWindow( {
 			channel: data.channel
+			,parent: this
 		} );
 
 		// Show window
@@ -316,6 +329,25 @@ ChatJs.prototype.JOIN = function( data ) {
 	}
 
 	// TODO: Handle out of synch 'JOIN' reply (display event in status window, if the channel window doesn't exist)
+}
+
+/**
+ * Method used for handling 'PART' event, and close the channel window, or update the client list
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.PART = function( data ) {
+	if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && typeof this._channelWindows[data.channel] === "undefined" ) {
+		// 'Terminate' the window
+		// TODO:
+		// Remove from list
+	} else {
+		// Append text
+		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has left " + Ext.htmlEncode( data.channel ) );
+
+		// Remove from list of users
+		this._channelWindows[data.channel].removeClient( data.nickname );
+	}
 }
 
 /**

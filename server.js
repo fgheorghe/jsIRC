@@ -256,6 +256,7 @@ var IRCProtocol = {
 
 			// List of users
 			this._users = [];
+			this._lcUsers = [];
 
 			// List of sockets
 			this._sockets = [];
@@ -291,10 +292,10 @@ var IRCProtocol = {
 				if ( nicknameAlreadyAdded === -1 ) {
 					// Add nickname
 					this._users.push( socket.Client.getNickname() );
+					this._lcUsers.push( socket.Client.getNickname() );
 
 					// Notify clients of a new join
 					for ( var i = 0; i < this._sockets.length; i++ ) {
-						console.log( "here" );
 						this._sockets[i].emit(
 							'JOIN'
 							,{
@@ -315,8 +316,30 @@ var IRCProtocol = {
 			}
 
 			// Method used for removing a user
-			this.removeUser = function( nickname ) {
-				
+			this.removeUser = function( socket ) {
+				// Remove from lists, and notify users
+				var nicknamePosition = this._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() );
+
+				// Remove nickname from lists
+				this._users.splice( nicknamePosition, 1 );
+				this._lcUsers.splice( nicknamePosition, 1 );
+
+				// Remove socket, from this channel's list
+				this._sockets.splice( nicknamePosition, 1 );
+
+				// Notify clients of a part
+				for ( var i = 0; i < this._sockets.length; i++ ) {
+					this._sockets[i].emit(
+						'PART'
+						,{
+							channel: this.getName()
+							,nickname: socket.Client.getNickname()
+							,user: socket.Client.getUser()
+							,host: socket.Client.getHost()
+							,servername: IRCProtocol.ServerInfo.SERVER_NAME
+						}
+					);
+				}
 			}
 
 			// Method used for getting users
@@ -762,6 +785,49 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 	console.log( data );
 }
 
+/**
+ * Client PART command.
+ * @param {Object} data Data object, with the required 'channels' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
+	// Validate required properties
+	if ( typeof data.channels === "undefined" || data.channels.length === 0 ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Parse each channel
+	var channelName = "";
+	for ( var i = 0; i < data.channels.length; i++ ) {
+		channelName = data.channels[i];
+		// TODO: Validate channel name
+
+		// Check if the channel exists (if not, create and add to list)
+		var channelPosition = this._lcChannelNames.indexOf( channelName.toLowerCase() )
+			,channel;
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+
+			// And remove the user
+			channel.removeUser( socket );
+
+			// TODO: Remove channel if no users are left
+		} else {
+			// TODO: ERR_NOTONCHANNEL
+			return;
+		}
+	}
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -784,6 +850,7 @@ ChatServer = new Server( {
 		,WHOIS: IRCClient.WHOIS
 		// Channel join/part commands
 		,JOIN: IRCClient.JOIN
+		,PART: IRCClient.PART
 	}
 	// New connection handler
 	,connection: IRCClient.connection
