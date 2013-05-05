@@ -105,6 +105,7 @@ Server.prototype.init = function() {
 // Load various required libraries:
 var S = require( 'string' ); // http://stringjs.com/
 var _ = require('lodash'); // http://lodash.com/
+var fs = require('fs'); // Standard file system
 
 /** IRC Protocol */
 var IRCProtocol = {
@@ -179,7 +180,7 @@ var IRCProtocol = {
 				,ERR_TOOMANYTARGETS: [ 487, "<target> :<error code> recipients. <abort message>" ]
 			}
 			,MOTD: {
-				RPL_MOTDSTART: [ 375, "- <server> Message of the day - " ]
+				RPL_MOTDSTART: [ 375, "Message of the day - " ]
 				,RPL_MOTD: [ 372, "- <text>" ]
 				,RPL_ENDOFMOTD: [ 376, "End of MOTD command" ]
 				,ERR_NOMOTD: [ 422, "MOTD File is missing" ]
@@ -1014,6 +1015,58 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 	console.log( data );
 }
 
+/**
+ * Client MOTD command.
+ * @param {Object} data Data object, with the optional 'target' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.MOTD = function( data, socket ) {
+	// TODO: Add target support
+
+	// Read the MOTD file
+	fs.readFile( IRCProtocol.MotdFile, function ( err, data ) {
+		// Return an ERR_NOMOTD event, if file can't be read
+		if ( err ) {
+			this.emitIRCError(
+				socket
+				,'ERR_NOMOTD'
+				,IRCProtocol.NumericReplyConstants.Client.MOTD.ERR_NOMOTD[0]
+				,IRCProtocol.NumericReplyConstants.Client.MOTD.ERR_NOMOTD[1]
+			);
+		} else {
+			// Begin with RPL_MOTDSTART
+			this.emitIRCError(
+				socket
+				,'RPL_MOTDSTART'
+				,IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[0]
+				,"- " + IRCProtocol.ServerInfo.SERVER_NAME + " " + IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[1]
+			);
+
+			// Send the MOTD file content, line by line
+			var motdContentArray = data.toString().split( "\n" );
+
+			// RPL_MOTD
+			for ( var i = 0; i < motdContentArray.length; i++ ) {
+				this.emitIRCError(
+					socket
+					,'RPL_MOTD'
+					,IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTD[0]
+					,"- " + motdContentArray[i]
+				);
+			}
+
+			// RPL_ENDOFMOTD
+			this.emitIRCError(
+				socket
+				,'RPL_ENDOFMOTD'
+				,IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_ENDOFMOTD[0]
+				,IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_ENDOFMOTD[1]
+			);
+		}
+	}.bind( this ) );
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1039,6 +1092,8 @@ ChatServer = new Server( {
 		,PART: IRCClient.PART
 		// Private message
 		,PRIVMSG: IRCClient.PRIVMSG
+		// MOTD
+		,MOTD: IRCClient.MOTD
 	}
 	// New connection handler
 	,connection: IRCClient.connection

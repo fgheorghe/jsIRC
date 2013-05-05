@@ -215,6 +215,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "motd":
+			// Construct a privmsg command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.target = parameters[0];
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
 			break;
@@ -545,6 +555,9 @@ ChatJs.prototype.QUIT = function( data ) {
 ChatJs.prototype.RPL_MYINFO = function( data ) {
 	// Add text to window
 	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
+
+	// Once this is displayed, request a motd
+	this.client.emit( "MOTD", {} );
 }
 
 /**
@@ -583,6 +596,46 @@ ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_NOTEXTTOSEND = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_MOTDSTART' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_MOTDSTART = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_MOTD' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_MOTD = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFMOTD' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFMOTD = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_NOMOTD' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NOMOTD = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

@@ -112,6 +112,10 @@ var Example = new Client( {
 		,PRIVMSG: ChatApplication.PRIVMSG
 		,RPL_WHOISCHANNELS: ChatApplication.RPL_WHOISCHANNELS
 		,QUIT: ChatApplication.QUIT
+		,RPL_MOTDSTART: ChatApplication.RPL_MOTDSTART
+		,RPL_MOTD: ChatApplication.RPL_MOTD
+		,RPL_ENDOFMOTD: ChatApplication.RPL_ENDOFMOTD
+		,ERR_NOMOTD: ChatApplication.ERR_NOMOTD
 		// TODO: Implement
 // 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}
