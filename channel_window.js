@@ -139,6 +139,9 @@ ChannelWindow.prototype.init = function() {
 		,frame: false
 		,bodyStyle: {
 			padding: '5px'
+			,whiteSpace: "pre-wrap"
+			,fontFamily: "monospace"
+			,fontSize: "11px"
 		}
 		,autoScroll: true
 		// Start adding text from the bottom
