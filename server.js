@@ -115,6 +115,7 @@ var IRCProtocol = {
 		SERVER_NAME: "grosan.co.uk"
 		,SERVER_INFO: "Oxford, Oxfordshire, UK, EU"
 	}
+	,MotdFile: 'motd.txt'
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -176,6 +177,12 @@ var IRCProtocol = {
 				,ERR_NOTEXTTOSEND: [ 412, "No text to send" ]
 				,ERR_NOTOPLEVEL: [ 413, "<mask> :No toplevel domain specified" ]
 				,ERR_TOOMANYTARGETS: [ 487, "<target> :<error code> recipients. <abort message>" ]
+			}
+			,MOTD: {
+				RPL_MOTDSTART: [ 375, "- <server> Message of the day - " ]
+				,RPL_MOTD: [ 372, "- <text>" ]
+				,RPL_ENDOFMOTD: [ 376, "End of MOTD command" ]
+				,ERR_NOMOTD: [ 422, "MOTD File is missing" ]
 			}
 		}
 		// TODO: Reorder
@@ -404,7 +411,7 @@ var IRCProtocol = {
 		,CHANNEL_NAME_LENGTH: 49 // (50)
 		// TODO: Implement proper patterns (these are partially implemented)
 		,NICK_PATTERN: /^[a-zA-Z0-9]+$/ // Nickname pattern, as per RFC
-		,CHANNEL_NAME_PATTERN: /^[#&+!][a-zA-Z0-9\-\_]+$/ // Channel name, as per RFC...
+		,CHANNEL_NAME_PATTERN: /^[#&+!]+[a-zA-Z0-9\-\_]+$/ // Channel name, as per RFC...
 	}
 };
 

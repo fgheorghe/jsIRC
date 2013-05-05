@@ -58,14 +58,6 @@ var ChatJs = function() {
 				// If a recipient if set, construct a privmsg command, and call same function again
 				if ( recipient ) {
 					this.parseCommand( "/privmsg " + recipient + " " + _textField.getValue().toString() );
-				} else {
-					// TODO: Remove
-					if ( _textField.getValue() ) {
-						this.addText( "<b>" + this.myName + ":</b> " + Ext.htmlEncode( _textField.getValue() ) );
-
-						// Emit event
-						this.client.emit( 'clientMessage', { text: _textField.getValue() } );
-					}
 				}
 			}
 			_textField.setValue( "" );
@@ -311,6 +303,9 @@ ChatJs.prototype.connectHandler = function() {
 ChatJs.prototype.addText = function( text ) {
 	// Apply extra formats
 	text = Ext.util.Format.nl2br( text );
+
+	// Convert links
+	text = text.replace( /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig, "<a href='$1' target='_blank'>$1</a>" );
 
 	this.textPanel.body.insertHtml( "beforeEnd", text + '<br>' );
 	this.textPanel.body.scroll( 'b', Infinity );

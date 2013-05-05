@@ -51,6 +51,9 @@ ChannelWindow.prototype.addText = function( text ) {
 	// Apply extra formats
 	text = Ext.util.Format.nl2br( text );
 
+	// Convert links
+	text = text.replace( /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig, "<a href='$1' target='_blank'>$1</a>" );
+
 	this.textPanel.body.insertHtml( "beforeEnd", text + '<br>' );
 	this.textPanel.body.scroll( 'b', Infinity );
 }
