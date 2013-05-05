@@ -452,7 +452,6 @@ IRCProtocol.ClientProtocol = function( parent ) {
 		,network_servers: 1 // At least this server...
 		,operators: 0
 		,channels: 0
-		,clients: 0
 		,local_servers: 0 // Servers connected to this server
 	};
 }
@@ -551,6 +550,9 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
 
 	// Set host
 	socket.Client.setHost( socket.handshake.address.address );
+
+	// Increase statistics number, for unknown clients
+	this._stats.unknown++;
 }
 
 /**
@@ -574,7 +576,6 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 		}
 
 		// Construct list of channel users
-		console.log( "asdsad" );
 		users = users.concat( users, channel.getUsers() );
 	}
 
@@ -599,6 +600,15 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 				);
 			}
 		}
+	}
+
+	// Update statistics
+	if ( socket.Client.isRegistered() ) {
+		// Decrease statistics number, for known clients
+		this._stats.users--;
+	} else {
+		// Decrease statistics number, for unknown clients
+		this._stats.unknown--;
 	}
 
 	// Find socket position, by id
@@ -725,6 +735,11 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 
 		// Notify the user
 		this.emitIRCWelcome( socket );
+
+		// Increase statistics number, for known clients
+		this._stats.users++;
+		// Decrease statistics number, for unknown clients
+		this._stats.unknown--;
 	}
 }
 
@@ -866,6 +881,9 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			this._lcChannelNames.push( channelName.toLowerCase() );
 			channel = new IRCProtocol.IrcState.Channel( channelName );
 			this._channels.push( channel );
+
+			// Update the number of channels
+			this._stats.channels++;
 		}
 
 		// Add user to channel
@@ -955,7 +973,14 @@ IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
 			// Update the user's channel list
 			socket.Client.removeChannel( channel.getName() );
 
-			// TODO: Remove channel if no users are left
+			if ( channel.getUsers().length === 0 ) {
+				// Remove channel from lists, if empty
+				this._channels.splice( channelPosition, 1 );
+				this._lcChannelNames.splice( channelPosition, 1 );
+
+				// Update the number of channels
+				this._stats.channels--;
+			}
 		} else {
 			// TODO: ERR_NOTONCHANNEL
 			return;
@@ -1133,7 +1158,7 @@ IRCProtocol.ClientProtocol.prototype.LUSERS = function( data, socket ) {
 		socket
 		,'RPL_LUSERME'
 		,IRCProtocol.NumericReplyConstants.Client.LUSERS.RPL_LUSERME[0]
-		,"I have " + this._stats.clients + " clients and " + this._stats.local_servers + " servers"
+		,"I have " + this._stats.users + " clients and " + this._stats.local_servers + " servers"
 	);
 }
 
