@@ -225,6 +225,22 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "lusers":
+			// Mask
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.mask = parameters[0];
+			}
+
+			// Target
+			if ( parameters.length >= 2 ) {
+				// Target
+				data.target = parameters[0];
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
 			break;
@@ -636,6 +652,56 @@ ChatJs.prototype.RPL_ENDOFMOTD = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_NOMOTD = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_LUSERCLIENT' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LUSERCLIENT = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_LUSEROP' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LUSEROP = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_LUSERUNKOWN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LUSERUNKOWN = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_LUSERCHANNELS' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LUSERCHANNELS = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_LUSERME' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LUSERME = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

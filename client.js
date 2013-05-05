@@ -116,6 +116,11 @@ var Example = new Client( {
 		,RPL_MOTD: ChatApplication.RPL_MOTD
 		,RPL_ENDOFMOTD: ChatApplication.RPL_ENDOFMOTD
 		,ERR_NOMOTD: ChatApplication.ERR_NOMOTD
+		,RPL_LUSERCLIENT: ChatApplication.RPL_LUSERCLIENT
+		,RPL_LUSEROP: ChatApplication.RPL_LUSEROP
+		,RPL_LUSERUNKOWN: ChatApplication.RPL_LUSERUNKOWN
+		,RPL_LUSERCHANNELS: ChatApplication.RPL_LUSERCHANNELS
+		,RPL_LUSERME: ChatApplication.RPL_LUSERME
 		// TODO: Implement
 // 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}

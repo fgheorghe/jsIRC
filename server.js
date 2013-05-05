@@ -185,6 +185,13 @@ var IRCProtocol = {
 				,RPL_ENDOFMOTD: [ 376, "End of MOTD command" ]
 				,ERR_NOMOTD: [ 422, "MOTD File is missing" ]
 			}
+			,LUSERS: {
+				RPL_LUSERCLIENT: [ 251, "There are <integer> users and <integer> services on <integer> servers" ]
+				,RPL_LUSEROP: [ 252, "<integer> :operator(s) online" ]
+				,RPL_LUSERUNKOWN: [ 253, "<integer> :unknown connection(s)" ]
+				,RPL_LUSERCHANNELS: [ 254, "<integer> :channels formed" ]
+				,RPL_LUSERME: [ 255, "I have <integer> clients and <integer> servers" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -192,6 +199,7 @@ var IRCProtocol = {
 			,ERR_NEEDMOREPARAMS: [ 461, "Not enough parameters" ] // <command>
 			,ERR_RESTRICTED: [ 484, "Your connection is restricted!" ]
 			,RPL_WELCOME: [ 001, "Welcome to the Internet Relay Network" ] // <nick>!<user>@<host>
+			,ERR_NOSUCHSERVER: [ 402, "<server name> :No such server" ]
 			// Exceptions:
 			,RPL_YOURHOST: [ 002, "" ] // Built by emitIRCWelcome() function.
 			,RPL_CREATED: [ 003, "" ] // Built by emitIRCWelcome() function.
@@ -435,6 +443,18 @@ IRCProtocol.ClientProtocol = function( parent ) {
 
 	// Store create date
 	this._created = new Date();
+
+	// Server statistics, used for caching counters, returned when users trigger a LUSERS event
+	this._stats = {
+		users: 0 // 'Connected' users (authenticated)
+		,unknown: 0 // Pending connections (non-authenticated)
+		,services: 0
+		,network_servers: 1 // At least this server...
+		,operators: 0
+		,channels: 0
+		,clients: 0
+		,local_servers: 0 // Servers connected to this server
+	};
 }
 
 /**
@@ -1067,6 +1087,56 @@ IRCProtocol.ClientProtocol.prototype.MOTD = function( data, socket ) {
 	}.bind( this ) );
 }
 
+/**
+ * Client LUSERS command.
+ * @param {Object} data Data object, with the optional 'target' and 'mask' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.LUSERS = function( data, socket ) {
+	// TODO: Add mask and target support
+
+	// RPL_LUSERCLIENT
+	this.emitIRCError(
+		socket
+		,'RPL_LUSERCLIENT'
+		,IRCProtocol.NumericReplyConstants.Client.LUSERS.RPL_LUSERCLIENT[0]
+		,"There are " + this._stats.users + " users and " + this._stats.services + " services on " + this._stats.network_servers + " servers"
+	);
+
+	// RPL_LUSEROP
+	this.emitIRCError(
+		socket
+		,'RPL_LUSEROP'
+		,IRCProtocol.NumericReplyConstants.Client.LUSERS.RPL_LUSEROP[0]
+		,this._stats.operators + " :operator(s) online"
+	);
+
+	// RPL_LUSERUNKOWN
+	this.emitIRCError(
+		socket
+		,'RPL_LUSERUNKOWN'
+		,IRCProtocol.NumericReplyConstants.Client.LUSERS.RPL_LUSERUNKOWN[0]
+		,this._stats.unknown + " :unknown connection(s)"
+	);
+
+	// RPL_LUSERCHANNELS
+	this.emitIRCError(
+		socket
+		,'RPL_LUSERCHANNELS'
+		,IRCProtocol.NumericReplyConstants.Client.LUSERS.RPL_LUSERCHANNELS[0]
+		,this._stats.channels + " :channels formed"
+	);
+
+	// RPL_LUSERME
+	this.emitIRCError(
+		socket
+		,'RPL_LUSERME'
+		,IRCProtocol.NumericReplyConstants.Client.LUSERS.RPL_LUSERME[0]
+		,"I have " + this._stats.clients + " clients and " + this._stats.local_servers + " servers"
+	);
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1094,6 +1164,8 @@ ChatServer = new Server( {
 		,PRIVMSG: IRCClient.PRIVMSG
 		// MOTD
 		,MOTD: IRCClient.MOTD
+		// LUSERS
+		,LUSERS: IRCClient.LUSERS
 	}
 	// New connection handler
 	,connection: IRCClient.connection
