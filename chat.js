@@ -45,6 +45,16 @@ var ChatJs = function() {
 	// The current nickname
 	this._nickname = null;
 
+	// Keep track of the current 'tab' or browser window focus...
+	this._windowFocus = true;
+	var me = this;
+	$( window ).focus( function() {
+		me._windowFocus = true;
+	} );
+	$( window ).blur( function() {
+		me._windowFocus = false;
+	} );
+
 	// Create the UI as soon as ExtJS is ready
 	Ext.onReady( function() {
 		// Handle a text sending UI action
@@ -338,6 +348,15 @@ ChatJs.prototype.addText = function( text ) {
 
 	this.textPanel.body.insertHtml( "beforeEnd", text + '<br>' );
 	this.textPanel.body.scroll( 'b', Infinity );
+
+	// If the window is blured (user switched to another tab), flash the title
+	if ( !this._windowFocus ) {
+		$.titleAlert( "New chat message!", {
+			stopOnFocus: true
+			,duration: 4000
+			,interval: 700
+		} );
+	}
 }
 
 /** IRC Client Protocol Handlers */

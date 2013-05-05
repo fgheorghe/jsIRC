@@ -1056,7 +1056,6 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 	}
 
 	// TODO: Handle user to user messages
-
 	console.log( data );
 }
 
