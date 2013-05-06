@@ -809,6 +809,10 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
+	// Reset pong interval
+	// TODO: Remove redundant code
+	socket.Client.setPingIdle( 0 );
+
 	// Verify command parameters
 	if ( typeof data.target === "undefined" ) {
 		// Issue an ERR_NONICKNAMEGIVEN error.
@@ -906,6 +910,10 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
+	// Reset pong interval
+	// TODO: Remove redundant code
+	socket.Client.setPingIdle( 0 );
+
 	// Validate the command parameters
 	if ( typeof data.channels === "undefined" || data.length === 0 ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
@@ -1009,6 +1017,10 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
+	// Reset pong interval
+	// TODO: Remove redundant code
+	socket.Client.setPingIdle( 0 );
+
 	// Validate required properties
 	if ( typeof data.channels === "undefined" || data.channels.length === 0 ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
@@ -1062,6 +1074,10 @@ IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
+	// Reset pong interval
+	// TODO: Remove redundant code
+	socket.Client.setPingIdle( 0 );
+
 	// Validate the command parameters
 	if ( typeof data.target === "undefined" || !S( data.target ).trim().s ) {
 		// Issue an ERR_NORECIPIENT error.
@@ -1133,6 +1149,10 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.MOTD = function( data, socket ) {
+	// Reset pong interval
+	// TODO: Remove redundant code
+	socket.Client.setPingIdle( 0 );
+
 	// TODO: Add target support
 
 	// Read the MOTD file
@@ -1185,6 +1205,10 @@ IRCProtocol.ClientProtocol.prototype.MOTD = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.LUSERS = function( data, socket ) {
+	// Reset pong interval
+	// TODO: Remove redundant code
+	socket.Client.setPingIdle( 0 );
+
 	// TODO: Add mask and target support
 
 	// RPL_LUSERCLIENT
