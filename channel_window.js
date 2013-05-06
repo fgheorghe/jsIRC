@@ -72,6 +72,41 @@ ChannelWindow.prototype.addText = function( text, noAlert ) {
  * @function
  */
 ChannelWindow.prototype.init = function() {
+	// Nick name double click event (default to query)
+	this.userListItemDblClick = function( tree, record, item, index, e, eOpts ) {
+		// Issue a 'query' command
+		this._config.parent.parseCommand( "/query " + record.raw.text );
+	}
+
+	// Context menu handler
+	this.userListContextMenu = function( tree, record, item, index, e, eOpts ) {
+		// Create the menu
+		var menu = Ext.create( 'Ext.menu.Menu', {
+			items: [
+				{
+					text: 'Query'
+					,handler: function() {
+						// Issue a 'query' command
+						this._config.parent.parseCommand( "/query " + record.raw.text );
+					}.bind( this )
+				}
+				,{
+					text: 'Whois'
+					,handler: function() {
+						// Issue a 'whois' command
+						this._config.parent.parseCommand( "/whois " + record.raw.text );
+					}.bind( this )
+				}
+			]
+		} );
+
+		// Display menu
+		menu.showAt( e.getXY() );
+
+		// Prevent default browser right click behaviour
+		e.preventDefault();
+	}
+
 	// Prepare the client list
 	this.clientList = Ext.create( 'Ext.tree.Panel', {
 		store: Ext.create( 'Ext.data.TreeStore', {
@@ -90,6 +125,10 @@ ChannelWindow.prototype.init = function() {
 		,rootVisible: false
 		,region: 'east'
 		,title: 'Users'
+		,listeners: {
+			itemcontextmenu: this.userListContextMenu.bind( this )
+			,itemdblclick: this.userListItemDblClick.bind( this )
+		}
 	} );
 
 	// Method used for loading channels users
