@@ -668,7 +668,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 						nickname: socket.Client.getNickname()
 						,host: socket.Client.getHost()
 						,user: socket.Client.getUser()
-						,reason: 'Connection closed.'
+						,reason: 'Connection closed'
 					}
 				);
 			}
