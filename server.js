@@ -350,9 +350,12 @@ var IRCProtocol = {
 
 					// Add socket
 					this._sockets.push( socket );
-				}
 
-				console.log( this._users );
+					console.log( this._users );
+					return true;
+				} else {
+					return false;
+				}
 			}
 
 			// Method used for broadcasting an event to all channel clients
@@ -886,50 +889,50 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			this._stats.channels++;
 		}
 
-		// Add user to channel
-		channel.addUser( socket );
+		// Add user to channel (if the user 'may' join this channel)
+		if ( channel.addUser( socket ) ) {
+			// JOIN (TODO: Verify!)
+			socket.emit(
+				'JOIN'
+				,{
+					channel: channel.getName()
+					,nickname: socket.Client.getNickname()
+					,user: socket.Client.getUser()
+					,host: socket.Client.getHost()
+					,servername: IRCProtocol.ServerInfo.SERVER_NAME
+				}
+			);
 
-		// JOIN (TODO: Verify!)
-		socket.emit(
-			'JOIN'
-			,{
-				channel: channel.getName()
-				,nickname: socket.Client.getNickname()
-				,user: socket.Client.getUser()
-				,host: socket.Client.getHost()
-				,servername: IRCProtocol.ServerInfo.SERVER_NAME
+			// RPL_TOPIC or RPL_NOTOPIC
+			if ( channel.getTopic() ) {
+				socket.emit(
+					'RPL_TOPIC'
+					,{
+						channel: channel.getName()
+						,topic: channel.getTopic()
+					}
+				);
+			} else {
+				socket.emit(
+					'RPL_NOTOPIC'
+					,{
+						channel: channel.getName()
+					}
+				);
 			}
-		);
 
-		// RPL_TOPIC or RPL_NOTOPIC
-		if ( channel.getTopic() ) {
+			// RPL_NAMREPLY
 			socket.emit(
-				'RPL_TOPIC'
+				'RPL_NAMREPLY'
 				,{
 					channel: channel.getName()
-					,topic: channel.getTopic()
+					,names: channel.getUsers()
 				}
 			);
-		} else {
-			socket.emit(
-				'RPL_NOTOPIC'
-				,{
-					channel: channel.getName()
-				}
-			);
+
+			// Update the user's channel list
+			socket.Client.addChannel( channel.getName() );
 		}
-
-		// RPL_NAMREPLY
-		socket.emit(
-			'RPL_NAMREPLY'
-			,{
-				channel: channel.getName()
-				,names: channel.getUsers()
-			}
-		);
-
-		// Update the user's channel list
-		socket.Client.addChannel( channel.getName() );
 	}
 
 	console.log( data );
