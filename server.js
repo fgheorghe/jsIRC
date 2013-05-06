@@ -117,6 +117,7 @@ var IRCProtocol = {
 		,SERVER_INFO: "Oxford, Oxfordshire, UK, EU"
 	}
 	,MotdFile: 'motd.txt'
+	,PingFrequency: 10 // In seconds
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -192,6 +193,9 @@ var IRCProtocol = {
 				,RPL_LUSERCHANNELS: [ 254, "<integer> :channels formed" ]
 				,RPL_LUSERME: [ 255, "I have <integer> clients and <integer> servers" ]
 			}
+			,PING: {
+				ERR_NOORIGIN: [ 409, "No origin specified" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -215,7 +219,20 @@ var IRCProtocol = {
 			this._realname = ""; // Stores the user's real name
 			this._channels = []; // Stores channels this user has joined
 
+			this._idle = 0; // Idle time, in seconds
+			this._idleTimer = null;
+
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
+
+			// Get idle time in seconds
+			this.getIdle = function() {
+				return this._idle;
+			}
+
+			// Set idle time in seconds
+			this.setIdle = function( idle ) {
+				this._idle = idle;
+			}
 
 			// Method used for setting the nickname
 			this.setRealname = function( realname ) {
@@ -288,6 +305,11 @@ var IRCProtocol = {
 				} else {
 					// Setting
 					this._welcome_reply = value;
+
+					// Attach idle timer
+					this._idleTimer = new setInterval( function() {
+						this.setIdle( this.getIdle() + 1 );
+					}.bind( this ), 1000 );
 				}
 			}
 
@@ -409,6 +431,9 @@ var IRCProtocol = {
 						,servername: IRCProtocol.ServerInfo.SERVER_NAME
 					}
 				);
+
+				// Reset idle counter for this client
+				socket.Client.setIdle( 0 );
 			}
 
 			// Method used for getting users
@@ -817,7 +842,15 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 		);
 
 		// TODO: RPL_AWAY
-		// TODO: RPL_WHOISIDLE
+
+		// RPL_WHOISIDLE
+		socket.emit(
+			'RPL_WHOISIDLE'
+			,{
+				nick: clientSocket.Client.getNickname()
+				,idle: clientSocket.Client.getIdle()
+			}
+		);
 
 		// RPL_ENDOFWHOIS
 		// TODO: Perhaps all replies should return a JSON object, rather that _ANY_ string at all (to let the client decide which language to use, or how to display).
@@ -1164,6 +1197,16 @@ IRCProtocol.ClientProtocol.prototype.LUSERS = function( data, socket ) {
 	);
 }
 
+/**
+ * Client PONG command.
+ * @param {Object} data Data object, with the required 'server1' and optional 'server2' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.PONG = function( data, socket ) {
+	console.log( data );
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1193,6 +1236,8 @@ ChatServer = new Server( {
 		,MOTD: IRCClient.MOTD
 		// LUSERS
 		,LUSERS: IRCClient.LUSERS
+		// PING? PONG!
+		,PONG: IRCClient.PONG
 	}
 	// New connection handler
 	,connection: IRCClient.connection

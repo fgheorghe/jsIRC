@@ -537,6 +537,16 @@ ChatJs.prototype.RPL_ENDOFWHOIS = function( data ) {
 }
 
 /**
+ * Method used for handling 'RPL_WHOISIDLE' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WHOISIDLE = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.idle ) + ' :seconds idle' );
+}
+
+/**
  * Method used for handling 'RPL_WHOISUSER' event.
  * @param {Object} data Data object.
  * @function
