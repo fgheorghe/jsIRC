@@ -179,11 +179,28 @@ ChannelWindow.prototype.init = function() {
 		,handler: this._config.parent.handleSendText.bind( this._config.parent, [ this.textField, this._config.channel ] )
 	} );
 
+	// Topic text
+	this.topicText = Ext.create( 'Ext.form.field.Text', {
+		width: 560
+		,enableKeyEvents: true
+		,listeners: {
+			keydown: function( field, e, eOpts ) {
+				if ( e.getKey() === 13 ) {
+					// TODO: Handle failed topic update
+					this._config.parent.parseCommand( "/topic " + this._config.channel + " " + field.getValue() );
+				}
+			}.bind( this )
+		}
+	} );
+
 	// Prepare the text window
 	this.textPanel = Ext.create( 'Ext.panel.Panel', {
 		region: 'center'
 		,border: true
 		,frame: false
+		,tbar: [
+			this.topicText
+		]
 		,bodyStyle: {
 			padding: '5px'
 			,whiteSpace: "pre-wrap"
@@ -206,6 +223,11 @@ ChannelWindow.prototype.init = function() {
 				// Resize text field
 				this.textField.setWidth(
 					this.textPanel.getWidth() - this.sendButton.getWidth() - 11
+				);
+
+				// Resize topic field
+				this.topicText.setWidth(
+					this.textPanel.getWidth() - 6
 				);
 			}.bind( this )
 		}

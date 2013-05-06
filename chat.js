@@ -245,6 +245,22 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "topic":
+			// Construct a topic command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.channel = parameters[0];
+			}
+			
+			// Construct a topic command
+			if ( parameters.length >= 2 ) {
+				// Target
+				data.topic = text.slice( text.indexOf( data.channel ) + data.channel.length + 1 );
+			}
+			
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "privmsg":
 			// Construct a privmsg command
 			if ( parameters.length >= 1 ) {
@@ -496,7 +512,19 @@ ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_TOPIC = function( data ) {
-	console.log( data );
+	// Find the channel window
+	var channelWindow = this._channelWindows[ data.channel ];
+
+	// If this is a user updating (as opposed to requesting it on join) notify the user, and update topic
+	if ( data.nickname ) {
+		// Add text
+		channelWindow.addText( '* ' + Ext.htmlEncode( data.nickname ) + ' has changed topic to: ' + Ext.htmlEncode( data.topic ) );
+	} else {
+		channelWindow.addText( '* Topic for ' + Ext.htmlEncode( data.channel ) + ' is: ' + Ext.htmlEncode( data.topic ) );
+	}
+
+	// Update the window's topic value
+	channelWindow.topicText.setValue( data.topic );
 }
 
 /**

@@ -196,6 +196,9 @@ var IRCProtocol = {
 			,PING: {
 				ERR_NOORIGIN: [ 409, "No origin specified" ]
 			}
+			,TOPIC: {
+				ERR_NOTONCHANNEL: [ 442, "You're not on that channel" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -366,12 +369,24 @@ var IRCProtocol = {
 			}
 
 			// Method used for setting a topic
-			this.setTopic = function( topic ) {
+			this.setTopic = function( topic, socket ) {
 				this._topic = topic;
+
+				// Notify users
+				this._broadcastEvent( 'RPL_TOPIC'
+					,{
+						channel: this.getName()
+						,nickname: socket.Client.getNickname()
+						,user: socket.Client.getUser()
+						,host: socket.Client.getHost()
+						,topic: this.getTopic()
+					}
+				);
 			}
 
 			// Method used for getting the topic
 			this.getTopic = function() {
+				// TODO: Include 'author' of the topic
 				return this._topic;
 			}
 
@@ -397,7 +412,6 @@ var IRCProtocol = {
 							,nickname: socket.Client.getNickname()
 							,user: socket.Client.getUser()
 							,host: socket.Client.getHost()
-							,servername: IRCProtocol.ServerInfo.SERVER_NAME
 						}
 					);
 
@@ -442,7 +456,6 @@ var IRCProtocol = {
 							,nickname: socket.Client.getNickname()
 							,user: socket.Client.getUser()
 							,host: socket.Client.getHost()
-							,servername: IRCProtocol.ServerInfo.SERVER_NAME
 						}
 					);
 				}
@@ -695,7 +708,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	// Verify the nick data is present:
-	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s == "" ) {
+	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" ) {
 		// Issue an ERR_NONICKNAMEGIVEN error.
 		this.emitIRCError(
 			socket
@@ -1289,7 +1302,94 @@ IRCProtocol.ClientProtocol.prototype.LUSERS = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.PONG = function( data, socket ) {
 	// Reset pong interval
+	// TODO: Validate data
 	socket.Client.setPingIdle( 0 );
+}
+
+/**
+ * Client TOPIC command.
+ * @param {Object} data Data object, with the required 'channel' and optional 'topic' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.TOPIC = function( data, socket ) {
+	// Validate required properties
+	if ( typeof data.channel === "undefined" || S( data.channel ).trim().s === "" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Check channel names
+	var isChannel = data.channel.length <= IRCProtocol.OtherConstants.CHANNEL_NAME_LENGTH && IRCProtocol.OtherConstants.CHANNEL_NAME_PATTERN.test( data.channel );
+	if ( !isChannel ) {
+		this.emitIRCError(
+			socket
+			,'ERR_NOSUCHCHANNEL'
+			,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
+			,data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+		);
+		return;
+	} else {
+		// Find the channel
+		var channelPosition = this._lcChannelNames.indexOf( data.channel.toLowerCase() )
+			,channel;
+
+		// Err if not found
+		if ( channelPosition === -1 ) {
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
+				,data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+			);
+			return;
+		}
+		channel = this._channels[ channelPosition ];
+
+		// Verify if the user is on that channel
+		var user = channel._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() );
+		if ( user === -1 ) {
+			// ERR_NOTONCHANNEL
+			this.emitIRCError(
+				socket
+				,'ERR_NOTONCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.TOPIC.ERR_NOTONCHANNEL[0]
+				,data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.TOPIC.ERR_NOTONCHANNEL[1]
+			);
+			return;
+		}
+
+		// If the topic parameter is missing, return the topic
+		if ( typeof data.topic === "undefined" ) {
+			// RPL_TOPIC or RPL_NOTOPIC
+			if ( channel.getTopic() ) {
+				socket.emit(
+					'RPL_TOPIC'
+					,{
+						channel: channel.getName()
+						,topic: channel.getTopic()
+					}
+				);
+			} else {
+				socket.emit(
+					'RPL_NOTOPIC'
+					,{
+						channel: channel.getName()
+					}
+				);
+			}
+			return;
+		} else {
+			// Set the topic
+			channel.setTopic( data.topic, socket );
+		}
+	}
 }
 
 // Create a new instance of the IRC Protocol implementation.
@@ -1323,6 +1423,7 @@ ChatServer = new Server( {
 		,LUSERS: IRCClient.LUSERS
 		// PING? PONG!
 		,PONG: IRCClient.PONG
+		,TOPIC: IRCClient.TOPIC
 	}
 	// New connection handler
 	,connection: IRCClient.connection
