@@ -337,9 +337,10 @@ ChatJs.prototype.connectHandler = function() {
 /**
  * Method used for appending text.
  * @param {String} text String to add to window.
+ * @param {Boolean} noAlert Ignore the window title alert.
  * @function
  */
-ChatJs.prototype.addText = function( text ) {
+ChatJs.prototype.addText = function( text, noAlert ) {
 	// Apply extra formats
 	text = Ext.util.Format.nl2br( text );
 
@@ -350,7 +351,7 @@ ChatJs.prototype.addText = function( text ) {
 	this.textPanel.body.scroll( 'b', Infinity );
 
 	// If the window is blured (user switched to another tab), flash the title
-	if ( !this._windowFocus ) {
+	if ( !this._windowFocus && !noAlert ) {
 		$.titleAlert( "New chat message!", {
 			stopOnFocus: true
 			,duration: 4000
@@ -633,6 +634,22 @@ ChatJs.prototype.RPL_YOURHOST = function( data ) {
 ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'PING' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.PING = function( data ) {
+	// Add text to window
+	// TODO: Clarify
+	this.addText( '* PING from ' + Ext.htmlEncode( data.source ), true );
+
+	this.addText( '* PONG to ' + Ext.htmlEncode( data.source ), true );
+	this.client.emit( 'PONG', {
+		server: data.source
+	} );
 }
 
 /**

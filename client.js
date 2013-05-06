@@ -121,7 +121,8 @@ var Example = new Client( {
 		,RPL_LUSERUNKOWN: ChatApplication.RPL_LUSERUNKOWN
 		,RPL_LUSERCHANNELS: ChatApplication.RPL_LUSERCHANNELS
 		,RPL_LUSERME: ChatApplication.RPL_LUSERME
-		,RPL_WHOISIDLE:ChatApplication.RPL_WHOISIDLE
+		,RPL_WHOISIDLE: ChatApplication.RPL_WHOISIDLE
+		,PING: ChatApplication.PING
 		// TODO: Implement
 // 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}

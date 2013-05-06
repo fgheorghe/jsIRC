@@ -212,7 +212,10 @@ var IRCProtocol = {
 	}
 	// Keeps track of the user's/client's IRC state (e.g. nickname, channels, etc).
 	,IrcState: {
-		Client: function() {
+		Client: function( socket ) {
+			// Store the client's socket
+			this._socket = socket;
+
 			this._nickname = false; // Stores nickname, string
 			this._user = false; // Stores 'user' command data, object as per command parameters
 			this._host = ""; // Stores the user's host
@@ -220,7 +223,9 @@ var IRCProtocol = {
 			this._channels = []; // Stores channels this user has joined
 
 			this._idle = 0; // Idle time, in seconds
+			this._pingIdle = 0; // Ping/Pong timer
 			this._idleTimer = null;
+			this._pingTimer = null;
 
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
 
@@ -232,6 +237,16 @@ var IRCProtocol = {
 			// Set idle time in seconds
 			this.setIdle = function( idle ) {
 				this._idle = idle;
+			}
+
+			// Get ping idle time in seconds
+			this.getPingIdle = function() {
+				return this._pingIdle;
+			}
+			
+			// Set ping idle time in seconds
+			this.setPingIdle = function( idle ) {
+				this._pingIdle = idle;
 			}
 
 			// Method used for setting the nickname
@@ -309,6 +324,22 @@ var IRCProtocol = {
 					// Attach idle timer
 					this._idleTimer = new setInterval( function() {
 						this.setIdle( this.getIdle() + 1 );
+					}.bind( this ), 1000 );
+
+					// Attach ping/pong timer
+					this._pingTimer = new setInterval( function() {
+						// TODO: Reset on user events, to avoid too much traffic
+						this.setPingIdle( this.getPingIdle() + 1 );
+
+						// Send a ping event
+						if ( this.getPingIdle() >= IRCProtocol.PingFrequency ) {
+							this._socket.emit(
+								'PING'
+								,{
+									source: IRCProtocol.ServerInfo.SERVER_NAME
+								}
+							);
+						}
 					}.bind( this ), 1000 );
 				}
 			}
@@ -574,7 +605,7 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
 	this._clientSocketIds.push( socket.id );
 
 	// Attach IRC state object, used for performing various checks
-	socket.Client = new IRCProtocol.IrcState.Client();
+	socket.Client = new IRCProtocol.IrcState.Client( socket );
 
 	// Set host
 	socket.Client.setHost( socket.handshake.address.address );
@@ -1204,7 +1235,8 @@ IRCProtocol.ClientProtocol.prototype.LUSERS = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.PONG = function( data, socket ) {
-	console.log( data );
+	// Reset pong interval
+	socket.Client.setPingIdle( 0 );
 }
 
 // Create a new instance of the IRC Protocol implementation.
