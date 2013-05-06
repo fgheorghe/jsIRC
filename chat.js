@@ -404,7 +404,7 @@ ChatJs.prototype.JOIN = function( data ) {
 		this._channelWindows[data.channel].chatWindow.focus();
 	} else if ( data.nickname.toLowerCase() !== this._nickname.toLowerCase() && this._channelWindows[data.channel] ) {
 		// Append text
-		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has joined " + Ext.htmlEncode( data.channel ) );
+		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has joined " + Ext.htmlEncode( data.channel ), true );
 		// Append to user list
 		this._channelWindows[data.channel].addClient( {
 			leaf: true
@@ -427,7 +427,7 @@ ChatJs.prototype.PART = function( data ) {
 		// Remove from list
 	} else {
 		// Append text
-		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has left " + Ext.htmlEncode( data.channel ) );
+		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has left " + Ext.htmlEncode( data.channel ), true );
 
 		// Remove from list of users
 		this._channelWindows[data.channel].removeClient( data.nickname );
@@ -587,7 +587,7 @@ ChatJs.prototype.QUIT = function( data ) {
 	// TODO: Handle out of synch quits, and optimize the process
 	for ( var channel in this._channelWindows ) {
 		if ( this._channelWindows[ channel ].findClient( data.nickname ) ) {
-			this._channelWindows[ channel ].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has quit (" + Ext.htmlEncode( data.reason ) + ")" );
+			this._channelWindows[ channel ].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has quit (" + Ext.htmlEncode( data.reason ) + ")", true );
 			this._channelWindows[ channel ].removeClient( data.nickname );
 		}
 	}

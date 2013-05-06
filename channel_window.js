@@ -47,7 +47,7 @@ var ChannelWindow = function( config ) {
  * @param {String} text String to add to window.
  * @function
  */
-ChannelWindow.prototype.addText = function( text ) {
+ChannelWindow.prototype.addText = function( text, noAlert ) {
 	// Apply extra formats
 	text = Ext.util.Format.nl2br( text );
 
@@ -58,7 +58,7 @@ ChannelWindow.prototype.addText = function( text ) {
 	this.textPanel.body.scroll( 'b', Infinity );
 
 	// If the window is blured (user switched to another tab), flash the title
-	if ( !this._config.parent._windowFocus ) {
+	if ( !this._config.parent._windowFocus && !noAlert ) {
 		$.titleAlert( "New chat message!", {
 			stopOnFocus: true
 			,duration: 4000
