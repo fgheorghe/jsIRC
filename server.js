@@ -478,6 +478,7 @@ var IRCProtocol = {
 		NICK_LENGTH: 8 // Max nickname characters (9, since the count starts from 0)
 		,CHANNEL_NAME_LENGTH: 49 // (50)
 		// TODO: Implement proper patterns (these are partially implemented)
+		// TODO: Update client as well
 		,NICK_PATTERN: /^[a-zA-Z0-9]+$/ // Nickname pattern, as per RFC
 		,CHANNEL_NAME_PATTERN: /^[#&+!]+[a-zA-Z0-9\-\_]+$/ // Channel name, as per RFC...
 	}
@@ -1135,6 +1136,34 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 				,data.target + " :No such nick/channel"
 			);
 			return;
+		}
+	} else if ( isNickname ) {
+		// Handle client to client chat
+		// Find target
+		var nicknamePosition = this._lcNicknames.indexOf( data.target.toLowerCase() );
+
+		if ( nicknamePosition === -1 ) {
+			// User not found, issue an ERR_NOSUCHNICK error
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHNICK'
+				,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+				,data.target + " :No such nick/channel"
+			);
+			return;
+		} else {
+			// Send to target
+			this._clientSockets[nicknamePosition].emit(
+				'PRIVMSG'
+				,{
+					target: data.target
+					,message: data.message
+					,nickname: socket.Client.getNickname()
+					,user: socket.Client.getUser()
+					,host: socket.Client.getHost()
+					,servername: IRCProtocol.ServerInfo.SERVER_NAME
+				}
+			);
 		}
 	}
 

@@ -69,7 +69,6 @@ ChannelWindow.prototype.addText = function( text, noAlert ) {
 
 /**
  * Method used for initiating the channel window.
- * @param {String} channel Channel name.
  * @function
  */
 ChannelWindow.prototype.init = function() {

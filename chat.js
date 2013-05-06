@@ -33,11 +33,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * @constructor
  */
 var ChatJs = function() {
+	// Constants
+	this.NICK_PATTERN = /^[a-zA-Z0-9]+$/; // Nickname pattern, as per RFC
+	this.CHANNEL_NAME_PATTERN = /^[#&+!]+[a-zA-Z0-9\-\_]+$/; // Channel name, as per RFC...
+
 	// Client id array
 	this._clients = [];
 
 	// 'Array' of channel windows
 	this._channelWindows = {};
+
+	// Array of chat windows
+	this._queryWindows = [];
+	this._lcChatNicknames = []; // Array of lower case chat nicknames
 
 	// Client instance
 	this.client = {};
@@ -89,7 +97,7 @@ var ChatJs = function() {
 		// Send button
 		this.sendButton = Ext.create( 'Ext.button.Button', {
 			text: 'Send'
-			,handler: this.handleSendText.bind( this )
+			,handler: this.handleSendText.bind( this, [ this.textField ] )
 		} );
 
 		// Prepare the text window
@@ -146,6 +154,34 @@ var ChatJs = function() {
 		this.chatWindow.mask();
 	}.bind( this ) );
 };
+
+/**
+ * Method used for finding or creating a query window.
+ * @param {String} nickname Client nickname.
+ * @function
+ */
+ChatJs.prototype.findOrCreateQueryWindow = function( nickname ) {
+	// Verify if already created
+	var queryWindowPosition = this._lcChatNicknames.indexOf( nickname.toLowerCase() )
+		,queryWindow;
+
+	if ( queryWindowPosition === -1 ) {
+		// Create window
+		queryWindow = new ChatWindow( {
+			parent: this
+			,nickname: nickname
+		} );
+
+		// Add to list
+		this._queryWindows.push( queryWindow );
+		this._lcChatNicknames.push( nickname.toLowerCase() );
+	} else {
+		// Display window
+		queryWindow = this._queryWindows[queryWindowPosition];
+	}
+
+	return queryWindow;
+}
 
 /**
  * Parse a command, prepare parameters, and send it.
@@ -250,6 +286,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
+			break;
+		case "query": // NOTE: Not an IRC command. Opens a new client query window, if it doesn't already exist
+			// Nickname
+			if ( parameters.length >= 1 ) {
+				var queryWindow = this.findOrCreateQueryWindow( parameters[0] );
+
+				queryWindow.chatWindow.show();
+			} else {
+				this.addText( '* query command usage: /query nickname' );
+			}
 			break;
 		default:
 			// TODO:
@@ -519,11 +565,34 @@ ChatJs.prototype.ERR_NOSUCHNICK = function( data ) {
  * @function
  */
 ChatJs.prototype.PRIVMSG = function( data ) {
-	// Find a channel window
-	// TODO: Add private user message
-	// TODO: Handle non existing channel/user windows
-	if ( typeof this._channelWindows[data.target] !== "undefined" ) {
-		this._channelWindows[data.target].addText( "<b>[" + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
+	// Check if target is a channel, or current user
+	var isChannel = this.CHANNEL_NAME_PATTERN.test( data.target );
+	var isNickname = this.NICK_PATTERN.test( data.target );
+
+	// Handle channel messages
+	if ( isChannel ) {
+		// Find a channel window
+		// TODO: Handle non existing channel windows
+		if ( typeof this._channelWindows[data.target] !== "undefined" ) {
+			this._channelWindows[data.target].addText( "<b>[" + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
+		}
+	} else if ( isNickname ) {
+		// TODO: Handle target / nickname mismatch
+		if ( data.target.toLowerCase() === this._nickname.toLowerCase() ) {
+			// Check if window exists
+			var windowExists = this._lcChatNicknames.indexOf( data.nickname.toLowerCase() );
+
+			// Get an instance
+			var queryWindow = this.findOrCreateQueryWindow( data.nickname );
+
+			// Show, if just created
+			if ( windowExists === -1 ) {
+				queryWindow.chatWindow.show();
+			}
+
+			// Append text
+			queryWindow.addText( "<b>[" + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
+		}
 	}
 }
 
