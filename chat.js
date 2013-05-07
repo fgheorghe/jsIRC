@@ -313,6 +313,10 @@ ChatJs.prototype.parseCommand = function( text ) {
 				this.addText( '* query command usage: /query nickname' );
 			}
 			break;
+		case "list":
+			// TODO: Add channel list support
+			this.client.emit( command.toUpperCase(), {} );
+			break;
 		default:
 			// TODO:
 			break;
@@ -845,6 +849,56 @@ ChatJs.prototype.RPL_LUSERCHANNELS = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_LUSERME = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_LIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LIST = function( data ) {
+	// Create if not already in place
+	if ( !this._channelListWindow ) {
+		this._channelListWindow = new ListWindow( {
+			parent: this
+		} );
+	}
+
+	// Clear, if already open and listed
+	if ( this._channelListWindow.listed ) {
+		// Remove all items
+		this._channelListWindow.channelGrid.getStore().removeAll();
+	}
+
+	// Show
+	this._channelListWindow.listWindow.show();
+
+	var channels = data.channels
+		,topics = data.topics
+		,users = data.users;
+
+	for ( var i = 0; i < channels.length; i++ ) {
+		this._channelListWindow.channelGrid.getStore().insert( 0, {
+			users: Ext.htmlEncode( users[i] )
+			,channel: Ext.htmlEncode( channels[i] )
+			,topic: Ext.htmlEncode( topics[i] )
+		} );
+	}
+}
+
+/**
+ * Method used for handling 'RPL_LISTEND' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_LISTEND = function( data ) {
+	// Set as listed, so on next request it will be cleared
+	if ( this._channelListWindow ) {
+		this._channelListWindow.listed = true;
+	}
+
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

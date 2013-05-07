@@ -118,6 +118,7 @@ var IRCProtocol = {
 	}
 	,MotdFile: 'motd.txt'
 	,PingFrequency: 10 // In seconds
+	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -198,6 +199,11 @@ var IRCProtocol = {
 			}
 			,TOPIC: {
 				ERR_NOTONCHANNEL: [ 442, "You're not on that channel" ]
+			}
+			,LIST: {
+				ERR_TOOMANYMATCHES: [  ] // ??? Not defined in the RFC ?
+				,RPL_LIST: [ 322, "<channel> <# visible> :<topic>" ]
+				,RPL_LISTEND: [ 323, "End of LIST" ]
 			}
 		}
 		// TODO: Reorder
@@ -1392,6 +1398,49 @@ IRCProtocol.ClientProtocol.prototype.TOPIC = function( data, socket ) {
 	}
 }
 
+/**
+ * Client LIST command.
+ * @param {Object} data Data object, with the optional 'channels' array and optional 'target' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.LIST = function( data, socket ) {
+	// RPL_LIST
+	var channels = [];
+	var topics = [];
+	var users = [];
+
+	for ( var i = 0; i < this._channels.length; i++ ) {
+		channels.push( this._channels[i].getName() );
+		topics.push( this._channels[i].getTopic() );
+		users.push( this._channels[i].getUsers().length );
+
+		if ( i % IRCClient.MaxChannelList === 0 || i === this._channels.length - 1 ) {
+			socket.emit(
+				'RPL_LIST'
+				,{
+					channels: channels
+					,users: users
+					,topics: topics
+				}
+			);
+			channels = [];
+			topics = [];
+			users = [];
+		}
+	}
+
+	// RPL_LISTEND (TODO: avoid same request from a user, twice)
+	this.emitIRCError(
+		socket
+		,'RPL_LISTEND'
+		,IRCProtocol.NumericReplyConstants.Client.LIST.RPL_LISTEND[0]
+		,IRCProtocol.NumericReplyConstants.Client.LIST.RPL_LISTEND[1]
+	);
+
+	// TODO: Add channels and target support
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1424,6 +1473,7 @@ ChatServer = new Server( {
 		// PING? PONG!
 		,PONG: IRCClient.PONG
 		,TOPIC: IRCClient.TOPIC
+		,LIST: IRCClient.LIST
 	}
 	// New connection handler
 	,connection: IRCClient.connection

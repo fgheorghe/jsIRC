@@ -123,6 +123,8 @@ var Example = new Client( {
 		,RPL_LUSERME: ChatApplication.RPL_LUSERME
 		,RPL_WHOISIDLE: ChatApplication.RPL_WHOISIDLE
 		,PING: ChatApplication.PING
+		,RPL_LISTEND: ChatApplication.RPL_LISTEND
+		,RPL_LIST: ChatApplication.RPL_LIST
 		// TODO: Implement
 // 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}
