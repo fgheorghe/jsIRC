@@ -49,6 +49,29 @@ var ListWindow = function( config ) {
  * @function
  */
 ListWindow.prototype.init = function() {
+	// Context menu handler
+	this.channelListContextMenu = function( tree, record, item, index, e, eOpts ) {
+		// Create the menu
+		var menu = Ext.create( 'Ext.menu.Menu', {
+			items: [
+				{
+					text: 'Join Channel'
+					,handler: function() {
+						console.log( record );
+						// Issue a 'join' command
+						this._config.parent.parseCommand( "/join " + record.raw.channel );
+					}.bind( this )
+				}
+			]
+		} );
+		
+		// Display menu
+		menu.showAt( e.getXY() );
+		
+		// Prevent default browser right click behaviour
+		e.preventDefault();
+	}
+
 	// Prepare the grid
 	this.channelGrid = Ext.create( 'Ext.grid.Panel', {
 		store: Ext.create( 'Ext.data.ArrayStore', {
@@ -76,6 +99,9 @@ ListWindow.prototype.init = function() {
 				,dataIndex: 'topic'
 			}
 		]
+		,listeners: {
+			itemcontextmenu: this.channelListContextMenu.bind( this )
+		}
 	} );
 
 	// Prepare the window
