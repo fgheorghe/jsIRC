@@ -654,6 +654,16 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 			channel.removeUser( socket, true );
 		}
 
+		// Remove channel if empty
+		if ( channel.getUsers().length === 0 ) {
+			// Remove channel from lists, if empty
+			this._channels.splice( channelPosition, 1 );
+			this._lcChannelNames.splice( channelPosition, 1 );
+			
+			// Update the number of channels
+			this._stats.channels--;
+		}
+
 		// Construct list of channel users
 		users = users.concat( users, channel.getUsers() );
 	}

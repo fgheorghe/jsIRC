@@ -314,7 +314,13 @@ ChatJs.prototype.parseCommand = function( text ) {
 			}
 			break;
 		case "list":
-			// TODO: Add channel list support
+			// TODO: Add channel and target filters
+			// Clear, if already open and listed
+			if ( this._channelListWindow ) {
+				// Remove all items
+				this._channelListWindow.channelGrid.getStore().removeAll();
+			}
+
 			this.client.emit( command.toUpperCase(), {} );
 			break;
 		default:
@@ -864,12 +870,6 @@ ChatJs.prototype.RPL_LIST = function( data ) {
 		this._channelListWindow = new ListWindow( {
 			parent: this
 		} );
-	}
-
-	// Clear, if already open and listed
-	if ( this._channelListWindow.listed ) {
-		// Remove all items
-		this._channelListWindow.channelGrid.getStore().removeAll();
 	}
 
 	// Show
