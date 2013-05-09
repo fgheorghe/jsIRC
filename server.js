@@ -113,12 +113,14 @@ var IRCProtocol = {
 	VERSION: "0.1"
 	// Server info
 	,ServerInfo: {
+		// TODO: Rename, to follow same convention as other constants
 		SERVER_NAME: "grosan.co.uk"
 		,SERVER_INFO: "Oxford, Oxfordshire, UK, EU"
 	}
 	,MotdFile: 'motd.txt'
 	,PingFrequency: 10 // In seconds
 	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
+	,OperPassword: 'password' // TODO: Encrypt, and add host support
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -205,6 +207,11 @@ var IRCProtocol = {
 				,RPL_LIST: [ 322, "<channel> <# visible> :<topic>" ]
 				,RPL_LISTEND: [ 323, "End of LIST" ]
 			}
+			,OPER: {
+				RPL_YOUREOPER: [ 381, "You are now an IRC operator" ]
+				,ERR_NOOPERHOST: [ 491, "No O-lines for your host" ]
+				,ERR_PASSWDMISMATCH: [ 464, "Password incorrect" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -231,12 +238,26 @@ var IRCProtocol = {
 			this._realname = ""; // Stores the user's real name
 			this._channels = []; // Stores channels this user has joined
 
+			// Operator status (mode)
+			// TODO: Add mode support
+			this._oper = false;
+
 			this._idle = 0; // Idle time, in seconds
 			this._pingIdle = 0; // Ping/Pong timer
 			this._idleTimer = null;
 			this._pingTimer = null;
 
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
+
+			// Get oper
+			this.getOper = function() {
+				return this._oper;
+			}
+			
+			// Set oper
+			this.setOper = function( oper ) {
+				this._oper = oper;
+			}
 
 			// Get idle time in seconds
 			this.getIdle = function() {
@@ -906,6 +927,16 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 			}
 		);
 
+		// RPL_WHOISOPERATOR
+		if ( clientSocket.Client.getOper() ) {
+			socket.emit(
+				'RPL_WHOISOPERATOR'
+				,{
+					nick: clientSocket.Client.getNickname()
+				}
+			);
+		}
+
 		// TODO: RPL_AWAY
 
 		// RPL_WHOISIDLE
@@ -1202,6 +1233,7 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 
 /**
  * Client MOTD command.
+ * TODO: Once oper functionality is in place, load the MOTD content once, and reload upon a REHASH command
  * @param {Object} data Data object, with the optional 'target' key.
  * @param {Object} socket Socket object.
  * @function
@@ -1451,6 +1483,49 @@ IRCProtocol.ClientProtocol.prototype.LIST = function( data, socket ) {
 	// TODO: Add channels and target support
 }
 
+/**
+ * Client OPER command.
+ * @param {Object} data Data object, with the required 'password' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.OPER = function( data, socket ) {
+	// Validate required parameters
+	if ( typeof data.password === "undefined" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// TODO: Check host
+	// Validate password, case insensitive
+	if ( data.password === IRCProtocol.OperPassword ) {
+		// RPL_YOUREOPER
+		this.emitIRCError(
+			socket
+			,'RPL_YOUREOPER'
+			,IRCProtocol.NumericReplyConstants.Client.OPER.RPL_YOUREOPER[0]
+			,IRCProtocol.NumericReplyConstants.Client.OPER.RPL_YOUREOPER[1]
+		);
+
+		// Set user as operator
+		socket.Client.setOper( true );
+	} else {
+		// ERR_PASSWDMISMATCH
+		this.emitIRCError(
+			socket
+			,'ERR_PASSWDMISMATCH'
+			,IRCProtocol.NumericReplyConstants.Client.OPER.ERR_PASSWDMISMATCH[0]
+			,IRCProtocol.NumericReplyConstants.Client.OPER.ERR_PASSWDMISMATCH[1]
+		);
+	}
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1484,6 +1559,7 @@ ChatServer = new Server( {
 		,PONG: IRCClient.PONG
 		,TOPIC: IRCClient.TOPIC
 		,LIST: IRCClient.LIST
+		,OPER: IRCClient.OPER
 	}
 	// New connection handler
 	,connection: IRCClient.connection

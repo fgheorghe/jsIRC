@@ -323,6 +323,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 
 			this.client.emit( command.toUpperCase(), {} );
 			break;
+		case "oper":
+			// Password
+			if ( parameters.length >= 1 ) {
+				// Password
+				data.password = parameters[0];
+			}
+			
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
 			break;
@@ -857,6 +867,36 @@ ChatJs.prototype.RPL_LUSERCHANNELS = function( data ) {
 ChatJs.prototype.RPL_LUSERME = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_YOUREOPER' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_YOUREOPER = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_PASSWDMISMATCH' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_PASSWDMISMATCH = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_WHOISOPERATOR' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WHOISOPERATOR = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + "is an IRC operator" );
 }
 
 /**
