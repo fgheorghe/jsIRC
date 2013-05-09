@@ -47,6 +47,9 @@ var ChatJs = function() {
 	this._queryWindows = [];
 	this._lcChatNicknames = []; // Array of lower case chat nicknames
 
+	// Keep of a client's registered state
+	this._registered = false;
+
 	// Client instance
 	this.client = {};
 
@@ -333,6 +336,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "nick":
+			// Nickname
+			if ( parameters.length >= 1 ) {
+				// Nickname
+				data.nickname = parameters[0];
+			}
+			
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
 			break;
@@ -449,19 +462,23 @@ ChatJs.prototype.addText = function( text, noAlert ) {
  * @function
  */
 ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
-	// Show an error message, then the prompt asking for a new name
-	Ext.Msg.show( {
-		title: 'Nickname'
-		,msg: 'Nickname is already in use. Please input a different nickname.'
-		,buttons: Ext.Msg.OK
-		,width: 380
-		,modal: false
-		,closable: false
-		,fn: function() {
-			// Display the prompt again
-			this.createNamePrompt();
-		}.bind( this )
-	} );
+	if ( this._registered === false ) {
+		// Show an error message, then the prompt asking for a new name
+		Ext.Msg.show( {
+			title: 'Nickname'
+			,msg: 'Nickname is already in use. Please input a different nickname.'
+			,buttons: Ext.Msg.OK
+			,width: 380
+			,modal: false
+			,closable: false
+			,fn: function() {
+				// Display the prompt again
+				this.createNamePrompt();
+			}.bind( this )
+		} );
+	} else {
+		this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+	}
 }
 
 /**
@@ -711,6 +728,34 @@ ChatJs.prototype.QUIT = function( data ) {
 }
 
 /**
+ * Method used for handling 'NICK' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.NICK = function( data ) {
+	// Add text to all channel windows
+	for ( var channel in this._channelWindows ) {
+		if ( this._channelWindows[ channel ].findClient( data.initial ) ) {
+			if ( data.initial.toLowerCase() === this._nickname.toLowerCase() ) {
+				this._channelWindows[ channel ].addText( "* You are now known as " + Ext.htmlEncode( data.nickname ), true );
+			} else {
+				this._channelWindows[ channel ].addText( "* " + Ext.htmlEncode( data.initial ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") is now known as " + Ext.htmlEncode( data.nickname ), true );
+			}
+
+			// Update channel nickname list
+			this._channelWindows[ channel ].replaceClient( data.initial, data.nickname );
+		}
+	}
+
+	if ( data.initial.toLowerCase() === this._nickname.toLowerCase() ) {
+		this.addText( "* You are now known as " + Ext.htmlEncode( data.nickname ) );
+		this._nickname = data.nickname;
+	}
+
+	console.log( "Current: " + this._nickname );
+}
+
+/**
  * Method used for handling 'RPL_MYINFO' event.
  * @param {Object} data Data object.
  * @function
@@ -797,6 +842,32 @@ ChatJs.prototype.RPL_MOTDSTART = function( data ) {
 ChatJs.prototype.RPL_MOTD = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_ERRONEUSNICKNAME' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_ERRONEUSNICKNAME = function( data ) {
+	if ( this._registered === false ) {
+		// Show an error message, then the prompt asking for a new name
+		Ext.Msg.show( {
+			title: 'Nickname'
+			,msg: 'Erroneus nickname. Please input a different nickname.'
+			,buttons: Ext.Msg.OK
+			,width: 380
+			,modal: false
+			,closable: false
+			,fn: function() {
+				// Display the prompt again
+				this.createNamePrompt();
+			}.bind( this )
+		} );
+	} else {
+		// Add text to window
+		this.addText( "* " + Ext.htmlEncode( data.msg ) );
+	}
 }
 
 /**
@@ -949,6 +1020,9 @@ ChatJs.prototype.RPL_LISTEND = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_WELCOME = function( data ) {
+	// Set client as 'registered'
+	this._registered = true;
+
 	// Unmask the window
 	this.chatWindow.unmask();
 

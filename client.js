@@ -128,8 +128,8 @@ var Example = new Client( {
 		,RPL_LIST: ChatApplication.RPL_LIST
 		,RPL_YOUREOPER: ChatApplication.RPL_YOUREOPER
 		,ERR_PASSWDMISMATCH: ChatApplication.ERR_PASSWDMISMATCH
-		// TODO: Implement
-// 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
+		,NICK: ChatApplication.NICK
+		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 	}
 } );
 

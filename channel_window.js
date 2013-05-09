@@ -137,6 +137,14 @@ ChannelWindow.prototype.init = function() {
 		this.clientList.getRootNode().appendChild( list );
 	}
 
+	// Method used for replacing a 'client' (change nickname that is)
+	this.replaceClient = function( initialNickname, nickname ) {
+		var node = this.findClient( initialNickname );
+		node.set( 'text', Ext.htmlEncode( nickname ) );
+		node.raw.text = Ext.htmlEncode( nickname );
+		node.save();
+	}
+
 	// Method used for adding a new user to the list
 	// TODO: Sort by op, voice, non-op etc
 	this.addClient = function( client ) {

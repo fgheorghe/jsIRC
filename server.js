@@ -232,7 +232,7 @@ var IRCProtocol = {
 			// Store the client's socket
 			this._socket = socket;
 
-			this._nickname = false; // Stores nickname, string
+			this._nickname = ""; // Stores nickname, string
 			this._user = false; // Stores 'user' command data, object as per command parameters
 			this._host = ""; // Stores the user's host
 			this._realname = ""; // Stores the user's real name
@@ -339,7 +339,7 @@ var IRCProtocol = {
 
 			// Method used for checking if a user is registered or not (sent valid nickname and user properties)
 			this.isRegistered = function() {
-				return this.getUser() !== false && this.getNickname() !== false;
+				return this.getUser() !== false && this.getNickname() !== "";
 			}
 
 			// Method used for checking/setting if we sent the 'RPL_WELCOME' message to this user or not
@@ -461,6 +461,13 @@ var IRCProtocol = {
 						,data
 					);
 				}
+			}
+
+			// Method used for replacing a user (change nickname that is)
+			this.replaceUser = function( initialNickname, nickname ) {
+				var nicknamePosition = this._lcUsers.indexOf( initialNickname.toLowerCase() );
+				this._lcUsers[ nicknamePosition ] = nickname.toLowerCase();
+				this._users[ nicknamePosition ] = nickname;
 			}
 
 			// Method used for removing a user
@@ -673,6 +680,8 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 			// Get the channel object, at this position
 			channel = this._channels[ channelPosition ];
 			channel.removeUser( socket, true );
+		} else {
+			continue;
 		}
 
 		// Remove channel if empty
@@ -691,7 +700,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 
 	// Notify users on all channels that the user has quit
 	// TODO: Optimise
-	var _notified = []; // Lower case array of notofied users, to avoid duplicates
+	var _notified = []; // Lower case array of notified users, to avoid duplicates
 	for ( var i = 0; i < users.length; i++ ) {
 		// Notify if not already done so
 		if ( _notified.indexOf( users[i].toLowerCase() ) === -1 ) {
@@ -724,7 +733,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 	// Find socket position, by id
 	var socketPosition = this._clientSocketIds.indexOf( socket.id );
 	// Find nickname position, if the user registered
-	if ( socket.Client.getNickname() ) {
+	if ( socket.Client.getNickname() !== "" ) {
 		var nicknamePosition = this._lcNicknames.indexOf( socket.Client.getNickname().toLowerCase() );
 
 		// Remove nickname from list
@@ -766,10 +775,13 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 			socket
 			,'ERR_ERRONEUSNICKNAME'
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[0]
-			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[1]
-			// Include the faulty nickname
-			,nickname
+			,nickname + " :" + IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ERRONEUSNICKNAME[1]
 		);
+		return;
+	}
+
+	// Silently ignore a user changing the nickname to the same...
+	if ( nickname.toLowerCase() === socket.Client.getNickname().toLowerCase() ) {
 		return;
 	}
 
@@ -780,31 +792,102 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 			socket
 			,'ERR_NICKNAMEINUSE'
 			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[0]
-			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[1]
-			// Include the faulty nickname
-			,nickname
+			,nickname + " :" + IRCProtocol.NumericReplyConstants.Client.NICK.ERR_NICKNAMEINUSE[1]
 		);
 		return;
 	}
 
 	// TODO: Service unavailable...
 
-	// Nickname appears to be ok...
-	// Store in the list of nicknames
-	this._lcNicknames.push( nickname.toLowerCase() );
+	// Remember old nickname
+	var initialNickname = socket.Client.getNickname();
 
 	// Set the client's nickname
 	socket.Client.setNickname( nickname );
 
 	// TODO: Optimise this check (redundant)...
 	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
-
 	if ( socket.Client.isRegistered() && !socket.Client.welcomeSent() ) {
+		// Nickname appears to be ok...
+		// Store in the list of nicknames
+		this._lcNicknames.push( nickname.toLowerCase() );
+
 		// Set to true, and issue the welcome stream of messages
 		socket.Client.welcomeSent( true );
 
 		// Notify the user
 		this.emitIRCWelcome( socket );
+		return;
+	} else if ( !socket.Client.isRegistered() && !socket.Client.welcomeSent()  ) {
+		// Nickname appears to be ok...
+		// Store in the list of nicknames
+		this._lcNicknames.push( nickname.toLowerCase() );
+		return;
+	} else if ( socket.Client.isRegistered() && socket.Client.welcomeSent() ) {
+		// Replace nickname at position of old nickname, in the _lcNicknames array
+		var initialNicknamePosition = this._lcNicknames.indexOf( initialNickname.toLowerCase() );
+		if ( initialNicknamePosition !== -1 ) {
+			this._lcNicknames[ initialNicknamePosition ] = nickname.toLowerCase();
+		}
+
+		var channels = socket.Client.getChannels()
+			,users = [];
+
+		for ( var i = 0; i < channels.length; i++ ) {
+			// Check if the channel exists
+			var channelPosition = this._lcChannelNames.indexOf( channels[i].toLowerCase() )
+				,channel;
+			if ( channelPosition !== -1 ) {
+				// Get the channel object, at this position
+				channel = this._channels[ channelPosition ];
+
+				// Update channel, with the new nickname
+				channel.replaceUser( initialNickname, nickname );
+			} else {
+				continue;
+			}
+
+			users = users.concat( users, channel.getUsers() );
+		}
+
+		// If the user is on any channels, notify others of the nickname change
+		// TODO: Optimise, remove redundancy with disconnect code...
+		var _notified = []; // Lower case array of notified users, to avoid duplicates
+		for ( var i = 0; i < users.length; i++ ) {
+			// Ignore this user
+			if ( users[i].toLowerCase() === socket.Client.getNickname().toLowerCase() ) {
+				continue;
+			}
+
+			// Notify if not already done so
+			if ( _notified.indexOf( users[i].toLowerCase() ) === -1 ) {
+				// Find client socket
+				var nicknamePosition = this._lcNicknames.indexOf( users[i].toLowerCase() );
+				if ( nicknamePosition !== -1 ) {
+					var clientSocket = this._clientSockets[ nicknamePosition ];
+					clientSocket.emit(
+						'NICK'
+						,{
+							initial: initialNickname
+							,host: socket.Client.getHost()
+							,user: socket.Client.getUser()
+							,nickname: nickname
+						}
+					);
+				}
+			}
+		}
+
+		// Notify the user, that the change was a success
+		socket.emit(
+			'NICK'
+			,{
+				initial: initialNickname
+				,host: socket.Client.getHost()
+				,user: socket.Client.getUser()
+				,nickname: socket.Client.getNickname()
+			}
+		);
 	}
 }
 
