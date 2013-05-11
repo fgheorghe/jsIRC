@@ -149,6 +149,9 @@ var Example = new Client( {
 		,RPL_INFO: ChatApplication.RPL_INFO
 		,RPL_ENDOFINFO: ChatApplication.RPL_ENDOFINFO
 		,ERR_NOPRIVILEGES: ChatApplication.ERR_NOPRIVILEGES
+		,RPL_UMODEIS: ChatApplication.RPL_UMODEIS
+		,ERR_USERSDONTMATCH: ChatApplication.ERR_USERSDONTMATCH
+		,ERR_UMODEUNKNOWNFLAG: ChatApplication.ERR_UMODEUNKNOWNFLAG
 	}
 } );
 

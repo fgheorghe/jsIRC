@@ -158,6 +158,24 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
 	,OperPassword: 'password' // TODO: Encrypt, and add host support
 	,DebugLevel: 0 // TODO: Implement debug levels
+	,UserModes: [
+		"a" // Away
+		,"i" // Invisible
+		,"w" // Wallops
+		,"r" // Restricted connection
+		,"o" // Global operator
+		,"O" // Local operator
+		,"s" // Server notices
+	]
+	,UserModeDefaults: {
+		a: false // Away
+		,i: false // Invisible
+		,w: false // Wallops
+		,r: false // Restricted connection
+		,o: false // Global operator
+		,O: false // Local operator
+		,s: false // Server notices
+	}
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -263,6 +281,11 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				ERR_NOPRIVILEGES: [ 481, "Permission Denied- You're not an IRC operator" ]
 				,ERR_CANTKILLSERVER: [ 483, "You can't kill a server!" ]
 			}
+			,MODE: {
+				ERR_UMODEUNKNOWNFLAG: [ 501, "Unknown MODE flag" ]
+				,ERR_USERSDONTMATCH: [ 502, "Cannot change mode for other users" ]
+				,RPL_UMODEIS: [ 221, "<user mode string>" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -295,6 +318,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// TODO: Add mode support
 			this._oper = false;
 
+			// User modes
+			this._modes = IRCProtocol.UserModeDefaults;
+
 			this._idle = 0; // Idle time, in seconds
 			this._pingIdle = 0; // Ping/Pong timer
 			this._idleTimer = null;
@@ -315,14 +341,25 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				this._quitMessage = quitMessage;
 			}
 
-			// Get oper
-			this.getOper = function() {
-				return this._oper;
+			// Method used for fetching user modes, as a string
+			this.getSetModesString = function() {
+				var result = "";
+				for ( var mode in this._modes ) {
+					if ( this._modes[mode] === true ) {
+						result += mode;
+					}
+				}
+				return result;
 			}
-			
-			// Set oper
-			this.setOper = function( oper ) {
-				this._oper = oper;
+
+			// Method used for fetching user mode of specified type
+			this.getMode = function( mode ) {
+				return this._modes[mode];
+			}
+
+			// Method used for setting user mode of specified type
+			this.setMode = function( mode, value ) {
+				this._modes[mode] = value;
 			}
 
 			// Get idle time in seconds
@@ -661,12 +698,12 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 
 	// Send RPL_MYINFO, with even more details
 	// <servername> <version> <available user modes> <available channel modes>
-	// TODO: Add modes (user/channel)
+	// TODO: Add modes (channel)
 	this.emitIRCError(
 		socket
 		,'RPL_MYINFO'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[0]
-		,IRCProtocol.ServerName + " " + IRCProtocol.Version
+		,IRCProtocol.ServerName + " " + IRCProtocol.Version + " " + IRCProtocol.UserModes.join( "" )
 	);
 }
 
@@ -1089,7 +1126,7 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 		);
 
 		// RPL_WHOISOPERATOR
-		if ( clientSocket.Client.getOper() ) {
+		if ( clientSocket.Client.getMode( 'o' ) || clientSocket.Client.getMode( 'O' ) ) {
 			socket.emit(
 				'RPL_WHOISOPERATOR'
 				,{
@@ -1137,7 +1174,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 	socket.Client.setPingIdle( 0 );
 
 	// Validate the command parameters
-	if ( typeof data.channels === "undefined" || data.length === 0 ) {
+	if ( typeof data.channels === "undefined" || data.channels.length === 0 ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
@@ -1674,8 +1711,8 @@ IRCProtocol.ClientProtocol.prototype.OPER = function( data, socket ) {
 			,IRCProtocol.NumericReplyConstants.Client.OPER.RPL_YOUREOPER[1]
 		);
 
-		// Set user as operator
-		socket.Client.setOper( true );
+		// Set user as local operator
+		socket.Client.setMode( 'O', true );
 	} else {
 		// ERR_PASSWDMISMATCH
 		this.emitIRCError(
@@ -1813,7 +1850,7 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 	}
 
 	// TODO: ERR_CANTKILLSERVER
-	if ( !socket.Client.getOper() ) {
+	if ( !clientSocket.Client.getMode( 'o' ) && !clientSocket.Client.getMode( 'O' ) ) {
 		// ERR_NOPRIVILEGES
 		this.emitIRCError(
 			socket
@@ -1844,6 +1881,93 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 			clientSocket.disconnect( {}, clientSocket );
 		}
 	}
+}
+
+/**
+ * Client MODE command.
+ * @param {Object} data Data object, with the required 'nickname' parameter, and optional 'modes' array.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
+	// Validate parameters
+	if ( typeof data.nickname === "undefined" ) {
+		// ERR_NEEDMOREPARAMS
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Check if the user is only querying for his/her modes
+	if ( S( data.nickname ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( typeof data.modes === "undefined" || data.modes.length === 0 ) ) {
+		// RPL_UMODEIS
+		this.emitIRCError(
+			socket
+			,'RPL_UMODEIS'
+			,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_UMODEIS[0]
+			// Only return set modes
+			,"+" + socket.Client.getSetModesString()
+		);
+		return;
+	} else if ( S( data.nickname ).trim().s.toLowerCase() !== socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
+		// ERR_USERSDONTMATCH if changing modes for others
+		this.emitIRCError(
+			socket
+			,'ERR_USERSDONTMATCH'
+			,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[0]
+			,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[1]
+		);
+		return;
+	} else if ( S( data.nickname ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
+		// Set modes
+		var set = false; // Setting or removing modes
+		var errSent = false; // Prevent from sending ERR_UMODEUNKNOWNFLAG more than once, per query
+		for ( var i = 0; i < data.modes.length; i++ ) {
+			// Check if setting
+			if ( data.modes[i][0] === "+" ) {
+				set = true;
+			} else if ( data.modes[i][0] === "-" ) {
+				set = false;
+			} else if ( data.modes[i][0] !== "+" && data.modes[i][0] !== "-" ) {
+				// Ingore...
+				continue;
+			}
+
+			// Set/remove modes
+			for ( var j = 1; j < data.modes[i].length; j++ ) {
+				// NOTE: As per RFC2812, o/O/a can not be set using this command!
+				if ( set && ( data.modes[i][j] === "o" || data.modes[i][j] === "O" || data.modes[i][j] === "a" ) ) {
+					continue;
+				}
+				// NOTE: As per RFC2812, a/r can not be un-set using this command!
+				if ( !set && ( data.modes[i][j] === "a" || data.modes[i][j] === "r" ) ) {
+					continue;
+				}
+
+				// If a more is 'unknown', return an ERR_UMODEUNKNOWNFLAG error...once per query
+				if ( !errSent && IRCProtocol.UserModes.indexOf( data.modes[i][j] ) === -1 ) {
+					// ERR_UMODEUNKNOWNFLAG if changing modes for others
+					this.emitIRCError(
+						socket
+						,'ERR_UMODEUNKNOWNFLAG'
+						,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UMODEUNKNOWNFLAG[0]
+						,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UMODEUNKNOWNFLAG[1]
+					);
+					errSent = true;
+					continue;
+				}
+
+				// Set/remove modes
+				socket.Client.setMode( data.modes[i][j], set );
+			}
+		}
+	}
+
+	console.log( data );
 }
 
 // Create a new instance of the IRC Protocol implementation.
@@ -1885,6 +2009,7 @@ ChatServer = new Server( {
 		,ADMIN: IRCClient.ADMIN
 		,INFO: IRCClient.INFO
 		,KILL: IRCClient.KILL
+		,MODE: IRCClient.MODE
 	}
 	// New connection handler
 	,connection: IRCClient.connection

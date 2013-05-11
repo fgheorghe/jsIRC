@@ -306,6 +306,20 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "mode":
+			// Construct a mode command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.nickname = parameters[0];
+			}
+			// Modes
+			if ( parameters.length >= 2 ) {
+				data.modes = parameters.splice( 1 );
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "version":
 			// Construct a version command
 			if ( parameters.length >= 1 ) {
@@ -1172,6 +1186,36 @@ ChatJs.prototype.ERR_PASSWDMISMATCH = function( data ) {
 ChatJs.prototype.RPL_WHOISOPERATOR = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + "is an IRC operator" );
+}
+
+/**
+ * Method used for handling 'RPL_UMODEIS' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_UMODEIS = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_UMODEUNKNOWNFLAG' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_UMODEUNKNOWNFLAG = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_USERSDONTMATCH' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_USERSDONTMATCH = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
 
 /**
