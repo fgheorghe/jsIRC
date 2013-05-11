@@ -120,6 +120,11 @@ var IRCProtocol = {
 		,ServerInfo: "Oxford, Oxfordshire, UK, EU"
 		,Comments: "Development version."
 	}
+	,AdminInfo: {
+		Location: "Oxford, Oxfordshire, United Kingdom, European Union"
+		,Organization: "Grosan.co.uk"
+		,Email: "fgheorghe@grosan.co.uk"
+	}
 	,MotdFile: 'motd.txt'
 	,PingFrequency: 10 // In seconds
 	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
@@ -215,6 +220,12 @@ var IRCProtocol = {
 				RPL_YOUREOPER: [ 381, "You are now an IRC operator" ]
 				,ERR_NOOPERHOST: [ 491, "No O-lines for your host" ]
 				,ERR_PASSWDMISMATCH: [ 464, "Password incorrect" ]
+			}
+			,ADMIN: {
+				RPL_ADMINME: [ 256, " :Administrative info" ]
+				,RPL_ADMINLOC1: [ 257, ":<admin info>" ] // RFC: what city, state and country the server is in
+				,RPL_ADMINLOC2: [ 258, ":<admin info>" ] // RFC: details of the institution
+				,RPL_ADMINEMAIL: [ 259, ":<admin info>" ]
 			}
 		}
 		// TODO: Reorder
@@ -1651,6 +1662,7 @@ IRCProtocol.ClientProtocol.prototype.VERSION = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.TIME = function( data, socket ) {
+	// TODO: Target support
 	// TODO: ERR_NOSUCHSERVER
 	// RPL_TIME
 	this.emitIRCError(
@@ -1658,6 +1670,48 @@ IRCProtocol.ClientProtocol.prototype.TIME = function( data, socket ) {
 		,'RPL_TIME'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_TIME[0]
 		,IRCProtocol.ServerInfo.ServerName + ' :' + new Date()
+	);
+}
+
+/**
+ * Client ADMIN command.
+ * @param {Object} data Data object, with the optional 'target' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.ADMIN = function( data, socket ) {
+	// TODO: Target support
+	// TODO: ERR_NOSUCHSERVER
+	// RPL_ADMINME
+	this.emitIRCError(
+		socket
+		,'RPL_ADMINME'
+		,IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINME[0]
+		,IRCProtocol.ServerInfo.ServerName + IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINME[1]
+	);
+
+	// RPL_ADMINLOC1
+	this.emitIRCError(
+		socket
+		,'RPL_ADMINLOC1'
+		,IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINLOC1[0]
+		,':' + IRCProtocol.AdminInfo.Location
+	);
+
+	// RPL_ADMINLOC2
+	this.emitIRCError(
+		socket
+		,'RPL_ADMINLOC2'
+		,IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINLOC2[0]
+		,':' + IRCProtocol.AdminInfo.Organization
+	);
+
+	// RPL_ADMINEMAIL
+	this.emitIRCError(
+		socket
+		,'RPL_ADMINEMAIL'
+		,IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINEMAIL[0]
+		,':' + IRCProtocol.AdminInfo.Email
 	);
 }
 
@@ -1697,6 +1751,7 @@ ChatServer = new Server( {
 		,OPER: IRCClient.OPER
 		,VERSION: IRCClient.VERSION
 		,TIME: IRCClient.TIME
+		,ADMIN: IRCClient.ADMIN
 	}
 	// New connection handler
 	,connection: IRCClient.connection

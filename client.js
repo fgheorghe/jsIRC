@@ -133,6 +133,10 @@ var Example = new Client( {
 		,ERR_ALREADYREGISTRED: ChatApplication.ERR_ALREADYREGISTRED
 		,RPL_VERSION: ChatApplication.RPL_VERSION
 		,RPL_TIME: ChatApplication.RPL_TIME
+		,RPL_ADMINME: ChatApplication.RPL_ADMINME
+		,RPL_ADMINLOC1: ChatApplication.RPL_ADMINLOC1
+		,RPL_ADMINLOC2: ChatApplication.RPL_ADMINLOC2
+		,RPL_ADMINEMAIL: ChatApplication.RPL_ADMINEMAIL
 	}
 } );
 

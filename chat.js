@@ -310,6 +310,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "admin":
+			// Construct an admin command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.target = parameters[0];
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "lusers":
 			// Mask
 			if ( parameters.length >= 1 ) {
@@ -891,6 +901,46 @@ ChatJs.prototype.RPL_MOTD = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_TIME = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ADMINME' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ADMINME = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ADMINLOC1' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ADMINLOC1 = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ADMINLOC2' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ADMINLOC2 = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ADMINEMAIL' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ADMINEMAIL = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
