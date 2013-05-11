@@ -846,9 +846,10 @@ ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
 ChatJs.prototype.PING = function( data ) {
 	// Add text to window
 	// TODO: Clarify
-	this.addText( '* PING from ' + Ext.htmlEncode( data.source ), true );
+	// TODO: Add text back
+// 	this.addText( '* PING from ' + Ext.htmlEncode( data.source ), true );
 
-	this.addText( '* PONG to ' + Ext.htmlEncode( data.source ), true );
+// 	this.addText( '* PONG to ' + Ext.htmlEncode( data.source ), true );
 	this.client.emit( 'PONG', {
 		server: data.source
 	} );
