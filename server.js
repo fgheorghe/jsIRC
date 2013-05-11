@@ -229,6 +229,7 @@ var IRCProtocol = {
 			,RPL_CREATED: [ 003, "" ] // Built by emitIRCWelcome() function.
 			,RPL_MYINFO: [ 004, "" ] // Built by emitIRCWelcome() function.
 			,RPL_VERSION: [ 351, "<version>.<debuglevel> <server> :<comments>" ]
+			,RPL_TIME: [ 391, "<server> :<string showing server's local time>" ]
 		}
 	}
 	// Keeps track of the user's/client's IRC state (e.g. nickname, channels, etc).
@@ -1643,6 +1644,23 @@ IRCProtocol.ClientProtocol.prototype.VERSION = function( data, socket ) {
 	);
 }
 
+/**
+ * Client TIME command.
+ * @param {Object} data Data object, with the optional 'target' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.TIME = function( data, socket ) {
+	// TODO: ERR_NOSUCHSERVER
+	// RPL_TIME
+	this.emitIRCError(
+		socket
+		,'RPL_TIME'
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_TIME[0]
+		,IRCProtocol.ServerInfo.ServerName + ' :' + new Date()
+	);
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1678,6 +1696,7 @@ ChatServer = new Server( {
 		,LIST: IRCClient.LIST
 		,OPER: IRCClient.OPER
 		,VERSION: IRCClient.VERSION
+		,TIME: IRCClient.TIME
 	}
 	// New connection handler
 	,connection: IRCClient.connection
