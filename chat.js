@@ -280,6 +280,22 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "kill":
+			// Construct a kill command
+			if ( parameters.length >= 1 ) {
+				// Nickname
+				data.nickname = parameters[0];
+			}
+
+			// Comment
+			if ( parameters.length >= 2 ) {
+				// Comment
+				data.comment = text.slice( text.indexOf( data.nickname ) + data.nickname.length + 1 );
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "motd":
 			// Construct a motd command
 			if ( parameters.length >= 1 ) {
@@ -393,16 +409,63 @@ ChatJs.prototype.parseCommand = function( text ) {
 }
 
 /**
+ * Method used for re-connecting to server.
+ * TODO: Implement.
+ * @function
+ */
+ChatJs.prototype.reconnect = function() {
+	var i;
+
+	// Unmask chat windows, if any
+	for ( var key in this._channelWindows ) {
+		this._channelWindows[key].chatWindow.unmask();
+	}
+
+	// Unmask query windows, if any
+	for ( i = 0; i < this._queryWindows.length; i++ ) {
+		this._queryWindows[i].chatWindow.unmask();
+	}
+
+	// Unmask list window, if loaded
+	if ( this._channelListWindow ) {
+		this._channelListWindow.listWindow.unmask();
+	}
+
+	// Unmask status window
+	this.chatWindow.unmask();
+}
+
+/**
  * Method used for handling a lost connection.
  * @function
  */
 ChatJs.prototype.disconnectHandler = function() {
+	var i;
+
+	// Mask chat windows, if any
+	for ( var key in this._channelWindows ) {
+		this._channelWindows[key].chatWindow.mask();
+	}
+
+	// Mask query windows, if any
+	for ( i = 0; i < this._queryWindows.length; i++ ) {
+		this._queryWindows[i].chatWindow.mask();
+	}
+
+	// Mask list window, if loaded
+	if ( this._channelListWindow ) {
+		this._channelListWindow.listWindow.mask();
+	}
+
+	// Mask status window
+	this.chatWindow.mask();
+
 	// Just display an error window
 	Ext.Msg.show( {
 		title: 'Error'
-		,msg: 'Connection lost. Please reload the page.'
+		,msg: 'Connection lost. Please reload page.'
 		,closable: false
-		,width: 255
+		,modal: false
 	} );
 }
 
@@ -579,6 +642,16 @@ ChatJs.prototype.PART = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_NOPRIVILEGES' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NOPRIVILEGES = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }

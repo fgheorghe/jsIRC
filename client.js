@@ -37,12 +37,21 @@ var Client = function( config ) {
 }
 
 /**
+ * Method used for opening a new connection.
+ * @function
+ */
+Client.prototype.connect = function() {
+	// Create connection
+	this._socket = io.connect( this._config.host + ':' + this._config.port );
+}
+
+/**
  * Method used for initiating a connection, and attaching event listeners.
  * @function
  */
 Client.prototype.init = function() {
-	// Create connection
-	this._socket = io.connect( this._config.host + ':' + this._config.port );
+	// Open connection
+	this.connect();
 
 	// Attach the Application Specific Event handlers
 	this.attachSocketEvents();
@@ -139,6 +148,7 @@ var Example = new Client( {
 		,RPL_ADMINEMAIL: ChatApplication.RPL_ADMINEMAIL
 		,RPL_INFO: ChatApplication.RPL_INFO
 		,RPL_ENDOFINFO: ChatApplication.RPL_ENDOFINFO
+		,ERR_NOPRIVILEGES: ChatApplication.ERR_NOPRIVILEGES
 	}
 } );
 

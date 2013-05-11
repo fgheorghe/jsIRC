@@ -125,7 +125,7 @@ var IRCProtocol = {
 	,Info: "IRC 2.0 (JSON Based Web IRC Server).\n\
 Based on RFC2812. Copyright (C) The Internet Society (2000). All Rights Reserved.\n\
 \n\
-Copyright (c) 2013, Grosan Flaviu Gheorghe\n\
+Copyright (c) 2013, Grosan Flaviu Gheorghe.\n\
 All rights reserved.\n\
 \n\
 Redistribution and use in source and binary forms, with or without\n\
@@ -257,7 +257,11 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 			,INFO: {
 				RPL_INFO: [ 371, ":<string>" ]
-				,RPL_ENDOFINFO: [ 374, ":End of INFO list" ]
+				,RPL_ENDOFINFO: [ 374, "End of INFO list" ]
+			}
+			,KILL: {
+				ERR_NOPRIVILEGES: [ 481, "Permission Denied- You're not an IRC operator" ]
+				,ERR_CANTKILLSERVER: [ 483, "You can't kill a server!" ]
 			}
 		}
 		// TODO: Reorder
@@ -296,7 +300,20 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._idleTimer = null;
 			this._pingTimer = null;
 
+			// Quit message, passed to 'disconnect' event
+			this._quitMessage = "";
+
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
+
+			// Get quit message
+			this.getQuitMessage = function() {
+				return this._quitMessage;
+			}
+
+			// Set quit message
+			this.setQuitMessage = function( quitMessage ) {
+				this._quitMessage = quitMessage;
+			}
 
 			// Get oper
 			this.getOper = function() {
@@ -763,7 +780,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 						nickname: socket.Client.getNickname()
 						,host: socket.Client.getHost()
 						,user: socket.Client.getUser()
-						,reason: 'Connection closed'
+						,reason: socket.Client.getQuitMessage() || 'Connection closed'
 					}
 				);
 			}
@@ -1757,7 +1774,6 @@ IRCProtocol.ClientProtocol.prototype.INFO = function( data, socket ) {
 	// TODO: Target support
 	// TODO: ERR_NOSUCHSERVER
 	// RPL_INFO
-	console.log( IRCProtocol.Info );
 	var infoContentArray = IRCProtocol.Info.split( "\n" );
 	for ( var i = 0; i < infoContentArray.length; i++ ) {
 		this.emitIRCError(
@@ -1775,6 +1791,59 @@ IRCProtocol.ClientProtocol.prototype.INFO = function( data, socket ) {
 		,IRCProtocol.NumericReplyConstants.Client.INFO.RPL_ENDOFINFO[0]
 		,IRCProtocol.NumericReplyConstants.Client.INFO.RPL_ENDOFINFO[1]
 	);
+}
+
+/**
+ * Client KILL command.
+ * @param {Object} data Data object, with the required 'comment' and 'nickname' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
+	// Validate required parameters
+	if ( typeof data.comment === "undefined" || S( data.comment ).trim().s === "" || typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// TODO: ERR_CANTKILLSERVER
+	if ( !socket.Client.getOper() ) {
+		// ERR_NOPRIVILEGES
+		this.emitIRCError(
+			socket
+			,'ERR_NOPRIVILEGES'
+			,IRCProtocol.NumericReplyConstants.Client.KILL.ERR_NOPRIVILEGES[0]
+			,IRCProtocol.NumericReplyConstants.Client.KILL.ERR_NOPRIVILEGES[1]
+		);
+	} else {
+		// Find target
+		var nicknamePosition = this._lcNicknames.indexOf( data.nickname.toLowerCase() );
+
+		// ERR_NOSUCHNICK if not found
+		if ( nicknamePosition === -1 ) {
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHNICK'
+				,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+				,data.nickname + " :No such nick/channel"
+			);
+		} else {
+			// Issue a QUIT command "from" the target user, with a KILL message, and terminate connection
+			var clientSocket = this._clientSockets[ nicknamePosition ];
+
+			// Set kill message
+			clientSocket.Client.setQuitMessage( "KILL: " + data.comment );
+
+			// Drop connection
+			clientSocket.disconnect( {}, clientSocket );
+		}
+	}
 }
 
 // Create a new instance of the IRC Protocol implementation.
@@ -1815,6 +1884,7 @@ ChatServer = new Server( {
 		,TIME: IRCClient.TIME
 		,ADMIN: IRCClient.ADMIN
 		,INFO: IRCClient.INFO
+		,KILL: IRCClient.KILL
 	}
 	// New connection handler
 	,connection: IRCClient.connection
