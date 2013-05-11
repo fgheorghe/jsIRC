@@ -286,6 +286,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,ERR_USERSDONTMATCH: [ 502, "Cannot change mode for other users" ]
 				,RPL_UMODEIS: [ 221, "<user mode string>" ]
 			}
+			,AWAY: {
+				RPL_NOWAWAY: [ 306, "You have been marked as being away" ]
+				,RPL_UNAWAY: [ 305, "You are no longer marked as being away" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -328,6 +332,8 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Quit message, passed to 'disconnect' event
 			this._quitMessage = "";
+			// Away text
+			this._awayText = "";
 
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
 
@@ -339,6 +345,23 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// Set quit message
 			this.setQuitMessage = function( quitMessage ) {
 				this._quitMessage = quitMessage;
+			}
+
+			// Set away text, and mode
+			this.setAway = function( text ) {
+				this.setMode( "a", true );
+				this._awayText = text;
+			}
+
+			// Set away text
+			this.getAway = function( text ) {
+				return this._awayText;
+			}
+
+			// Remove away text and mode
+			this.removeAway = function() {
+				this._awayText = "";
+				this.setMode( "a", false );
 			}
 
 			// Method used for fetching user modes, as a string
@@ -1135,7 +1158,16 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 			);
 		}
 
-		// TODO: RPL_AWAY
+		// RPL_AWAY
+		if ( clientSocket.Client.getMode( "a" ) ) {
+			socket.emit(
+				'RPL_AWAY'
+				,{
+					nick: clientSocket.Client.getNickname()
+					,text: clientSocket.Client.getAway()
+				}
+			);
+		}
 
 		// RPL_WHOISIDLE
 		socket.emit(
@@ -1410,6 +1442,17 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 			);
 			return;
 		} else {
+			// If the user target is away, let the source know it
+			if ( this._clientSockets[nicknamePosition].Client.getMode( "a" ) ) {
+				socket.emit(
+					'RPL_AWAY'
+					,{
+						nick: this._clientSockets[nicknamePosition].Client.getNickname()
+						,text: this._clientSockets[nicknamePosition].Client.getAway()
+					}
+				);
+			}
+
 			// Send to target
 			this._clientSockets[nicknamePosition].emit(
 				'PRIVMSG'
@@ -1970,6 +2013,40 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 	console.log( data );
 }
 
+/**
+ * Client AWAY command.
+ * @param {Object} data Data object, with the optional 'text' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.AWAY = function( data, socket ) {
+	// Remove away if 'text' key is missing, or empty
+	if ( typeof data.text === "undefined" || data.text === "" ) {
+		socket.Client.removeAway();
+
+		// RPL_UNAWAY
+		this.emitIRCError(
+			socket
+			,'RPL_UNAWAY'
+			,IRCProtocol.NumericReplyConstants.Client.AWAY.RPL_UNAWAY[0]
+			,IRCProtocol.NumericReplyConstants.Client.AWAY.RPL_UNAWAY[1]
+		);
+		return;
+	} else {
+		// Set as away
+		socket.Client.setAway( data.text );
+
+		// RPL_NOWAWAY
+		this.emitIRCError(
+			socket
+			,'RPL_NOWAWAY'
+			,IRCProtocol.NumericReplyConstants.Client.AWAY.RPL_NOWAWAY[0]
+			,IRCProtocol.NumericReplyConstants.Client.AWAY.RPL_NOWAWAY[1]
+		);
+		return;
+	}
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -2010,6 +2087,7 @@ ChatServer = new Server( {
 		,INFO: IRCClient.INFO
 		,KILL: IRCClient.KILL
 		,MODE: IRCClient.MODE
+		,AWAY: IRCClient.AWAY
 	}
 	// New connection handler
 	,connection: IRCClient.connection

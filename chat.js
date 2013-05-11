@@ -264,6 +264,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "away":
+			// Construct an away command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.text = text.slice( text.indexOf( command ) + command.length + 1 );
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "privmsg":
 			// Construct a privmsg command
 			if ( parameters.length >= 1 ) {
@@ -1199,6 +1209,26 @@ ChatJs.prototype.RPL_UMODEIS = function( data ) {
 }
 
 /**
+ * Method used for handling 'RPL_UNAWAY' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_UNAWAY = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_NOWAWAY' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_NOWAWAY = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'ERR_UMODEUNKNOWNFLAG' event.
  * @param {Object} data Data object.
  * @function
@@ -1216,6 +1246,16 @@ ChatJs.prototype.ERR_UMODEUNKNOWNFLAG = function( data ) {
 ChatJs.prototype.ERR_USERSDONTMATCH = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_AWAY' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_AWAY = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + "is away: " + data.text );
 }
 
 /**

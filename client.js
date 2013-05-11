@@ -152,6 +152,9 @@ var Example = new Client( {
 		,RPL_UMODEIS: ChatApplication.RPL_UMODEIS
 		,ERR_USERSDONTMATCH: ChatApplication.ERR_USERSDONTMATCH
 		,ERR_UMODEUNKNOWNFLAG: ChatApplication.ERR_UMODEUNKNOWNFLAG
+		,RPL_NOWAWAY: ChatApplication.RPL_NOWAWAY
+		,RPL_UNAWAY: ChatApplication.RPL_UNAWAY
+		,RPL_AWAY: ChatApplication.RPL_AWAY
 	}
 } );
 
