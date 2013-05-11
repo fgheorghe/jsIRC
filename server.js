@@ -25,6 +25,8 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+// BIG TODO: Separate authenticated/non-authenticated user commands!
+
 /**
  * Messaging server.
  * @class Provides server functionality.
@@ -110,17 +112,19 @@ var fs = require('fs'); // Standard file system
 /** IRC Protocol */
 var IRCProtocol = {
 	// Daemon version
-	VERSION: "0.1"
+	Version: "0.1"
 	// Server info
 	,ServerInfo: {
 		// TODO: Rename, to follow same convention as other constants
-		SERVER_NAME: "grosan.co.uk"
-		,SERVER_INFO: "Oxford, Oxfordshire, UK, EU"
+		ServerName: "grosan.co.uk"
+		,ServerInfo: "Oxford, Oxfordshire, UK, EU"
+		,Comments: "Development version."
 	}
 	,MotdFile: 'motd.txt'
 	,PingFrequency: 10 // In seconds
 	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
 	,OperPassword: 'password' // TODO: Encrypt, and add host support
+	,DebugLevel: 0 // TODO: Implement debug levels
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -224,6 +228,7 @@ var IRCProtocol = {
 			,RPL_YOURHOST: [ 002, "" ] // Built by emitIRCWelcome() function.
 			,RPL_CREATED: [ 003, "" ] // Built by emitIRCWelcome() function.
 			,RPL_MYINFO: [ 004, "" ] // Built by emitIRCWelcome() function.
+			,RPL_VERSION: [ 351, "<version>.<debuglevel> <server> :<comments>" ]
 		}
 	}
 	// Keeps track of the user's/client's IRC state (e.g. nickname, channels, etc).
@@ -366,7 +371,7 @@ var IRCProtocol = {
 							this._socket.emit(
 								'PING'
 								,{
-									source: IRCProtocol.ServerInfo.SERVER_NAME
+									source: IRCProtocol.ServerInfo.ServerName
 								}
 							);
 						}
@@ -506,7 +511,7 @@ var IRCProtocol = {
 						,nickname: socket.Client.getNickname()
 						,user: socket.Client.getUser()
 						,host: socket.Client.getHost()
-						,servername: IRCProtocol.ServerInfo.SERVER_NAME
+						,servername: IRCProtocol.ServerInfo.ServerName
 					}
 				);
 
@@ -582,7 +587,7 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 		socket
 		,'RPL_YOURHOST'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[0]
-		,"Your host is chatjs, running version " + IRCProtocol.VERSION
+		,"Your host is chatjs, running version " + IRCProtocol.Version
 	);
 
 	// Send RPL_CREATED, with the date this server was started
@@ -600,7 +605,7 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 		socket
 		,'RPL_MYINFO'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[0]
-		,IRCProtocol.ServerInfo.SERVER_NAME + " " + IRCProtocol.VERSION
+		,IRCProtocol.ServerInfo.ServerName + " " + IRCProtocol.Version
 	);
 }
 
@@ -1017,8 +1022,8 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 			'RPL_WHOISSERVER'
 			,{
 				nick: clientSocket.Client.getNickname()
-				,server: IRCProtocol.ServerInfo.SERVER_NAME
-				,serverinfo: IRCProtocol.ServerInfo.SERVER_INFO
+				,server: IRCProtocol.ServerInfo.ServerName
+				,serverinfo: IRCProtocol.ServerInfo.ServerInfo
 			}
 		);
 
@@ -1127,7 +1132,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 					,nickname: socket.Client.getNickname()
 					,user: socket.Client.getUser()
 					,host: socket.Client.getHost()
-					,servername: IRCProtocol.ServerInfo.SERVER_NAME
+					,servername: IRCProtocol.ServerInfo.ServerName
 				}
 			);
 
@@ -1316,7 +1321,7 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 					,nickname: socket.Client.getNickname()
 					,user: socket.Client.getUser()
 					,host: socket.Client.getHost()
-					,servername: IRCProtocol.ServerInfo.SERVER_NAME
+					,servername: IRCProtocol.ServerInfo.ServerName
 				}
 			);
 		}
@@ -1356,7 +1361,7 @@ IRCProtocol.ClientProtocol.prototype.MOTD = function( data, socket ) {
 				socket
 				,'RPL_MOTDSTART'
 				,IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[0]
-				,"- " + IRCProtocol.ServerInfo.SERVER_NAME + " " + IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[1]
+				,"- " + IRCProtocol.ServerInfo.ServerName + " " + IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[1]
 			);
 
 			// Send the MOTD file content, line by line
@@ -1621,6 +1626,23 @@ IRCProtocol.ClientProtocol.prototype.OPER = function( data, socket ) {
 	}
 }
 
+/**
+ * Client VERSION command.
+ * @param {Object} data Data object, with the optional 'target' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.VERSION = function( data, socket ) {
+	// TODO: ERR_NOSUCHSERVER
+	// RPL_VERSION
+	this.emitIRCError(
+		socket
+		,'RPL_VERSION'
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_VERSION[0]
+		,IRCProtocol.Version + '.' + IRCProtocol.DebugLevel + ' ' + IRCProtocol.ServerInfo.ServerName + ' :' + IRCProtocol.ServerInfo.Comments
+	);
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -1655,6 +1677,7 @@ ChatServer = new Server( {
 		,TOPIC: IRCClient.TOPIC
 		,LIST: IRCClient.LIST
 		,OPER: IRCClient.OPER
+		,VERSION: IRCClient.VERSION
 	}
 	// New connection handler
 	,connection: IRCClient.connection

@@ -281,7 +281,17 @@ ChatJs.prototype.parseCommand = function( text ) {
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "motd":
-			// Construct a privmsg command
+			// Construct a motd command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.target = parameters[0];
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
+		case "version":
+			// Construct a version command
 			if ( parameters.length >= 1 ) {
 				// Target
 				data.target = parameters[0];
@@ -620,6 +630,16 @@ ChatJs.prototype.ERR_NOSUCHCHANNEL = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_ALREADYREGISTRED = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_VERSION' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_VERSION = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }

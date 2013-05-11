@@ -131,6 +131,7 @@ var Example = new Client( {
 		,NICK: ChatApplication.NICK
 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
 		,ERR_ALREADYREGISTRED: ChatApplication.ERR_ALREADYREGISTRED
+		,RPL_VERSION: ChatApplication.RPL_VERSION
 	}
 } );
 
