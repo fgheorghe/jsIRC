@@ -130,6 +130,7 @@ var Example = new Client( {
 		,ERR_PASSWDMISMATCH: ChatApplication.ERR_PASSWDMISMATCH
 		,NICK: ChatApplication.NICK
 		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
+		,ERR_ALREADYREGISTRED: ChatApplication.ERR_ALREADYREGISTRED
 	}
 } );
 

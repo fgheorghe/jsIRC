@@ -910,6 +910,18 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 		return;
 	}
 
+	// ERR_ALREADYREGISTRED
+	if ( socket.Client.welcomeSent() ) {
+		// Issue an ERR_ALREADYREGISTRED error.
+		this.emitIRCError(
+			socket
+			,'ERR_ALREADYREGISTRED'
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ALREADYREGISTRED[0]
+			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ALREADYREGISTRED[1]
+		);
+		return;
+	}
+
 	// TODO: Add proper user and realname validation.
 	// TODO: Add proper mode validation (and functionality).
 

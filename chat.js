@@ -615,6 +615,16 @@ ChatJs.prototype.ERR_NOSUCHCHANNEL = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_ALREADYREGISTRED' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_ALREADYREGISTRED = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'ERR_NOSUCHNICK' event.
  * @param {Object} data Data object.
  * @function
