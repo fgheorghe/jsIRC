@@ -3,7 +3,7 @@ ChatJS
 
 IRC 2.0 (Json based Web IRC) implementation, using Node.js, Socket.io, Extjs, Phantomjs and jQuery.
 
-Based on based on RFC2812: http://tools.ietf.org/html/rfc2812.
+Based on RFC2812: http://tools.ietf.org/html/rfc2812.
 
 Supported Client to Server commands:
 
