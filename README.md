@@ -1,13 +1,64 @@
 ChatJS
 ======
 
-ExtJS Based Chat Application Using Node.Js and Socket.Io.
+IRC 2.0 (Json based Web IRC) implementation, using Node.js, Socket.io, Extjs, Phantomjs and jQuery.
 
-http://grosan.co.uk/part-1-real-time-browser-to-browser-communication-using-node-js-and-socket-io/
+Based on based on RFC2812: http://tools.ietf.org/html/rfc2812.
 
-http://grosan.co.uk/real-time-browser-to-browser-communication-adding-application-specific-events/
+Supported Client to Server commands:
 
-http://grosan.co.uk/part-3-real-time-browser-to-browser-communication-extjs-based-chat-client-using-node-js-and-socket-io/
+- NICK
+- USER
+- WHOIS
+- JOIN
+- PART
+- PRIVMSG
+- MOTD
+- LUSERS
+- PONG
+- TOPIC
+- LIST
+- OPER
 
-This basic chat client is a hobby project, aimed at demonstrating the use of node.js and socket.io 
-for real-time browser to browser communication.
+Supported Server to Client commands:
+
+- RPL_WELCOME
+- RPL_YOURHOST
+- RPL_CREATED
+- RPL_MYINFO
+- ERR_NOSUCHNICK
+- ERR_NONICKNAMEGIVEN
+- RPL_WHOISUSER
+- RPL_WHOISSERVER
+- RPL_ENDOFWHOIS
+- ERR_NICKNAMEINUSE
+- ERR_NEEDMOREPARAMS
+- ERR_NOSUCHCHANNEL
+- RPL_TOPIC
+- RPL_NOTOPIC
+- RPL_NAMREPLY
+- JOIN
+- PART
+- ERR_NOTEXTTOSEND
+- ERR_NORECIPIENT
+- PRIVMSG
+- RPL_WHOISCHANNELS
+- QUIT
+- RPL_MOTDSTART
+- RPL_MOTD
+- RPL_ENDOFMOTD
+- ERR_NOMOTD
+- RPL_LUSERCLIENT
+- RPL_LUSEROP
+- RPL_LUSERUNKOWN
+- RPL_LUSERCHANNELS
+- RPL_LUSERME
+- RPL_WHOISIDLE
+- RPL_WHOISOPERATOR
+- PING
+- RPL_LISTEND
+- RPL_LIST
+- RPL_YOUREOPER
+- ERR_PASSWDMISMATCH
+- NICK
+- ERR_ERRONEUSNICKNAME

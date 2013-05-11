@@ -531,7 +531,7 @@ var IRCProtocol = {
 	}
 };
 
-/** IRC Client Protocol Implementation, based RFC2812: http://tools.ietf.org/html/rfc2812 */
+/** IRC Client Protocol Implementation, based on RFC2812: http://tools.ietf.org/html/rfc2812 */
 IRCProtocol.ClientProtocol = function( parent ) {
 	// NOTE: These two _MUST_ be synchronised
 	// Prepare sockets array
