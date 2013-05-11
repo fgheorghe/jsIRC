@@ -114,17 +114,45 @@ var IRCProtocol = {
 	// Daemon version
 	Version: "0.1"
 	// Server info
-	,ServerInfo: {
-		// TODO: Rename, to follow same convention as other constants
-		ServerName: "grosan.co.uk"
-		,ServerInfo: "Oxford, Oxfordshire, UK, EU"
-		,Comments: "Development version."
-	}
+	,ServerName: "grosan.co.uk"
+	,ServerInfo: "Oxford, Oxfordshire, UK, EU"
+	,ServerComments: "Development version."
 	,AdminInfo: {
 		Location: "Oxford, Oxfordshire, United Kingdom, European Union"
 		,Organization: "Grosan.co.uk"
 		,Email: "fgheorghe@grosan.co.uk"
 	}
+	,Info: "IRC 2.0 (JSON Based Web IRC Server).\n\
+Based on RFC2812. Copyright (C) The Internet Society (2000). All Rights Reserved.\n\
+\n\
+Copyright (c) 2013, Grosan Flaviu Gheorghe\n\
+All rights reserved.\n\
+\n\
+Redistribution and use in source and binary forms, with or without\n\
+modification, are permitted provided that the following conditions are met:\n\
+    * Redistributions of source code must retain the above copyright\n\
+      notice, this list of conditions and the following disclaimer.\n\
+    * Redistributions in binary form must reproduce the above copyright\n\
+      notice, this list of conditions and the following disclaimer in the\n\
+      documentation and/or other materials provided with the distribution.\n\
+    * Neither the name of the author nor the\n\
+      names of its contributors may be used to endorse or promote products\n\
+      derived from this software without specific prior written permission.\n\
+\n\
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND\n\
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n\
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n\
+DISCLAIMED. IN NO EVENT SHALL GROSAN FLAVIU GHEORGHE BE LIABLE FOR ANY\n\
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n\
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n\
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND\n\
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n\
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n\
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\
+\n\
+\n\
+Contribute of fork:\n\
+https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 	,MotdFile: 'motd.txt'
 	,PingFrequency: 10 // In seconds
 	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
@@ -226,6 +254,10 @@ var IRCProtocol = {
 				,RPL_ADMINLOC1: [ 257, ":<admin info>" ] // RFC: what city, state and country the server is in
 				,RPL_ADMINLOC2: [ 258, ":<admin info>" ] // RFC: details of the institution
 				,RPL_ADMINEMAIL: [ 259, ":<admin info>" ]
+			}
+			,INFO: {
+				RPL_INFO: [ 371, ":<string>" ]
+				,RPL_ENDOFINFO: [ 374, ":End of INFO list" ]
 			}
 		}
 		// TODO: Reorder
@@ -383,7 +415,7 @@ var IRCProtocol = {
 							this._socket.emit(
 								'PING'
 								,{
-									source: IRCProtocol.ServerInfo.ServerName
+									source: IRCProtocol.ServerName
 								}
 							);
 						}
@@ -523,7 +555,7 @@ var IRCProtocol = {
 						,nickname: socket.Client.getNickname()
 						,user: socket.Client.getUser()
 						,host: socket.Client.getHost()
-						,servername: IRCProtocol.ServerInfo.ServerName
+						,servername: IRCProtocol.ServerName
 					}
 				);
 
@@ -617,7 +649,7 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 		socket
 		,'RPL_MYINFO'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_MYINFO[0]
-		,IRCProtocol.ServerInfo.ServerName + " " + IRCProtocol.Version
+		,IRCProtocol.ServerName + " " + IRCProtocol.Version
 	);
 }
 
@@ -1034,8 +1066,8 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 			'RPL_WHOISSERVER'
 			,{
 				nick: clientSocket.Client.getNickname()
-				,server: IRCProtocol.ServerInfo.ServerName
-				,serverinfo: IRCProtocol.ServerInfo.ServerInfo
+				,server: IRCProtocol.ServerName
+				,serverinfo: IRCProtocol.ServerInfo
 			}
 		);
 
@@ -1144,7 +1176,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 					,nickname: socket.Client.getNickname()
 					,user: socket.Client.getUser()
 					,host: socket.Client.getHost()
-					,servername: IRCProtocol.ServerInfo.ServerName
+					,servername: IRCProtocol.ServerName
 				}
 			);
 
@@ -1333,7 +1365,7 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 					,nickname: socket.Client.getNickname()
 					,user: socket.Client.getUser()
 					,host: socket.Client.getHost()
-					,servername: IRCProtocol.ServerInfo.ServerName
+					,servername: IRCProtocol.ServerName
 				}
 			);
 		}
@@ -1373,7 +1405,7 @@ IRCProtocol.ClientProtocol.prototype.MOTD = function( data, socket ) {
 				socket
 				,'RPL_MOTDSTART'
 				,IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[0]
-				,"- " + IRCProtocol.ServerInfo.ServerName + " " + IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[1]
+				,"- " + IRCProtocol.ServerName + " " + IRCProtocol.NumericReplyConstants.Client.MOTD.RPL_MOTDSTART[1]
 			);
 
 			// Send the MOTD file content, line by line
@@ -1651,7 +1683,7 @@ IRCProtocol.ClientProtocol.prototype.VERSION = function( data, socket ) {
 		socket
 		,'RPL_VERSION'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_VERSION[0]
-		,IRCProtocol.Version + '.' + IRCProtocol.DebugLevel + ' ' + IRCProtocol.ServerInfo.ServerName + ' :' + IRCProtocol.ServerInfo.Comments
+		,IRCProtocol.Version + '.' + IRCProtocol.DebugLevel + ' ' + IRCProtocol.ServerName + ' :' + IRCProtocol.ServerComments
 	);
 }
 
@@ -1669,7 +1701,7 @@ IRCProtocol.ClientProtocol.prototype.TIME = function( data, socket ) {
 		socket
 		,'RPL_TIME'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_TIME[0]
-		,IRCProtocol.ServerInfo.ServerName + ' :' + new Date()
+		,IRCProtocol.ServerName + ' :' + new Date()
 	);
 }
 
@@ -1687,7 +1719,7 @@ IRCProtocol.ClientProtocol.prototype.ADMIN = function( data, socket ) {
 		socket
 		,'RPL_ADMINME'
 		,IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINME[0]
-		,IRCProtocol.ServerInfo.ServerName + IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINME[1]
+		,IRCProtocol.ServerName + IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINME[1]
 	);
 
 	// RPL_ADMINLOC1
@@ -1712,6 +1744,36 @@ IRCProtocol.ClientProtocol.prototype.ADMIN = function( data, socket ) {
 		,'RPL_ADMINEMAIL'
 		,IRCProtocol.NumericReplyConstants.Client.ADMIN.RPL_ADMINEMAIL[0]
 		,':' + IRCProtocol.AdminInfo.Email
+	);
+}
+
+/**
+ * Client INFO command.
+ * @param {Object} data Data object, with the optional 'target' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.INFO = function( data, socket ) {
+	// TODO: Target support
+	// TODO: ERR_NOSUCHSERVER
+	// RPL_INFO
+	console.log( IRCProtocol.Info );
+	var infoContentArray = IRCProtocol.Info.split( "\n" );
+	for ( var i = 0; i < infoContentArray.length; i++ ) {
+		this.emitIRCError(
+			socket
+			,'RPL_INFO'
+			,IRCProtocol.NumericReplyConstants.Client.INFO.RPL_INFO[0]
+			,"- " + infoContentArray[i]
+		);
+	}
+
+	// RPL_ENDOFINFO
+	this.emitIRCError(
+		socket
+		,'RPL_ENDOFINFO'
+		,IRCProtocol.NumericReplyConstants.Client.INFO.RPL_ENDOFINFO[0]
+		,IRCProtocol.NumericReplyConstants.Client.INFO.RPL_ENDOFINFO[1]
 	);
 }
 
@@ -1752,6 +1814,7 @@ ChatServer = new Server( {
 		,VERSION: IRCClient.VERSION
 		,TIME: IRCClient.TIME
 		,ADMIN: IRCClient.ADMIN
+		,INFO: IRCClient.INFO
 	}
 	// New connection handler
 	,connection: IRCClient.connection

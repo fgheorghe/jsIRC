@@ -137,6 +137,8 @@ var Example = new Client( {
 		,RPL_ADMINLOC1: ChatApplication.RPL_ADMINLOC1
 		,RPL_ADMINLOC2: ChatApplication.RPL_ADMINLOC2
 		,RPL_ADMINEMAIL: ChatApplication.RPL_ADMINEMAIL
+		,RPL_INFO: ChatApplication.RPL_INFO
+		,RPL_ENDOFINFO: ChatApplication.RPL_ENDOFINFO
 	}
 } );
 

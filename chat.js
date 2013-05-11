@@ -320,6 +320,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "info":
+			// Construct an info command
+			if ( parameters.length >= 1 ) {
+				// Target
+				data.target = parameters[0];
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "lusers":
 			// Mask
 			if ( parameters.length >= 1 ) {
@@ -891,6 +901,26 @@ ChatJs.prototype.RPL_MOTDSTART = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_MOTD = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_INFO' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_INFO = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFINFO' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFINFO = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
