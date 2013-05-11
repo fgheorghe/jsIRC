@@ -1917,6 +1917,7 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 			// Issue a QUIT command "from" the target user, with a KILL message, and terminate connection
 			var clientSocket = this._clientSockets[ nicknamePosition ];
 
+			// TODO: Remove redundancy
 			// Set kill message
 			clientSocket.Client.setQuitMessage( "KILL: " + data.comment );
 
@@ -2047,6 +2048,23 @@ IRCProtocol.ClientProtocol.prototype.AWAY = function( data, socket ) {
 	}
 }
 
+/**
+ * Client QUIT command.
+ * @param {Object} data Data object, with the optional 'reason' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.QUIT = function( data, socket ) {
+	// TODO: Remove redundancy
+	// Set quit message
+	if ( typeof data.reason !== "undefined" ) {
+		socket.Client.setQuitMessage( data.reason );
+	}
+
+	// Drop connection
+	socket.disconnect( {}, socket );
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -2088,6 +2106,7 @@ ChatServer = new Server( {
 		,KILL: IRCClient.KILL
 		,MODE: IRCClient.MODE
 		,AWAY: IRCClient.AWAY
+		,QUIT: IRCClient.QUIT
 	}
 	// New connection handler
 	,connection: IRCClient.connection

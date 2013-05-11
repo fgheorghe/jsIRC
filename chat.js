@@ -274,6 +274,16 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "quit":
+			// Construct a quit command
+			if ( parameters.length >= 1 ) {
+				// Reason
+				data.reason = text.slice( text.indexOf( command ) + command.length + 1 );
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "privmsg":
 			// Construct a privmsg command
 			if ( parameters.length >= 1 ) {
