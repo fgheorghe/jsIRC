@@ -331,7 +331,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._oper = false;
 
 			// User modes
-			this._modes = IRCProtocol.UserModeDefaults;
+			this._modes = {};
+			for ( var key in IRCProtocol.UserModeDefaults ) {
+				this._modes[key] = IRCProtocol.UserModeDefaults[key];
+			}
 
 			this._idle = 0; // Idle time, in seconds
 			this._pingIdle = 0; // Ping/Pong timer
