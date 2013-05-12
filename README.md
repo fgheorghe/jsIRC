@@ -28,7 +28,7 @@ Supported Client to Server commands:
 - ADMIN
 - TIME
 - VERSION
- -WHO
+- WHO
 
 Supported Server to Client commands:
 
