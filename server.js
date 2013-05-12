@@ -2146,7 +2146,7 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 		// TODO: Move to separate function
 		for ( var i = 0; i < this._clientSockets.length; i++ ) {
 			var clientSocket = this._clientSockets[i];
-			if ( this._clientSockets[i].Client.welcomeSent() && ( this._clientSockets[i].Client.getMode( "o" ) || this._clientSockets[i].Client.getMode( "O" ) ) ) {
+			if ( this._clientSockets[i].Client.welcomeSent() && ( this._clientSockets[i].Client.getMode( "o" ) || this._clientSockets[i].Client.getMode( "O" ) ) && !this._clientSockets[i].Client.getMode( "i" ) ) {
 				socket.emit(
 					'RPL_WHOREPLY'
 					,{
