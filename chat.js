@@ -327,6 +327,22 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "who":
+			// Construct a who command
+			if ( parameters.length >= 1 ) {
+				// Mask
+				data.mask = parameters[0];
+			}
+
+			// o
+			if ( parameters.length >= 2 ) {
+				// o
+				data.o = parameters[1];
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "motd":
 			// Construct a motd command
 			if ( parameters.length >= 1 ) {
@@ -1255,6 +1271,26 @@ ChatJs.prototype.RPL_UNAWAY = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_NOWAWAY = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_WHOREPLY' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_WHOREPLY = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.channel !== "" ? data.channel + " " : "" ) + Ext.htmlEncode( data.user ) + " " + Ext.htmlEncode( data.host ) + " " + Ext.htmlEncode( data.server ) + " " + Ext.htmlEncode( data.nick ) + ": " + Ext.htmlEncode( data.realname ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFWHO' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFWHO = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

@@ -156,6 +156,8 @@ var Example = new Client( {
 		,RPL_UNAWAY: ChatApplication.RPL_UNAWAY
 		,RPL_AWAY: ChatApplication.RPL_AWAY
 		,RPL_ENDOFNAMES: ChatApplication.RPL_ENDOFNAMES
+		,RPL_ENDOFWHO: ChatApplication.RPL_ENDOFWHO
+		,RPL_WHOREPLY: ChatApplication.RPL_WHOREPLY
 	}
 } );
 

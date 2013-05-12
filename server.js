@@ -294,6 +294,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				RPL_NAMREPLY: [ 352, "" ]
 				,RPL_ENDOFNAMES: [ 366, "End of NAMES list" ]
 			}
+			,WHO: {
+				RPL_WHOREPLY: [ 352, "" ]
+				,RPL_ENDOFWHO: [ 315, "End of WHO list" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -2117,6 +2121,79 @@ IRCProtocol.ClientProtocol.prototype.NAMES = function( data, socket ) {
 	}
 }
 
+/**
+ * Client WHO command.
+ * @param {Object} data Data object, with the optional 'channels' and 'target' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
+	// Check for a mask
+	var mask = false;
+	if ( typeof data.mask !== "undefined" && data.mask !== "" && ( typeof data.mask === "undefined" || data.mask !== "o" ) ) {
+		mask = data.mask;
+	}
+
+	// Check for 'o'
+	var o = false;
+	if ( typeof data.o !== "undefined" && data.o === "o" ) {
+		o = true;
+	}
+	
+	// RPL_WHOREPLY
+	if ( o === true ) {
+		// TODO: Add mask functionality!
+		// TODO: Move to separate function
+		for ( var i = 0; i < this._clientSockets.length; i++ ) {
+			var clientSocket = this._clientSockets[i];
+			if ( this._clientSockets[i].Client.welcomeSent() && ( this._clientSockets[i].Client.getMode( "o" ) || this._clientSockets[i].Client.getMode( "O" ) ) ) {
+				socket.emit(
+					'RPL_WHOREPLY'
+					,{
+						// TODO: Display last active channel
+						// TODO: Add hopcount
+						channel: clientSocket.Client.getChannels()[0] || ""
+						,user: clientSocket.Client.getUser()
+						,host: clientSocket.Client.getHost()
+						,server: IRCProtocol.ServerName
+						,nick: clientSocket.Client.getNickname()
+						,realname: clientSocket.Client.getRealname()
+					}
+				);
+			}
+		}
+	} else {
+		// TODO: Add mask functionality!
+		// TODO: Move to separate function
+		for ( var i = 0; i < this._clientSockets.length; i++ ) {
+			var clientSocket = this._clientSockets[i];
+			if ( this._clientSockets[i].Client.welcomeSent() && !this._clientSockets[i].Client.getMode( "i" ) ) {
+				socket.emit(
+					'RPL_WHOREPLY'
+					,{
+						// TODO: Display last active channel
+						// TODO: Add hopcount
+						channel: clientSocket.Client.getChannels()[0] || ""
+						,user: clientSocket.Client.getUser()
+						,host: clientSocket.Client.getHost()
+						,server: IRCProtocol.ServerName
+						,nick: clientSocket.Client.getNickname()
+						,realname: clientSocket.Client.getRealname()
+					}
+				);
+			}
+		}
+	}
+
+	// RPL_ENDOFWHO
+	this.emitIRCError(
+		socket
+		,'RPL_ENDOFWHO'
+		,IRCProtocol.NumericReplyConstants.Client.WHO.RPL_ENDOFWHO[0]
+		,IRCProtocol.NumericReplyConstants.Client.WHO.RPL_ENDOFWHO[1]
+	);
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -2160,6 +2237,7 @@ ChatServer = new Server( {
 		,AWAY: IRCClient.AWAY
 		,QUIT: IRCClient.QUIT
 		,NAMES: IRCClient.NAMES
+		,WHO: IRCClient.WHO
 	}
 	// New connection handler
 	,connection: IRCClient.connection
