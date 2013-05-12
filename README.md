@@ -28,6 +28,7 @@ Supported Client to Server commands:
 - ADMIN
 - TIME
 - VERSION
+ -WHO
 
 Supported Server to Client commands:
 
@@ -87,3 +88,5 @@ Supported Server to Client commands:
 - RPL_ADMINEMAIL
 - RPL_TIME
 - RPL_VERSION
+- RPL_WHOREPLY
+- RPL_ENDOFWHO
