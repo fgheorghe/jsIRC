@@ -218,6 +218,17 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "names":
+			// Construct a names command
+			if ( parameters.length >= 1 ) {
+				// Channel list
+				var channels = parameters[0].split( "," );
+				data.channels = channels;
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "join":
 			// TODO: Properly handle whitespace!
 			// Construct a join command
@@ -747,6 +758,16 @@ ChatJs.prototype.RPL_NOTOPIC = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_NEEDMOREPARAMS = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFNAMES' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFNAMES = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }

@@ -290,6 +290,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				RPL_NOWAWAY: [ 306, "You have been marked as being away" ]
 				,RPL_UNAWAY: [ 305, "You are no longer marked as being away" ]
 			}
+			,NAMES: {
+				RPL_NAMREPLY: [ 352, "" ]
+				,RPL_ENDOFNAMES: [ 366, "End of NAMES list" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -2065,6 +2069,54 @@ IRCProtocol.ClientProtocol.prototype.QUIT = function( data, socket ) {
 	socket.disconnect( {}, socket );
 }
 
+/**
+ * Client NAMES command.
+ * @param {Object} data Data object, with the optional 'channels' and 'target' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.NAMES = function( data, socket ) {
+	// NOTE: This server will only return users belonging to same channels as the requesting user
+	// TODO: Add 'target' support
+	// Ignore any requests without a 'channels' parameter
+	if ( typeof data.channels === "undefined" || data.channels.length === 0 ) {
+		return;
+	}
+
+	// Get user channels
+	var channels = socket.Client.getChannels();
+	for ( var i = 0; i < channels.length; i++ ) {
+		if ( data.channels.indexOf( channels[i].toLowerCase() ) !== -1 ) {
+			// Get channel users
+			var channelPosition = this._lcChannelNames.indexOf( channels[i] )
+				,channel;
+
+			// Ignore non existing channels
+			if ( channelPosition !== -1 ) {
+				// Get the channel object, at this position
+				channel = this._channels[ channelPosition ];
+
+				// RPL_NAMREPLY
+				socket.emit(
+					'RPL_NAMREPLY'
+					,{
+						channel: channel.getName()
+						,names: channel.getUsers()
+					}
+				);
+
+				// RPL_ENDOFNAMES
+				this.emitIRCError(
+					socket
+					,'RPL_ENDOFNAMES'
+					,IRCProtocol.NumericReplyConstants.Client.NAMES.RPL_ENDOFNAMES[0]
+					,IRCProtocol.NumericReplyConstants.Client.NAMES.RPL_ENDOFNAMES[1]
+				);
+			}
+		}
+	}
+}
+
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
@@ -2107,6 +2159,7 @@ ChatServer = new Server( {
 		,MODE: IRCClient.MODE
 		,AWAY: IRCClient.AWAY
 		,QUIT: IRCClient.QUIT
+		,NAMES: IRCClient.NAMES
 	}
 	// New connection handler
 	,connection: IRCClient.connection
