@@ -135,7 +135,7 @@ ListWindow.prototype.init = function() {
 		title: 'Channel List'
 		,closable: true
 		,maximizable: true
-		,minimizable: false
+		,minimizable: true
 		,resizable: true
 		,constrain: true
 		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
@@ -154,7 +154,7 @@ ListWindow.prototype.init = function() {
 				}
 			}.bind( this )
 			,activate: function() {
-				// If a taskbar is configured, add button
+				// If a taskbar is configured, toggle button
 				if ( this._config.taskbar ) {
 					// Toggle button
 					this.taskbarButton.toggle( true );
@@ -164,6 +164,14 @@ ListWindow.prototype.init = function() {
 				// If a taskbar is configured, remove button
 				if ( this._config.taskbar ) {
 					this._config.taskbar.toolbar.remove( this.taskbarButton );
+				}
+			}.bind( this )
+			,minimize: function() {
+				// If a taskbar is configured, un-toggle button
+				if ( this._config.taskbar ) {
+					// Un-toggle button
+					this.taskbarButton.toggle( false );
+					this.listWindow.hide();
 				}
 			}.bind( this )
 		}

@@ -164,7 +164,7 @@ var ChatJs = function( config ) {
 		title: 'Status'
 		,closable: false
 		,maximizable: true
-		,minimizable: false
+		,minimizable: true
 		,resizable: true
 		,constrain: true
 		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
@@ -187,6 +187,14 @@ var ChatJs = function( config ) {
 				if ( this._config.taskbar ) {
 					// Toggle button
 					this.taskbarButton.toggle( true );
+				}
+			}.bind( this )
+			,minimize: function() {
+				// If a taskbar is configured, un-toggle button
+				if ( this._config.taskbar ) {
+					// Un-toggle button
+					this.taskbarButton.toggle( false );
+					this.chatWindow.hide();
 				}
 			}.bind( this )
 		}
