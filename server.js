@@ -788,6 +788,7 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
 
 	// Store the array of socket ids, in this array, in order to find the socket position in the above array
 	this._clientSocketIds.push( socket.id );
+	this._lcNicknames.push( "" ); // Add empty nick holder
 
 	// Attach IRC state object, used for performing various checks
 	socket.Client = new IRCProtocol.IrcState.Client( socket );
@@ -946,8 +947,9 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
 	if ( socket.Client.isRegistered() && !socket.Client.welcomeSent() ) {
 		// Nickname appears to be ok...
-		// Store in the list of nicknames
-		this._lcNicknames.push( nickname.toLowerCase() );
+		// Store in the list of nicknames, at the position of the current socket
+		var socketPosition = this._clientSocketIds.indexOf( socket.id );
+		this._lcNicknames[socketPosition] = nickname.toLowerCase();
 
 		// Set to true, and issue the welcome stream of messages
 		socket.Client.welcomeSent( true );
@@ -957,8 +959,10 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 		return;
 	} else if ( !socket.Client.isRegistered() && !socket.Client.welcomeSent()  ) {
 		// Nickname appears to be ok...
-		// Store in the list of nicknames
-		this._lcNicknames.push( nickname.toLowerCase() );
+		// Store in the list of nicknames, at the position of the current socket
+		var socketPosition = this._clientSocketIds.indexOf( socket.id );
+		this._lcNicknames[socketPosition] = nickname.toLowerCase();
+
 		return;
 	} else if ( socket.Client.isRegistered() && socket.Client.welcomeSent() ) {
 		// Replace nickname at position of old nickname, in the _lcNicknames array
