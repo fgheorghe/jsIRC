@@ -285,6 +285,11 @@ ChannelWindow.prototype.init = function() {
 
 				// Remove from window array
 				this._config.parent.removeChannelWindow( this._config.channel );
+
+				// If a taskbar is configured, remove button
+				if ( this._config.taskbar ) {
+					this._config.taskbar.toolbar.remove( this.taskbarButton );
+				}
 			}.bind( this )
 			,render: function() {
 				this.textField.focus( false, 200 );

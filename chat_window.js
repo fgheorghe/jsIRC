@@ -147,6 +147,11 @@ ChatWindow.prototype.init = function() {
 
 				this._config.parent._lcChatNicknames.splice( queryWindowPosition, 1 );
 				this._config.parent._queryWindows.splice( queryWindowPosition, 1 );
+
+				// If a taskbar is configured, remove button
+				if ( this._config.taskbar ) {
+					this._config.taskbar.toolbar.remove( this.taskbarButton );
+				}
 			}.bind( this )
 			,render: function() {
 				this.textField.focus( false, 200 );

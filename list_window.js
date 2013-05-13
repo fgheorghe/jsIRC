@@ -160,6 +160,12 @@ ListWindow.prototype.init = function() {
 					this.taskbarButton.toggle( true );
 				}
 			}.bind( this )
+			,close: function() {
+				// If a taskbar is configured, remove button
+				if ( this._config.taskbar ) {
+					this._config.taskbar.toolbar.remove( this.taskbarButton );
+				}
+			}.bind( this )
 		}
 		,items: [
 			this.channelGrid
