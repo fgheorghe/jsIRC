@@ -247,6 +247,7 @@ ChannelWindow.prototype.init = function() {
 		,enableToggle: true
 		,depressed: true
 		,toggleGroup: 'taskList'
+		,autoDestroy: false
 		,handler: function( button ) {
 			// Hide or show the window
 			if ( !button.pressed && this.chatWindow.isHidden() === false ) {

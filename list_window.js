@@ -114,6 +114,7 @@ ListWindow.prototype.init = function() {
 		,enableToggle: true
 		,depressed: true
 		,toggleGroup: 'taskList'
+		,autoDestroy: false
 		,handler: function( button ) {
 			// Hide or show the window
 			if ( !button.pressed && this.listWindow.isHidden() === false ) {
@@ -161,6 +162,9 @@ ListWindow.prototype.init = function() {
 				}
 			}.bind( this )
 			,close: function() {
+				// Remove from parent
+				this._config.parent._channelListWindow = null;
+
 				// If a taskbar is configured, remove button
 				if ( this._config.taskbar ) {
 					this._config.taskbar.toolbar.remove( this.taskbarButton );
