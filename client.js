@@ -85,84 +85,112 @@ Client.prototype.attachSocketEvents = function() {
 }
 
 // Create a new instance of the chat application
-var ChatApplication = new ChatJs();
+// ...soon as ExtJS is ready
+Ext.onReady( function() {
+	// Create 'taskbar'
+	this.taskbar = new Taskbar();
 
-var Example = new Client( {
-	port: 10000
-	,host: 'http://localhost'
-	,scope: ChatApplication
-	// Example event handlers, not bound to any scope
-	,events: {
-		// Connection handler
-		connect: ChatApplication.connectHandler
-		// Disconnect handler
-		,disconnect: ChatApplication.disconnectHandler
-		// Welcome message. This marks the user is now registered with the server
-		,RPL_WELCOME: ChatApplication.RPL_WELCOME
-		// Server info events, usually received upon successul registration
-		,RPL_YOURHOST: ChatApplication.RPL_YOURHOST
-		,RPL_CREATED: ChatApplication.RPL_CREATED
-		,RPL_MYINFO: ChatApplication.RPL_MYINFO
-		,ERR_NOSUCHNICK: ChatApplication.ERR_NOSUCHNICK
-		,ERR_NONICKNAMEGIVEN: ChatApplication.ERR_NONICKNAMEGIVEN
-		,RPL_WHOISUSER: ChatApplication.RPL_WHOISUSER
-		,RPL_WHOISSERVER: ChatApplication.RPL_WHOISSERVER
-		,RPL_ENDOFWHOIS: ChatApplication.RPL_ENDOFWHOIS
-		,ERR_NICKNAMEINUSE: ChatApplication.ERR_NICKNAMEINUSE
-		,ERR_NEEDMOREPARAMS: ChatApplication.ERR_NEEDMOREPARAMS
-		,ERR_NOSUCHCHANNEL: ChatApplication.ERR_NOSUCHCHANNEL
-		,RPL_TOPIC: ChatApplication.RPL_TOPIC
-		,RPL_NOTOPIC: ChatApplication.RPL_NOTOPIC
-		,RPL_NAMREPLY: ChatApplication.RPL_NAMREPLY
-		,JOIN: ChatApplication.JOIN
-		,PART: ChatApplication.PART
-		,ERR_NOTEXTTOSEND: ChatApplication.ERR_NOTEXTTOSEND
-		,ERR_NORECIPIENT: ChatApplication.ERR_NORECIPIENT
-		,PRIVMSG: ChatApplication.PRIVMSG
-		,RPL_WHOISCHANNELS: ChatApplication.RPL_WHOISCHANNELS
-		,QUIT: ChatApplication.QUIT
-		,RPL_MOTDSTART: ChatApplication.RPL_MOTDSTART
-		,RPL_MOTD: ChatApplication.RPL_MOTD
-		,RPL_ENDOFMOTD: ChatApplication.RPL_ENDOFMOTD
-		,ERR_NOMOTD: ChatApplication.ERR_NOMOTD
-		,RPL_LUSERCLIENT: ChatApplication.RPL_LUSERCLIENT
-		,RPL_LUSEROP: ChatApplication.RPL_LUSEROP
-		,RPL_LUSERUNKOWN: ChatApplication.RPL_LUSERUNKOWN
-		,RPL_LUSERCHANNELS: ChatApplication.RPL_LUSERCHANNELS
-		,RPL_LUSERME: ChatApplication.RPL_LUSERME
-		,RPL_WHOISIDLE: ChatApplication.RPL_WHOISIDLE
-		,RPL_WHOISOPERATOR: ChatApplication.RPL_WHOISOPERATOR
-		,PING: ChatApplication.PING
-		,RPL_LISTEND: ChatApplication.RPL_LISTEND
-		,RPL_LIST: ChatApplication.RPL_LIST
-		,RPL_YOUREOPER: ChatApplication.RPL_YOUREOPER
-		,ERR_PASSWDMISMATCH: ChatApplication.ERR_PASSWDMISMATCH
-		,NICK: ChatApplication.NICK
-		,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
-		,ERR_ALREADYREGISTRED: ChatApplication.ERR_ALREADYREGISTRED
-		,RPL_VERSION: ChatApplication.RPL_VERSION
-		,RPL_TIME: ChatApplication.RPL_TIME
-		,RPL_ADMINME: ChatApplication.RPL_ADMINME
-		,RPL_ADMINLOC1: ChatApplication.RPL_ADMINLOC1
-		,RPL_ADMINLOC2: ChatApplication.RPL_ADMINLOC2
-		,RPL_ADMINEMAIL: ChatApplication.RPL_ADMINEMAIL
-		,RPL_INFO: ChatApplication.RPL_INFO
-		,RPL_ENDOFINFO: ChatApplication.RPL_ENDOFINFO
-		,ERR_NOPRIVILEGES: ChatApplication.ERR_NOPRIVILEGES
-		,RPL_UMODEIS: ChatApplication.RPL_UMODEIS
-		,ERR_USERSDONTMATCH: ChatApplication.ERR_USERSDONTMATCH
-		,ERR_UMODEUNKNOWNFLAG: ChatApplication.ERR_UMODEUNKNOWNFLAG
-		,RPL_NOWAWAY: ChatApplication.RPL_NOWAWAY
-		,RPL_UNAWAY: ChatApplication.RPL_UNAWAY
-		,RPL_AWAY: ChatApplication.RPL_AWAY
-		,RPL_ENDOFNAMES: ChatApplication.RPL_ENDOFNAMES
-		,RPL_ENDOFWHO: ChatApplication.RPL_ENDOFWHO
-		,RPL_WHOREPLY: ChatApplication.RPL_WHOREPLY
-	}
+	// Create window container
+	this.windowContainer = Ext.create( 'Ext.panel.Panel', {
+		// Nothing
+	} );
+
+	// Create center region, to contain the window container...
+	this.centerRegion = Ext.create( 'Ext.panel.Panel', {
+		region: 'center'
+		,layout: 'fit'
+		,items: [ this.windowContainer ]
+		,dockedItems: [ this.taskbar.toolbar ]
+	} );
+
+	// Create main viewport...
+	this.viewPort = Ext.create( 'Ext.container.Viewport', {
+		layout: 'border'
+		,items: [ this.centerRegion ]
+	} );
+
+	var ChatApplication = new ChatJs( {
+		renderTo: this.windowContainer
+		,taskbar: this.taskbar
+	} );
+
+	var Example = new Client( {
+		port: 10000
+		,host: 'http://localhost'
+		,scope: ChatApplication
+		// Example event handlers, not bound to any scope
+		,events: {
+			// Connection handler
+			connect: ChatApplication.connectHandler
+			// Disconnect handler
+			,disconnect: ChatApplication.disconnectHandler
+			// Welcome message. This marks the user is now registered with the server
+			,RPL_WELCOME: ChatApplication.RPL_WELCOME
+			// Server info events, usually received upon successul registration
+			,RPL_YOURHOST: ChatApplication.RPL_YOURHOST
+			,RPL_CREATED: ChatApplication.RPL_CREATED
+			,RPL_MYINFO: ChatApplication.RPL_MYINFO
+			,ERR_NOSUCHNICK: ChatApplication.ERR_NOSUCHNICK
+			,ERR_NONICKNAMEGIVEN: ChatApplication.ERR_NONICKNAMEGIVEN
+			,RPL_WHOISUSER: ChatApplication.RPL_WHOISUSER
+			,RPL_WHOISSERVER: ChatApplication.RPL_WHOISSERVER
+			,RPL_ENDOFWHOIS: ChatApplication.RPL_ENDOFWHOIS
+			,ERR_NICKNAMEINUSE: ChatApplication.ERR_NICKNAMEINUSE
+			,ERR_NEEDMOREPARAMS: ChatApplication.ERR_NEEDMOREPARAMS
+			,ERR_NOSUCHCHANNEL: ChatApplication.ERR_NOSUCHCHANNEL
+			,RPL_TOPIC: ChatApplication.RPL_TOPIC
+			,RPL_NOTOPIC: ChatApplication.RPL_NOTOPIC
+			,RPL_NAMREPLY: ChatApplication.RPL_NAMREPLY
+			,JOIN: ChatApplication.JOIN
+			,PART: ChatApplication.PART
+			,ERR_NOTEXTTOSEND: ChatApplication.ERR_NOTEXTTOSEND
+			,ERR_NORECIPIENT: ChatApplication.ERR_NORECIPIENT
+			,PRIVMSG: ChatApplication.PRIVMSG
+			,RPL_WHOISCHANNELS: ChatApplication.RPL_WHOISCHANNELS
+			,QUIT: ChatApplication.QUIT
+			,RPL_MOTDSTART: ChatApplication.RPL_MOTDSTART
+			,RPL_MOTD: ChatApplication.RPL_MOTD
+			,RPL_ENDOFMOTD: ChatApplication.RPL_ENDOFMOTD
+			,ERR_NOMOTD: ChatApplication.ERR_NOMOTD
+			,RPL_LUSERCLIENT: ChatApplication.RPL_LUSERCLIENT
+			,RPL_LUSEROP: ChatApplication.RPL_LUSEROP
+			,RPL_LUSERUNKOWN: ChatApplication.RPL_LUSERUNKOWN
+			,RPL_LUSERCHANNELS: ChatApplication.RPL_LUSERCHANNELS
+			,RPL_LUSERME: ChatApplication.RPL_LUSERME
+			,RPL_WHOISIDLE: ChatApplication.RPL_WHOISIDLE
+			,RPL_WHOISOPERATOR: ChatApplication.RPL_WHOISOPERATOR
+			,PING: ChatApplication.PING
+			,RPL_LISTEND: ChatApplication.RPL_LISTEND
+			,RPL_LIST: ChatApplication.RPL_LIST
+			,RPL_YOUREOPER: ChatApplication.RPL_YOUREOPER
+			,ERR_PASSWDMISMATCH: ChatApplication.ERR_PASSWDMISMATCH
+			,NICK: ChatApplication.NICK
+			,ERR_ERRONEUSNICKNAME: ChatApplication.ERR_ERRONEUSNICKNAME
+			,ERR_ALREADYREGISTRED: ChatApplication.ERR_ALREADYREGISTRED
+			,RPL_VERSION: ChatApplication.RPL_VERSION
+			,RPL_TIME: ChatApplication.RPL_TIME
+			,RPL_ADMINME: ChatApplication.RPL_ADMINME
+			,RPL_ADMINLOC1: ChatApplication.RPL_ADMINLOC1
+			,RPL_ADMINLOC2: ChatApplication.RPL_ADMINLOC2
+			,RPL_ADMINEMAIL: ChatApplication.RPL_ADMINEMAIL
+			,RPL_INFO: ChatApplication.RPL_INFO
+			,RPL_ENDOFINFO: ChatApplication.RPL_ENDOFINFO
+			,ERR_NOPRIVILEGES: ChatApplication.ERR_NOPRIVILEGES
+			,RPL_UMODEIS: ChatApplication.RPL_UMODEIS
+			,ERR_USERSDONTMATCH: ChatApplication.ERR_USERSDONTMATCH
+			,ERR_UMODEUNKNOWNFLAG: ChatApplication.ERR_UMODEUNKNOWNFLAG
+			,RPL_NOWAWAY: ChatApplication.RPL_NOWAWAY
+			,RPL_UNAWAY: ChatApplication.RPL_UNAWAY
+			,RPL_AWAY: ChatApplication.RPL_AWAY
+			,RPL_ENDOFNAMES: ChatApplication.RPL_ENDOFNAMES
+			,RPL_ENDOFWHO: ChatApplication.RPL_ENDOFWHO
+			,RPL_WHOREPLY: ChatApplication.RPL_WHOREPLY
+		}
+	} );
+
+	// Initialise the server
+	Example.init();
+
+	// Add the chat server to the chat application
+	ChatApplication.client = Example;
 } );
-
-// Initialise the server
-Example.init();
-
-// Add the chat server to the chat application
-ChatApplication.client = Example;

@@ -241,14 +241,38 @@ ChannelWindow.prototype.init = function() {
 		}
 	} );
 
+	// Prepare taskbar button
+	this.taskbarButton = Ext.create( 'Ext.button.Button', {
+		text: Ext.htmlEncode( this._config.channel )
+		,enableToggle: true
+		,depressed: true
+		,toggleGroup: 'taskList'
+		,handler: function( button ) {
+			// Hide or show the window
+			if ( !button.pressed && this.chatWindow.isHidden() === false ) {
+				this.chatWindow.hide();
+			} else {
+				this.chatWindow.show();
+				this.textField.focus( false, 200 );
+			}
+		}.bind( this )
+		,listeners: {
+			render: function() {
+				// Toggle button
+				this.taskbarButton.toggle( true );
+			}.bind( this )
+		}
+	} );
+
 	// Prepare the window
 	this.chatWindow = Ext.create( 'Ext.window.Window', {
-		title: this._config.channel
+		title: Ext.htmlEncode( this._config.channel )
 		,closable: true
 		,maximizable: true
 		,minimizable: false
 		,resizable: true
-		,constrainHeader: true
+		,constrain: true
+		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
 		,height: 500
 		,width: 800
 		,layout: 'border'
@@ -264,6 +288,11 @@ ChannelWindow.prototype.init = function() {
 			}.bind( this )
 			,render: function() {
 				this.textField.focus( false, 200 );
+
+				// If a taskbar is configured, add button
+				if ( this._config.taskbar ) {
+					this._config.taskbar.toolbar.add( this.taskbarButton );
+				}
 			}.bind( this )
 		}
 		,items: [

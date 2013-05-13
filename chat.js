@@ -29,10 +29,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /**
  * Chat Application Object.
+ * TODO: Document optional keys for all objects.
+ * @param {Object} config Chat status window configuration object.
  * @class Provides chat functionality.
  * @constructor
  */
-var ChatJs = function() {
+var ChatJs = function( config ) {
+	this._config = config;
 	// Constants
 	this.NICK_PATTERN = /^[a-zA-Z0-9]+$/; // Nickname pattern, as per RFC
 	this.CHANNEL_NAME_PATTERN = /^[#&+!]+[a-zA-Z0-9\-\_]+$/; // Channel name, as per RFC...
@@ -66,96 +69,127 @@ var ChatJs = function() {
 		me._windowFocus = false;
 	} );
 
-	// Create the UI as soon as ExtJS is ready
-	Ext.onReady( function() {
-		// Handle a text sending UI action
-		this.handleSendText = function( textField, recipient ) {
-			var _textField = textField || this.textField;
-			// Check if the user tries sending a command (string starting with a /).
-			if ( _textField.getValue().toString().charAt( 0 ) === "/" ) {
-				// Parse command
-				this.parseCommand( _textField.getValue().toString() );
-			} else {
-				// If a recipient if set, construct a privmsg command, and call same function again
-				if ( recipient ) {
-					this.parseCommand( "/privmsg " + recipient + " " + _textField.getValue().toString() );
-				}
+
+	// Handle a text sending UI action
+	this.handleSendText = function( textField, recipient ) {
+		var _textField = textField || this.textField;
+		// Check if the user tries sending a command (string starting with a /).
+		if ( _textField.getValue().toString().charAt( 0 ) === "/" ) {
+			// Parse command
+			this.parseCommand( _textField.getValue().toString() );
+		} else {
+			// If a recipient if set, construct a privmsg command, and call same function again
+			if ( recipient ) {
+				this.parseCommand( "/privmsg " + recipient + " " + _textField.getValue().toString() );
 			}
-			_textField.setValue( "" );
 		}
+		_textField.setValue( "" );
+	}
 
-		// Text field
-		this.textField = Ext.create( 'Ext.form.field.Text', {
-			width: 560
-			,enableKeyEvents: true
-			,listeners: {
-				keydown: function( field, e, eOpts ) {
-					if ( e.getKey() === 13 ) {
-						this.handleSendText.bind( this )();
-					}
-				}.bind( this )
+	// Text field
+	this.textField = Ext.create( 'Ext.form.field.Text', {
+		width: 560
+		,enableKeyEvents: true
+		,listeners: {
+			keydown: function( field, e, eOpts ) {
+				if ( e.getKey() === 13 ) {
+					this.handleSendText.bind( this )();
+				}
+			}.bind( this )
+		}
+	} );
+
+	// Send button
+	this.sendButton = Ext.create( 'Ext.button.Button', {
+		text: 'Send'
+		,handler: this.handleSendText.bind( this, [ this.textField ] )
+	} );
+
+	// Prepare the text window
+	this.textPanel = Ext.create( 'Ext.panel.Panel', {
+		border: true
+		,frame: false
+		,bodyStyle: {
+			padding: '5px'
+			,whiteSpace: "pre-wrap"
+			,fontFamily: "monospace"
+			,fontSize: "11px"
+		}
+		,autoScroll: true
+		// Start adding text from the bottom
+		,html: '<div style="height: 3000px;">&nbsp;</div>'
+		,bbar: [
+			this.textField
+			, '-'
+			,this.sendButton
+		]
+		,listeners: {
+			resize: function() {
+				// Scroll to bottom
+				this.textPanel.body.scroll( 'b', Infinity );
+
+				// Resize text field
+				this.textField.setWidth(
+					this.textPanel.getWidth() - this.sendButton.getWidth() - 11
+				);
+			}.bind( this )
+		}
+	} );
+
+	// Prepare taskbar button
+	this.taskbarButton = Ext.create( 'Ext.button.Button', {
+		text: 'Status'
+		,enableToggle: true
+		,depressed: true
+		,toggleGroup: 'taskList'
+		,handler: function( button ) {
+			// Hide or show the window
+			if ( !button.pressed && this.chatWindow.isHidden() === false ) {
+				this.chatWindow.hide();
+			} else {
+				this.chatWindow.show();
+				this.textField.focus( false, 200 );
 			}
-		} );
+		}.bind( this )
+		,listeners: {
+			render: function() {
+				// Toggle button
+				this.taskbarButton.toggle( true );
+			}.bind( this )
+		}
+	} );
 
-		// Send button
-		this.sendButton = Ext.create( 'Ext.button.Button', {
-			text: 'Send'
-			,handler: this.handleSendText.bind( this, [ this.textField ] )
-		} );
+	// Prepare the window
+	this.chatWindow = Ext.create( 'Ext.window.Window', {
+		title: 'Status'
+		,closable: false
+		,maximizable: true
+		,minimizable: false
+		,resizable: true
+		,constrain: true
+		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
+		,height: 500
+		,width: 800
+		,layout: 'fit'
+		,items: [
+			this.textPanel
+		]
+		,listeners: {
+			render: function() {
+				// If a taskbar is configured, add button
+				if ( this._config.taskbar ) {
+					this._config.taskbar.toolbar.add( this.taskbarButton );
+					this._config.taskbar.toolbar.add( '-' );
+				}
+			}.bind( this )
+		}
+	} );
 
-		// Prepare the text window
-		this.textPanel = Ext.create( 'Ext.panel.Panel', {
-			border: true
-			,frame: false
-			,bodyStyle: {
-				padding: '5px'
-				,whiteSpace: "pre-wrap"
-				,fontFamily: "monospace"
-				,fontSize: "11px"
-			}
-			,autoScroll: true
-			// Start adding text from the bottom
-			,html: '<div style="height: 3000px;">&nbsp;</div>'
-			,bbar: [
-				this.textField
-				, '-'
-				,this.sendButton
-			]
-			,listeners: {
-				resize: function() {
-					// Scroll to bottom
-					this.textPanel.body.scroll( 'b', Infinity );
+	// Show
+	this.chatWindow.show();
 
-					// Resize text field
-					this.textField.setWidth(
-						this.textPanel.getWidth() - this.sendButton.getWidth() - 11
-					);
-				}.bind( this )
-			}
-		} );
-
-		// Prepare the window
-		this.chatWindow = Ext.create( 'Ext.window.Window', {
-			title: 'Status'
-			,closable: false
-			,maximizable: true
-			,minimizable: false
-			,resizable: true
-			,constrainHeader: true
-			,height: 500
-			,width: 800
-			,layout: 'fit'
-			,items: [
-				this.textPanel
-			]
-		} );
-
-		// Show
-		this.chatWindow.show();
-
-		// Mask, until a connection is made
-		this.chatWindow.mask();
-	}.bind( this ) );
+	// Mask, until a connection is made
+	this.chatWindow.mask();
 };
 
 /**
@@ -173,6 +207,8 @@ ChatJs.prototype.findOrCreateQueryWindow = function( nickname ) {
 		queryWindow = new ChatWindow( {
 			parent: this
 			,nickname: nickname
+			,renderTo: this._config.renderTo
+			,taskbar: this._config.taskbar
 		} );
 
 		// Add to list
@@ -539,7 +575,7 @@ ChatJs.prototype.createNamePrompt = function() {
 		title: 'Name'
 		,msg: 'Please enter your name:'
 		,width: 300
-		,hideModel: 'hide'
+		,hideMode: 'hide'
 		,buttons: Ext.Msg.OK
 		,prompt: true
 		,modal: false
@@ -658,6 +694,8 @@ ChatJs.prototype.JOIN = function( data ) {
 		this._channelWindows[data.channel] = new ChannelWindow( {
 			channel: data.channel
 			,parent: this
+			,renderTo: this._config.renderTo
+			,taskbar: this._config.taskbar
 		} );
 
 		// Show window
@@ -1335,6 +1373,8 @@ ChatJs.prototype.RPL_LIST = function( data ) {
 	if ( !this._channelListWindow ) {
 		this._channelListWindow = new ListWindow( {
 			parent: this
+			,renderTo: this._config.renderTo
+			,taskbar: this._config.taskbar
 		} );
 	}
 

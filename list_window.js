@@ -104,6 +104,28 @@ ListWindow.prototype.init = function() {
 		}
 	} );
 
+	// Prepare taskbar button
+	this.taskbarButton = Ext.create( 'Ext.button.Button', {
+		text: Ext.htmlEncode( 'Channel List' )
+		,enableToggle: true
+		,depressed: true
+		,toggleGroup: 'taskList'
+		,handler: function( button ) {
+			// Hide or show the window
+			if ( !button.pressed && this.listWindow.isHidden() === false ) {
+				this.listWindow.hide();
+			} else {
+				this.listWindow.show();
+			}
+		}.bind( this )
+		,listeners: {
+			render: function() {
+				// Toggle button
+				this.taskbarButton.toggle( true );
+			}.bind( this )
+		}
+	} );
+
 	// Prepare the window
 	this.listWindow = Ext.create( 'Ext.window.Window', {
 		title: 'Channel List'
@@ -111,7 +133,8 @@ ListWindow.prototype.init = function() {
 		,maximizable: true
 		,minimizable: false
 		,resizable: true
-		,constrainHeader: true
+		,constrain: true
+		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
 		,layout: 'fit'
 		,height: 500
 		,width: 800
@@ -119,6 +142,12 @@ ListWindow.prototype.init = function() {
 		,listeners: {
 			close: function() {
 				this._config.parent._channelListWindow = false;
+			}.bind( this )
+			,render: function() {
+				// If a taskbar is configured, add button
+				if ( this._config.taskbar ) {
+					this._config.taskbar.toolbar.add( this.taskbarButton );
+				}
 			}.bind( this )
 		}
 		,items: [
