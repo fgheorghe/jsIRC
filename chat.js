@@ -182,6 +182,13 @@ var ChatJs = function( config ) {
 					this._config.taskbar.toolbar.add( '-' );
 				}
 			}.bind( this )
+			,activate: function() {
+				// If a taskbar is configured, add button
+				if ( this._config.taskbar ) {
+					// Toggle button
+					this.taskbarButton.toggle( true );
+				}
+			}.bind( this )
 		}
 	} );
 
@@ -701,8 +708,8 @@ ChatJs.prototype.JOIN = function( data ) {
 		// Show window
 		this._channelWindows[data.channel].chatWindow.show();
 	} else if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && this._channelWindows[data.channel] ) {
-		// Just focus
-		this._channelWindows[data.channel].chatWindow.focus();
+		// Just set active
+		this._channelWindows[data.channel].chatWindow.show();
 	} else if ( data.nickname.toLowerCase() !== this._nickname.toLowerCase() && this._channelWindows[data.channel] ) {
 		// Append text
 		this._channelWindows[data.channel].addText( "* " + Ext.htmlEncode( data.nickname ) + " (" + Ext.htmlEncode( data.user ) + "@" + Ext.htmlEncode( data.host ) + ") has joined " + Ext.htmlEncode( data.channel ), true );

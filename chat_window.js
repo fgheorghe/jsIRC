@@ -156,6 +156,13 @@ ChatWindow.prototype.init = function() {
 					this._config.taskbar.toolbar.add( this.taskbarButton );
 				}
 			}.bind( this )
+			,activate: function() {
+				// If a taskbar is configured, add button
+				if ( this._config.taskbar ) {
+					// Toggle button
+					this.taskbarButton.toggle( true );
+				}
+			}.bind( this )
 		}
 		,items: [
 			this.textPanel

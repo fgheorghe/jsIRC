@@ -57,9 +57,13 @@ ListWindow.prototype.init = function() {
 				{
 					text: 'Join Channel'
 					,handler: function() {
-						console.log( record );
-						// Issue a 'join' command
-						this._config.parent.parseCommand( "/join " + record.raw.channel );
+						// Issue a 'join' command if not already on that channel
+						if ( !this._config.parent._channelWindows[record.raw.channel] ) {
+							this._config.parent.parseCommand( "/join " + record.raw.channel );
+						} else {
+							// Just show...
+							this._config.parent._channelWindows[record.raw.channel].chatWindow.show();
+						}
 					}.bind( this )
 				}
 			]
@@ -147,6 +151,13 @@ ListWindow.prototype.init = function() {
 				// If a taskbar is configured, add button
 				if ( this._config.taskbar ) {
 					this._config.taskbar.toolbar.add( this.taskbarButton );
+				}
+			}.bind( this )
+			,activate: function() {
+				// If a taskbar is configured, add button
+				if ( this._config.taskbar ) {
+					// Toggle button
+					this.taskbarButton.toggle( true );
 				}
 			}.bind( this )
 		}
