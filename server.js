@@ -1908,7 +1908,7 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 	}
 
 	// TODO: ERR_CANTKILLSERVER
-	if ( !clientSocket.Client.getMode( 'o' ) && !clientSocket.Client.getMode( 'O' ) ) {
+	if ( !socket.Client.getMode( 'o' ) && !socket.Client.getMode( 'O' ) ) {
 		// ERR_NOPRIVILEGES
 		this.emitIRCError(
 			socket
