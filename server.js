@@ -1057,8 +1057,8 @@ IRCProtocol.ClientProtocol.prototype.USER = function( data, socket ) {
 		this.emitIRCError(
 			socket
 			,'ERR_ALREADYREGISTRED'
-			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ALREADYREGISTRED[0]
-			,IRCProtocol.NumericReplyConstants.Client.NICK.ERR_ALREADYREGISTRED[1]
+			,IRCProtocol.NumericReplyConstants.Client.USER.ERR_ALREADYREGISTRED[0]
+			,IRCProtocol.NumericReplyConstants.Client.USER.ERR_ALREADYREGISTRED[1]
 		);
 		return;
 	}
