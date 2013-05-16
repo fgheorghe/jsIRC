@@ -314,10 +314,11 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,RPL_UMODEIS: [ 221, "<user mode string>" ]
 				// Channel modes
 				,ERR_KEYSET: [ 467, "Channel key already set" ]
-				,ERR_NOCHANMODES: [ 471, "Cannot join channel (+l)" ]
+				,ERR_NOCHANMODES: [ 477, "Channel doesn't support modes" ] // NOTE: For special types of channels
+				,ERR_CHANNELISFULL: [ 471, "Cannot join channel (+l)" ]
 				,ERR_CHANOPRIVSNEEDED: [ 482, "You're not channel operator" ]
 				,ERR_USERNOTINCHANNEL: [ 441, "<nick> <channel> :They aren't on that channel" ]
-				,ERR_UNKNOWNMODE: [ 472, "<char> :is unknown mode char to me for <channel>" ]
+				,ERR_UNKNOWNMODE: [ 472, " :is unknown mode char to me for " ]
 				,RPL_CHANNELMODEIS: [ 324, "<channel> <mode> <mode params>" ]
 				,RPL_BANLIST: [ 367, "<channel> <banmask>" ]
 				,RPL_ENDOFBANLIST: [ 368, "End of channel ban list" ]
@@ -582,6 +583,46 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Topic
 			this._topic = "";
+
+			// User modes
+			// TODO: Modes logic is redundant with channel mode logic
+			this._modes = {};
+			for ( var key in IRCProtocol.ChannelModeDefaults ) {
+				this._modes[key] = IRCProtocol.ChannelModeDefaults[key];
+			}
+
+			// Method used for fetching channel mode of specified type
+			this.getMode = function( mode ) {
+				return this._modes[mode];
+			}
+			
+			// Method used for setting channel mode of specified type
+			this.setMode = function( socket, mode, value ) {
+				// Notify others of this change
+				console.log( "boardcars" );
+				this._broadcastEvent( 'MODE'
+					,{
+						channel: this.getName()
+						,nickname: socket.Client.getNickname()
+						,user: socket.Client.getUser()
+						,host: socket.Client.getHost()
+						,mode: ( value === true ? "+" : "-" ) + mode
+					}
+				);
+
+				this._modes[mode] = value;
+			}
+
+			// Method used for fetching channel modes, as a string
+			this.getSetModesString = function() {
+				var result = "";
+				for ( var mode in this._modes ) {
+					if ( this._modes[mode] === true ) {
+						result += mode;
+					}
+				}
+				return result;
+			}
 
 			// Method used for getting the channel name
 			this.getName = function() {
@@ -2000,13 +2041,13 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 
 /**
  * Client MODE command.
- * @param {Object} data Data object, with the required 'nickname' parameter, and optional 'modes' array.
+ * @param {Object} data Data object, with the required 'target' parameter, and optional 'modes' array, and if channel, 'params' array.
  * @param {Object} socket Socket object.
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 	// Validate parameters
-	if ( typeof data.nickname === "undefined" ) {
+	if ( typeof data.target === "undefined" ) {
 		// ERR_NEEDMOREPARAMS
 		this.emitIRCError(
 			socket
@@ -2017,68 +2058,153 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 		return;
 	}
 
-	// Check if the user is only querying for his/her modes
-	if ( S( data.nickname ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( typeof data.modes === "undefined" || data.modes.length === 0 ) ) {
-		// RPL_UMODEIS
-		this.emitIRCError(
-			socket
-			,'RPL_UMODEIS'
-			,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_UMODEIS[0]
-			// Only return set modes
-			,"+" + socket.Client.getSetModesString()
-		);
-		return;
-	} else if ( S( data.nickname ).trim().s.toLowerCase() !== socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
-		// ERR_USERSDONTMATCH if changing modes for others
-		this.emitIRCError(
-			socket
-			,'ERR_USERSDONTMATCH'
-			,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[0]
-			,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[1]
-		);
-		return;
-	} else if ( S( data.nickname ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
-		// Set modes
-		var set = false; // Setting or removing modes
-		var errSent = false; // Prevent from sending ERR_UMODEUNKNOWNFLAG more than once, per query
-		for ( var i = 0; i < data.modes.length; i++ ) {
-			// Check if setting
-			if ( data.modes[i][0] === "+" ) {
-				set = true;
-			} else if ( data.modes[i][0] === "-" ) {
-				set = false;
-			} else if ( data.modes[i][0] !== "+" && data.modes[i][0] !== "-" ) {
-				// Ingore...
-				continue;
-			}
+	// Check if target is a nickname or channel
+	var isChannel = data.target.length <= IRCProtocol.OtherConstants.CHANNEL_NAME_LENGTH && IRCProtocol.OtherConstants.CHANNEL_NAME_PATTERN.test( data.target );
+	var isNickname = data.target.length <= IRCProtocol.OtherConstants.NICK_LENGTH && IRCProtocol.OtherConstants.NICK_PATTERN.test( data.target );
 
-			// Set/remove modes
-			for ( var j = 1; j < data.modes[i].length; j++ ) {
-				// NOTE: As per RFC2812, o/O/a can not be set using this command!
-				if ( set && ( data.modes[i][j] === "o" || data.modes[i][j] === "O" || data.modes[i][j] === "a" ) ) {
-					continue;
-				}
-				// NOTE: As per RFC2812, a/r can not be un-set using this command!
-				if ( !set && ( data.modes[i][j] === "a" || data.modes[i][j] === "r" ) ) {
-					continue;
-				}
-
-				// If a more is 'unknown', return an ERR_UMODEUNKNOWNFLAG error...once per query
-				if ( !errSent && IRCProtocol.UserModes.indexOf( data.modes[i][j] ) === -1 ) {
-					// ERR_UMODEUNKNOWNFLAG if changing modes for others
-					this.emitIRCError(
-						socket
-						,'ERR_UMODEUNKNOWNFLAG'
-						,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UMODEUNKNOWNFLAG[0]
-						,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UMODEUNKNOWNFLAG[1]
-					);
-					errSent = true;
+	if ( isNickname ) {
+		// Check if the user is only querying for his/her modes
+		if ( S( data.target ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( typeof data.modes === "undefined" || data.modes.length === 0 ) ) {
+			// RPL_UMODEIS
+			this.emitIRCError(
+				socket
+				,'RPL_UMODEIS'
+				,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_UMODEIS[0]
+				// Only return set modes
+				,"+" + socket.Client.getSetModesString()
+			);
+			return;
+		} else if ( S( data.target ).trim().s.toLowerCase() !== socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
+			// ERR_USERSDONTMATCH if changing modes for others
+			this.emitIRCError(
+				socket
+				,'ERR_USERSDONTMATCH'
+				,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[0]
+				,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[1]
+			);
+			return;
+		} else if ( S( data.target ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
+			// Set modes
+			var set = false; // Setting or removing modes
+			var errSent = false; // Prevent from sending ERR_UMODEUNKNOWNFLAG more than once, per query
+			for ( var i = 0; i < data.modes.length; i++ ) {
+				// Check if setting
+				if ( data.modes[i][0] === "+" ) {
+					set = true;
+				} else if ( data.modes[i][0] === "-" ) {
+					set = false;
+				} else if ( data.modes[i][0] !== "+" && data.modes[i][0] !== "-" ) {
+					// Ingore...
 					continue;
 				}
 
 				// Set/remove modes
-				socket.Client.setMode( data.modes[i][j], set );
+				for ( var j = 1; j < data.modes[i].length; j++ ) {
+					// NOTE: As per RFC2812, o/O/a can not be set using this command!
+					if ( set && ( data.modes[i][j] === "o" || data.modes[i][j] === "O" || data.modes[i][j] === "a" ) ) {
+						continue;
+					}
+					// NOTE: As per RFC2812, a/r can not be un-set using this command!
+					if ( !set && ( data.modes[i][j] === "a" || data.modes[i][j] === "r" ) ) {
+						continue;
+					}
+
+					// If a mode is 'unknown', return an ERR_UMODEUNKNOWNFLAG error...once per query
+					if ( !errSent && IRCProtocol.UserModes.indexOf( data.modes[i][j] ) === -1 ) {
+						// ERR_UMODEUNKNOWNFLAG
+						this.emitIRCError(
+							socket
+							,'ERR_UMODEUNKNOWNFLAG'
+							,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UMODEUNKNOWNFLAG[0]
+							,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UMODEUNKNOWNFLAG[1]
+						);
+						errSent = true;
+						continue;
+					}
+
+					// Set/remove modes
+					socket.Client.setMode( data.modes[i][j], set );
+				}
 			}
+		}
+	} else if ( isChannel ) {
+		// Find target
+		// NOTE: Some of this functionality is redundant
+		// TODO: Check if a user is on channel
+		// TODO: Handle special types of channels that don't support modes
+		// Get channel users
+		var channelPosition = this._lcChannelNames.indexOf( data.target.toLowerCase() )
+			,channel;
+
+		// Ignore non existing channels
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+
+			// Check if the user is only querying channel modes
+			// NOTE: Return 'simple' channel modes, as exception, invite and ban are returned by their own events
+			if ( typeof data.modes === "undefined" || data.modes.length === 0 ) {
+				// RPL_CHANNELMODEIS
+				// TODO: Add channel name?
+				// TODO: RFC is not clear on this
+				socket.emit(
+					'RPL_CHANNELMODEIS'
+					// Only return set modes
+					,{
+						mode: "+" + channel.getSetModesString()
+						,channel: channel.getName()
+						// TODO: Add list
+						,params: []
+					}
+				);
+				console.log( "h3ere" );
+				
+				return;
+			} else {
+				// Begin setting modes
+				// Set modes
+				var set = false; // Setting or removing modes
+				var query = false; // If only querying for special modes
+				for ( var i = 0; i < data.modes.length; i++ ) {
+					// Check if setting
+					if ( data.modes[i][0] === "+" ) {
+						set = true;
+						query = false;
+					} else if ( data.modes[i][0] === "-" ) {
+						query = false;
+						set = false;
+					} else if ( data.modes[i][0] !== "+" && data.modes[i][0] !== "-" ) {
+						set = false;
+						query = true;
+					}
+
+					// Set or remove modes
+					// NOTE: Test command for setting all 'basic' modes: /mode #test +aimnqpsrt
+					// TODO: Add special modes
+					// TODO: Verify owner 'permissions' to change such modes
+					// Set/remove modes
+					for ( var j = 1; j < data.modes[i].length; j++ ) {
+						// If a mode is 'unknown', return an ERR_UNKNOWNMODE error...once per query
+						if ( IRCProtocol.ChannelModes.indexOf( data.modes[i][j] ) === -1 ) {
+							// ERR_UNKNOWNMODE
+							this.emitIRCError(
+								socket
+								,'ERR_UNKNOWNMODE'
+								,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UNKNOWNMODE[0]
+								,data.modes[i][j] + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UNKNOWNMODE[1] + data.target
+							);
+							continue;
+						}
+
+						if ( query === false ) {
+							// Set/remove modes
+							channel.setMode( socket, data.modes[i][j], set );
+						}
+					}
+				}
+			}
+			console.log( "here" );
+			
 		}
 	}
 

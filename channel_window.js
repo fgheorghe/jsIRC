@@ -201,13 +201,57 @@ ChannelWindow.prototype.init = function() {
 		}
 	} );
 
+	// Method used for creating a new mode checkbox
+	var createModeCheckbox = function( mode ) {
+		return Ext.create( 'Ext.form.field.Checkbox', {
+			fieldLabel: mode
+			,labelAlign: 'right'
+			,labelWidth: 8
+			,labelSeparator: ''
+			,listeners: {
+				change: function( checkbox, value ) {
+					// Set or remove the mode
+					console.log( "called" )
+					this._config.parent.client.emit(
+						'MODE'
+						,{
+							target: this._config.channel
+							,modes: [ ( value === true ? "+" : "-" ) + mode ]
+						}
+					);
+				}.bind( this )
+			}
+		} );
+	}
+
+	// Create checkboxes
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t" ];
+	var modeCheckboxDockItems = [];
+	this.modeCheckboxes = {};
+	for ( var i = 0; i < modes.length; i++ ) {
+		this.modeCheckboxes[modes[i]] = createModeCheckbox.bind( this )( modes[i] );
+		modeCheckboxDockItems.push( this.modeCheckboxes[modes[i]] );
+	}
+
 	// Prepare the text window
 	this.textPanel = Ext.create( 'Ext.panel.Panel', {
 		region: 'center'
 		,border: true
 		,frame: false
-		,tbar: [
-			this.topicText
+		,dockedItems: [
+			{
+				xtype: 'toolbar'
+				,dock: 'top'
+				,items: [
+					this.topicText
+				]
+			}
+			,{
+				xtype: 'toolbar'
+				,dock: 'top'
+				,items: modeCheckboxDockItems
+			}
+			
 		]
 		,bodyStyle: {
 			padding: '5px'

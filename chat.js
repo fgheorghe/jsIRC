@@ -448,8 +448,9 @@ ChatJs.prototype.parseCommand = function( text ) {
 			// Construct a mode command
 			if ( parameters.length >= 1 ) {
 				// Target
-				data.nickname = parameters[0];
+				data.target = parameters[0];
 			}
+
 			// Modes
 			if ( parameters.length >= 2 ) {
 				data.modes = parameters.splice( 1 );
@@ -767,6 +768,13 @@ ChatJs.prototype.JOIN = function( data ) {
 			,text: Ext.htmlEncode( data.nickname )
 		} );
 	}
+
+	// Request channel modes
+	this.client.emit( 'MODE',
+		{
+			target: data.channel
+		}
+	);
 
 	// TODO: Handle out of synch 'JOIN' reply (display event in status window, if the channel window doesn't exist)
 }
@@ -1390,6 +1398,62 @@ ChatJs.prototype.RPL_WHOISOPERATOR = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_UMODEIS = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'MODE' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.MODE = function( data ) {
+	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
+		// Get set or remove type of update
+		var value = data.mode[0] === "+";
+
+		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
+
+		// Update window
+		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].setValue( value );
+
+		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].resumeEvents();
+
+		// And notify user
+		this._channelWindows[data.channel].addText( '* ' + Ext.htmlEncode( data.nickname ) + ' sets mode ' + Ext.htmlEncode( data.mode ) + ' ' + Ext.htmlEncode( data.channel ) );
+	}
+}
+
+/**
+ * Method used for handling 'RPL_CHANNELMODEIS' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) );
+
+	// Find the window, and set or unset modes
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t" ];
+	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
+		for ( var i = 0; i < modes.length; i++ ) {
+			this._channelWindows[data.channel].modeCheckboxes[modes[i]].suspendEvents();
+			if ( data.mode.indexOf( modes[i] ) === -1 ) {
+				this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( false );
+			} else {
+				this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( true );
+			}
+			this._channelWindows[data.channel].modeCheckboxes[modes[i]].resumeEvents();
+		}
+	}
+}
+
+/**
+ * Method used for handling 'ERR_UNKNOWNMODE' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_UNKNOWNMODE = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

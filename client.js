@@ -189,6 +189,9 @@ Ext.onReady( function() {
 			,WALLOPS: ChatApplication.WALLOPS
 			,RPL_ISON: ChatApplication.RPL_ISON
 			,RPL_USERHOST: ChatApplication.RPL_USERHOST
+			,RPL_CHANNELMODEIS: ChatApplication.RPL_CHANNELMODEIS
+			,ERR_UNKNOWNMODE: ChatApplication.ERR_UNKNOWNMODE
+			,MODE: ChatApplication.MODE
 		}
 	} );
 
