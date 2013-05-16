@@ -188,6 +188,7 @@ Ext.onReady( function() {
 			,ERR_USERSDISABLED: ChatApplication.ERR_USERSDISABLED
 			,WALLOPS: ChatApplication.WALLOPS
 			,RPL_ISON: ChatApplication.RPL_ISON
+			,RPL_USERHOST: ChatApplication.RPL_USERHOST
 		}
 	} );
 

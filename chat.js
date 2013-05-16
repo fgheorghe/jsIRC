@@ -296,6 +296,17 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "userhost":
+			// Construct a userhost command
+			if ( parameters.length >= 1 ) {
+				// Channel list
+				var nicknames = text.split( " " ).splice( 1 );
+				data.nicknames = nicknames;
+			}
+			
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "join":
 			// TODO: Properly handle whitespace!
 			// Construct a join command
@@ -1106,6 +1117,18 @@ ChatJs.prototype.RPL_YOURHOST = function( data ) {
 ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_USERHOST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_USERHOST = function( data ) {
+	// Add text to window
+	for ( var i = 0; i < data.nicknames.length; i++ ) {
+		this.addText( '* USERHOST: ' + Ext.htmlEncode( data.nicknames[i].nickname ) + "=" + Ext.htmlEncode( data.nicknames[i].user ) + "@" + Ext.htmlEncode( data.nicknames[i].host ) );
+	}
 }
 
 /**

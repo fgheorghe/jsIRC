@@ -309,6 +309,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			,ISON: {
 				RPL_ISON: [ 303, ":*1<nick> *( \" \" <nick> )" ]
 			}
+			,USERHOST: {
+				RPL_USERHOST: [ 302, ":*1<reply> *( \" \" <reply> )" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -2200,6 +2203,47 @@ IRCProtocol.ClientProtocol.prototype.WALLOPS = function( data, socket ) {
 }
 
 /**
+ * Client USERHOST command.
+ * @param {Object} data Data object, with the required 'nicknames' array key. As per RFC, only first 5 nicknames will be processed.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.USERHOST = function( data, socket ) {
+	// Validate parameters
+	if ( typeof data.nicknames === "undefined" || data.nicknames.length === 0 ) {
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	var nicknames = [];
+	for ( var i = 0; i < data.nicknames.length && i < 5; i++ ) {
+		// Find client socket
+		var nicknamePosition = this._lcNicknames.indexOf( data.nicknames[i].toLowerCase() );
+		if ( nicknamePosition !== -1 ) {
+			var clientSocket = this._clientSockets[ nicknamePosition ];
+			nicknames.push(
+				{
+					nickname: clientSocket.Client.getNickname()
+					,user: clientSocket.Client.getUser()
+					,host: clientSocket.Client.getHost()
+				}
+			);
+		}
+	}
+
+	// Emit a 'RPL_USERHOST' event
+	socket.emit( 'RPL_USERHOST', {
+		nicknames: nicknames
+		,server: IRCProtocol.ServerName
+	} );
+}
+
+/**
  * Client ISON command.
  * @param {Object} data Data object, with the required 'nicknames' array key.
  * @param {Object} socket Socket object.
@@ -2230,6 +2274,7 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
 		'RPL_ISON'
 		,{
 			nicknames: nicknames
+			,server: IRCProtocol.ServerName
 		}
 	);
 }
@@ -2354,6 +2399,7 @@ ChatServer = new Server( {
 		,USERS: IRCClient.USERS
 		,WALLOPS: IRCClient.WALLOPS
 		,ISON: IRCClient.ISON
+		,USERHOST: IRCClient.USERHOST
 	}
 	// New connection handler
 	,connection: IRCClient.connection
