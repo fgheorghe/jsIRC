@@ -185,6 +185,7 @@ Ext.onReady( function() {
 			,RPL_ENDOFNAMES: ChatApplication.RPL_ENDOFNAMES
 			,RPL_ENDOFWHO: ChatApplication.RPL_ENDOFWHO
 			,RPL_WHOREPLY: ChatApplication.RPL_WHOREPLY
+			,ERR_USERSDISABLED: ChatApplication.ERR_USERSDISABLED
 		}
 	} );
 

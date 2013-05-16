@@ -298,6 +298,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				RPL_WHOREPLY: [ 352, "" ]
 				,RPL_ENDOFWHO: [ 315, "End of WHO list" ]
 			}
+			,USERS: {
+				// Not implemented
+				ERR_USERSDISABLED: [ 446, "USERS has been disabled" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -2129,6 +2133,22 @@ IRCProtocol.ClientProtocol.prototype.NAMES = function( data, socket ) {
 }
 
 /**
+ * Client USERS command.
+ * @param {Object} data Data object.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.USERS = function( data, socket ) {
+	// NOTE: This command is not implemented, thus return a ERR_USERSDISABLED event
+	this.emitIRCError(
+		socket
+		,'ERR_USERSDISABLED'
+		,IRCProtocol.NumericReplyConstants.Client.USERS.ERR_USERSDISABLED[0]
+		,IRCProtocol.NumericReplyConstants.Client.USERS.ERR_USERSDISABLED[1]
+	);
+}
+
+/**
  * Client WHO command.
  * @param {Object} data Data object, with the optional 'channels' and 'target' keys.
  * @param {Object} socket Socket object.
@@ -2245,6 +2265,7 @@ ChatServer = new Server( {
 		,QUIT: IRCClient.QUIT
 		,NAMES: IRCClient.NAMES
 		,WHO: IRCClient.WHO
+		,USERS: IRCClient.USERS
 	}
 	// New connection handler
 	,connection: IRCClient.connection

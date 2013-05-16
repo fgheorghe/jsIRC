@@ -280,6 +280,11 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "users":
+			// NOTE: Command is disabled
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "join":
 			// TODO: Properly handle whitespace!
 			// Construct a join command
@@ -769,6 +774,16 @@ ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_NOPRIVILEGES = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_USERSDISABLED' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_USERSDISABLED = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
