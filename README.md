@@ -29,6 +29,10 @@ Supported Client to Server commands:
 - TIME
 - VERSION
 - WHO
+- USERS (Not implemented, returns ERR_USERSDISABLED as per RFC2812)
+- WALLOPS (As per RFC2812, this command can be abused. Limited access to IRC Operators)
+- ISON
+- USERHOST
 
 Supported Server to Client commands:
 
@@ -90,3 +94,7 @@ Supported Server to Client commands:
 - RPL_VERSION
 - RPL_WHOREPLY
 - RPL_ENDOFWHO
+- ERR_USERSDISABLED
+- WALLOPS
+- RPL_ISON
+- RPL_USERHOST
