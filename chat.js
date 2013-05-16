@@ -285,6 +285,17 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "ison":
+			// Construct an ison command
+			if ( parameters.length >= 1 ) {
+				// Channel list
+				var nicknames = text.split( " " ).splice( 1 );
+				data.nicknames = nicknames;
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "join":
 			// TODO: Properly handle whitespace!
 			// Construct a join command
@@ -1095,6 +1106,16 @@ ChatJs.prototype.RPL_YOURHOST = function( data ) {
 ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ISON' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ISON = function( data ) {
+	// Add text to window
+	this.addText( '* ISON: ' + Ext.htmlEncode( data.nicknames.join( " " ) ) );
 }
 
 /**

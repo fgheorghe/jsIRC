@@ -306,6 +306,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				// NOTE: Only allow operators to issue this command
 				// ERR_NOPRIVILEGES
 			}
+			,ISON: {
+				RPL_ISON: [ 303, ":*1<nick> *( \" \" <nick> )" ]
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -2197,6 +2200,41 @@ IRCProtocol.ClientProtocol.prototype.WALLOPS = function( data, socket ) {
 }
 
 /**
+ * Client ISON command.
+ * @param {Object} data Data object, with the required 'nicknames' array key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
+	// Check parameters
+	if ( typeof data.nicknames === "undefined" || data.nicknames.length === 0 ) {
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Send a RPL_ISON event
+	var nicknames = [];
+	for ( var i = 0; i < data.nicknames.length; i++ ) {
+		if ( this._lcNicknames.indexOf( data.nicknames[i].toLowerCase() ) !== -1 ) {
+			nicknames.push( data.nicknames[i] );
+		}
+	}
+	console.log( nicknames );
+	// Return list of nicknames, even if empty
+	socket.emit(
+		'RPL_ISON'
+		,{
+			nicknames: nicknames
+		}
+	);
+}
+
+/**
  * Client WHO command.
  * @param {Object} data Data object, with the optional 'channels' and 'target' keys.
  * @param {Object} socket Socket object.
@@ -2315,6 +2353,7 @@ ChatServer = new Server( {
 		,WHO: IRCClient.WHO
 		,USERS: IRCClient.USERS
 		,WALLOPS: IRCClient.WALLOPS
+		,ISON: IRCClient.ISON
 	}
 	// New connection handler
 	,connection: IRCClient.connection
