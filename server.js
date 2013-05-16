@@ -176,6 +176,32 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 		,O: false // Local operator
 		,s: false // Server notices
 	}
+	,ChannelModes: [
+		"a" // anonymous
+		,"i" // invite-only 
+		,"m" // moderated
+		,"n" // no messages to channel from clients on the outside
+		,"q" // quiet
+		,"p" // private
+		,"s" // secret
+		,"r" // server reop
+		,"t" // topic settable by channel operator only
+		,"k" // key
+		,"l" // limit
+	]
+	,ChannelModeDefaults: {
+		a: false
+		,i: false
+		,m: false
+		,n: false
+		,q: false
+		,p: false
+		,s: false
+		,r: false
+		,t: false
+		,k: ""
+		,l: 0
+	}
 	/**
 	 * Method used for initialising a requested protocol
 	 * @param {String} type Type of protocol. Allowed values: 'client' or 'server' (not implemented).
@@ -282,9 +308,24 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,ERR_CANTKILLSERVER: [ 483, "You can't kill a server!" ]
 			}
 			,MODE: {
+				// User modes
 				ERR_UMODEUNKNOWNFLAG: [ 501, "Unknown MODE flag" ]
 				,ERR_USERSDONTMATCH: [ 502, "Cannot change mode for other users" ]
 				,RPL_UMODEIS: [ 221, "<user mode string>" ]
+				// Channel modes
+				,ERR_KEYSET: [ 467, "Channel key already set" ]
+				,ERR_NOCHANMODES: [ 471, "Cannot join channel (+l)" ]
+				,ERR_CHANOPRIVSNEEDED: [ 482, "You're not channel operator" ]
+				,ERR_USERNOTINCHANNEL: [ 441, "<nick> <channel> :They aren't on that channel" ]
+				,ERR_UNKNOWNMODE: [ 472, "<char> :is unknown mode char to me for <channel>" ]
+				,RPL_CHANNELMODEIS: [ 324, "<channel> <mode> <mode params>" ]
+				,RPL_BANLIST: [ 367, "<channel> <banmask>" ]
+				,RPL_ENDOFBANLIST: [ 368, "End of channel ban list" ]
+				,RPL_EXCEPTLIST: [ 348, "<channel> <exceptionmask>" ]
+				,RPL_ENDOFEXCEPTLIST: [ 349, "<channel> :End of channel exception list" ]
+				,RPL_INVITELIST: [ 346, "<channel> <invitemask>" ]
+				,RPL_ENDOFINVITELIST: [ 347, "<channel> :End of channel invite list" ]
+				,RPL_UNIQOPIS: [ 325, "<channel> <nickname>" ]
 			}
 			,AWAY: {
 				RPL_NOWAWAY: [ 306, "You have been marked as being away" ]
