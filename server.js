@@ -527,6 +527,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			return this;
 		}
+		// As per RFC2811 http://tools.ietf.org/html/rfc2811#section-4
 		,Channel: function( name ) {
 			// Channel name
 			this._name = name;
