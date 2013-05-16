@@ -321,6 +321,9 @@ ChatJs.prototype.parseCommand = function( text ) {
 			if ( parameters.length >= 2 ) {
 				// Target
 				data.topic = text.slice( text.indexOf( data.channel ) + data.channel.length + 1 );
+			} else {
+				// Set an empty topic, used for removing it
+				data.topic = "";
 			}
 			
 			console.log( data );
@@ -818,6 +821,10 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_NOTOPIC = function( data ) {
+	// Find channel window, and set to an empty string
+	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
+		this._channelWindows[data.channel].topicText.setValue( "" );
+	}
 	console.log( data );
 }
 
