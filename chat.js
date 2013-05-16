@@ -337,10 +337,20 @@ ChatJs.prototype.parseCommand = function( text ) {
 		case "away":
 			// Construct an away command
 			if ( parameters.length >= 1 ) {
-				// Target
+				// Text
 				data.text = text.slice( text.indexOf( command ) + command.length + 1 );
 			}
 
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
+		case "wallops":
+			// Construct a wallops command
+			if ( parameters.length >= 1 ) {
+				// Text
+				data.text = text.slice( text.indexOf( command ) + command.length + 1 );
+			}
+			
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
@@ -978,6 +988,16 @@ ChatJs.prototype.RPL_WHOISUSER = function( data ) {
 ChatJs.prototype.RPL_WHOISSERVER = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.server ) + ' :' + Ext.htmlEncode( data.serverinfo ) );
+}
+
+/**
+ * Method used for handling 'WALLOPS' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.WALLOPS = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.server ) + ' :' + Ext.htmlEncode( data.text ) );
 }
 
 /**

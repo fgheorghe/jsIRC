@@ -302,6 +302,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				// Not implemented
 				ERR_USERSDISABLED: [ 446, "USERS has been disabled" ]
 			}
+			,WALLOPS: {
+				// NOTE: Only allow operators to issue this command
+				// ERR_NOPRIVILEGES
+			}
 		}
 		// TODO: Reorder
 		,CommonNumericReplies: {
@@ -2149,6 +2153,50 @@ IRCProtocol.ClientProtocol.prototype.USERS = function( data, socket ) {
 }
 
 /**
+ * Client WALLOPS command.
+ * @param {Object} data Data object, with the required 'text' parameter.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.WALLOPS = function( data, socket ) {
+	// Validate required properties
+	if ( typeof data.text === "undefined" || S( data.text ).trim().s === "" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Check if the user is an IRC operator
+	if ( !socket.Client.getMode( 'o' ) && !socket.Client.getMode( 'O' ) ) {
+		// ERR_NOPRIVILEGES
+		this.emitIRCError(
+			socket
+			,'ERR_NOPRIVILEGES'
+			,IRCProtocol.NumericReplyConstants.Client.KILL.ERR_NOPRIVILEGES[0]
+			,IRCProtocol.NumericReplyConstants.Client.KILL.ERR_NOPRIVILEGES[1]
+		);
+	} else {
+		// Send to all users with the 'w' mode enabled
+		for ( var i = 0; i < this._clientSockets.length; i++ ) {
+			if ( this._clientSockets[i].Client.welcomeSent() && this._clientSockets[i].Client.getMode( 'w' ) ) {
+				this._clientSockets[i].emit(
+					'WALLOPS'
+					,{
+						text: data.text
+						,server: IRCProtocol.ServerName
+					}
+				);
+			}
+		}
+	}
+}
+
+/**
  * Client WHO command.
  * @param {Object} data Data object, with the optional 'channels' and 'target' keys.
  * @param {Object} socket Socket object.
@@ -2266,6 +2314,7 @@ ChatServer = new Server( {
 		,NAMES: IRCClient.NAMES
 		,WHO: IRCClient.WHO
 		,USERS: IRCClient.USERS
+		,WALLOPS: IRCClient.WALLOPS
 	}
 	// New connection handler
 	,connection: IRCClient.connection
