@@ -555,6 +555,22 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "invite":
+			// Nickname
+			if ( parameters.length >= 1 ) {
+				// Nickname
+				data.nickname = parameters[0];
+			}
+
+			// Channel
+			if ( parameters.length >= 2 ) {
+				// Nickname
+				data.channel = parameters[1];
+			}
+			
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		default:
 			// TODO:
 			break;
@@ -1001,6 +1017,66 @@ ChatJs.prototype.RPL_WHOISIDLE = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_NOTONCHANNEL' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_NOTONCHANNEL = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_INVITELIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_INVITELIST = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFINVITELIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFINVITELIST = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'INVITE' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.INVITE = function( data ) {
+	// Add text to window
+	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.user ) + '@' + Ext.htmlEncode( data.host ) + ' invites you to join '  + Ext.htmlEncode( data.channel ) );
+}
+
+/**
+ * Method used for handling 'RPL_INVITING' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_INVITING = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_USERONCHANNEL' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_USERONCHANNEL = function( data ) {
+	// Add text to window
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'RPL_WHOISUSER' event.
  * @param {Object} data Data object.
  * @function
@@ -1398,6 +1474,16 @@ ChatJs.prototype.RPL_WHOISOPERATOR = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_UMODEIS = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_INVITEONLYCHAN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_INVITEONLYCHAN = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

@@ -255,6 +255,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				ERR_NOSUCHCHANNEL: [ 403, "No such channel" ]
 				,RPL_TOPIC: [ 332, "<channel> :<topic>" ]
 				,RPL_NOTOPIC: [ 331, "<channel> :No topic is set" ]
+				,ERR_INVITEONLYCHAN: [ 473, " :Cannot join channel (+i)" ]
+				,ERR_CHANNELISFULL: [ 471, "Cannot join channel (+l)" ]
+				,ERR_BADCHANNELKEY: [ 475, "Cannot join channel (+k)" ]
 			}
 			,PRIVMSG: {
 				ERR_NORECIPIENT: [ 411, "No recipient given (<command>)" ]
@@ -325,7 +328,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,RPL_EXCEPTLIST: [ 348, "<channel> <exceptionmask>" ]
 				,RPL_ENDOFEXCEPTLIST: [ 349, "<channel> :End of channel exception list" ]
 				,RPL_INVITELIST: [ 346, "<channel> <invitemask>" ]
-				,RPL_ENDOFINVITELIST: [ 347, "<channel> :End of channel invite list" ]
+				,RPL_ENDOFINVITELIST: [ 347, ":End of channel invite list" ]
 				,RPL_UNIQOPIS: [ 325, "<channel> <nickname>" ]
 			}
 			,AWAY: {
@@ -353,6 +356,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 			,USERHOST: {
 				RPL_USERHOST: [ 302, ":*1<reply> *( \" \" <reply> )" ]
+			}
+			,INVITE: {
+				ERR_USERONCHANNEL: [ 443, "is already on channel" ]
+				,RPL_INVITING: [ 341, "<channel> <nick>" ]
 			}
 		}
 		// TODO: Reorder
@@ -402,7 +409,31 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// Away text
 			this._awayText = "";
 
+			// Channels the user is invited on (used for removing from these channels' invite lists, on quit, or nickname change)
+			this._lcInviteChannels = [];
+
 			this._welcome_reply = false; // Did we send the 'RPL_WELCOME' reply?
+
+			// Add channel to user invite list
+			this.addInvite = function( channel ) {
+				var channelPosition = this._lcInviteChannels.indexOf( channel.toLowerCase() );
+				if ( channelPosition === -1 ) {
+					this._lcInviteChannels.push( channel.toLowerCase() );
+				}
+			}
+
+			// Remove channel from invite list
+			this.removeInvite = function( channel ) {
+				var channelPosition = this._lcInviteChannels.indexOf( channel.toLowerCase() );
+				if ( channelPosition !== -1 ) {
+					this._lcInviteChannels.splice( channelPosition, 1 );
+				}
+			}
+
+			// Get list of channel invites
+			this.getInvites = function() {
+				return this._lcInviteChannels;
+			}
 
 			// Get quit message
 			this.getQuitMessage = function() {
@@ -518,6 +549,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 
 			// Method used for getting the user channels
+			// TODO: Exclude private and secret channels!
 			this.getChannels = function() {
 				return this._channels;
 			}
@@ -581,6 +613,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// List of sockets
 			this._sockets = [];
 
+			// List of invited users
+			this._inviteNicknames = []; // Case insensitive
+			this._lcInviteNicknames = []; // Lower case
+
 			// Topic
 			this._topic = "";
 
@@ -591,6 +627,34 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				this._modes[key] = IRCProtocol.ChannelModeDefaults[key];
 			}
 
+			// Add user to invite list
+			this.addInvite = function( nickname ) {
+				var nicknamePosition = this._lcInviteNicknames.indexOf( nickname.toLowerCase() );
+				if ( nicknamePosition === -1 ) {
+					this._inviteNicknames.push( nickname );
+					this._lcInviteNicknames.push( nickname.toLowerCase() );
+				}
+			}
+
+			// Check if user is invited to this channel
+			this.isInvited = function( nickname ) {
+				return this._lcInviteNicknames.indexOf( nickname.toLowerCase() ) !== -1 ? true : false;
+			}
+
+			// Remove this user from the invite list
+			this.removeInvite = function( nickname ) {
+				var nicknamePosition = this._lcInviteNicknames.indexOf( nickname.toLowerCase() );
+				if ( nicknamePosition !== 1 ) {
+					this._inviteNicknames.splice( nicknamePosition, 1 );
+					this._lcInviteNicknames.splice( nicknamePosition, 1 );
+				}
+			}
+
+			// Get invites
+			this.getInvites = function() {
+				return this._inviteNicknames;
+			}
+
 			// Method used for fetching channel mode of specified type
 			this.getMode = function( mode ) {
 				return this._modes[mode];
@@ -599,7 +663,6 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// Method used for setting channel mode of specified type
 			this.setMode = function( socket, mode, value ) {
 				// Notify others of this change
-				console.log( "boardcars" );
 				this._broadcastEvent( 'MODE'
 					,{
 						channel: this.getName()
@@ -956,6 +1019,17 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 		}
 	}
 
+	// Remove user from channel invite lists
+	var invites = socket.Client.getInvites();
+	for ( var i = 0; i < invites.length; i++ ) {
+		var channelPosition = this._lcChannelNames.indexOf( invites[i].toLowerCase() )
+			,channel;
+		if ( channelPosition !== -1 ) {
+			channel = this._channels[channelPosition];
+			channel.removeInvite( socket.Client.getNickname() );
+		}
+	}
+
 	// Update statistics
 	if ( socket.Client.isRegistered() ) {
 		// Decrease statistics number, for known clients
@@ -967,14 +1041,9 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 
 	// Find socket position, by id
 	var socketPosition = this._clientSocketIds.indexOf( socket.id );
-	// Find nickname position, if the user registered
-	if ( socket.Client.getNickname() !== "" ) {
-		var nicknamePosition = this._lcNicknames.indexOf( socket.Client.getNickname().toLowerCase() );
 
-		// Remove nickname from list
-		this._lcNicknames.splice( nicknamePosition, 1 );
-	}
-
+	// Remove nickname from list
+	this._lcNicknames.splice( socketPosition, 1 );
 	// Remove from socket array
 	this._clientSockets.splice( socketPosition, 1 );
 	// Remove id from socket id array
@@ -1039,7 +1108,6 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 
 	// Set the client's nickname
 	socket.Client.setNickname( nickname );
-
 	// TODO: Optimise this check (redundant)...
 	// If the user has just finished sending the USER and NICK commands, but the RPL_WELCOME has not been sent, do it now...
 	if ( socket.Client.isRegistered() && !socket.Client.welcomeSent() ) {
@@ -1059,7 +1127,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 		// Store in the list of nicknames, at the position of the current socket
 		var socketPosition = this._clientSocketIds.indexOf( socket.id );
 		this._lcNicknames[socketPosition] = nickname.toLowerCase();
-
+		
 		return;
 	} else if ( socket.Client.isRegistered() && socket.Client.welcomeSent() ) {
 		// Replace nickname at position of old nickname, in the _lcNicknames array
@@ -1086,6 +1154,22 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 			}
 
 			users = users.concat( users, channel.getUsers() );
+		}
+
+		// Remove from channel invite lists (if this really is a new nickname)
+		if ( initialNickname.toLowerCase() !== nickname.toLowerCase() ) {
+			var invites = socket.Client.getInvites();
+			for ( var i = 0; i < invites.length; i++ ) {
+				var channelPosition = this._lcChannelNames.indexOf( invites[i].toLowerCase() )
+					,channel;
+				if ( channelPosition !== -1 ) {
+					channel = this._channels[channelPosition];
+					channel.removeInvite( socket.Client.getNickname() );
+				}
+
+				// Remove channel invite from user as well
+				socket.Client.removeInvite( invites[i] );
+			}
 		}
 
 		// If the user is on any channels, notify others of the nickname change
@@ -1362,6 +1446,18 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 
 			// Update the number of channels
 			this._stats.channels++;
+		}
+
+		// ERR_INVITEONLYCHAN if invite only, and user is not on the channel invite list
+		if ( channel.getMode( 'i' ) && !channel.isInvited( socket.Client.getNickname() ) ) {
+			// ERR_INVITEONLYCHAN
+			this.emitIRCError(
+				socket
+				,'ERR_INVITEONLYCHAN'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[0]
+				,channel.getName() + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[1]
+			);
+			continue;
 		}
 
 		// Add user to channel (if the user 'may' join this channel)
@@ -1806,6 +1902,11 @@ IRCProtocol.ClientProtocol.prototype.LIST = function( data, socket ) {
 	var users = [];
 
 	for ( var i = 0; i < this._channels.length; i++ ) {
+		// Do not list these channels
+		if ( this._channels[i].getMode( 's' ) || this._channels[i].getMode( 'p' ) ) {
+			continue;
+		}
+
 		channels.push( this._channels[i].getName() );
 		topics.push( this._channels[i].getTopic() );
 		users.push( this._channels[i].getUsers().length );
@@ -2157,8 +2258,7 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 						,params: []
 					}
 				);
-				console.log( "h3ere" );
-				
+
 				return;
 			} else {
 				// Begin setting modes
@@ -2183,7 +2283,10 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 					// TODO: Add special modes
 					// TODO: Verify owner 'permissions' to change such modes
 					// Set/remove modes
-					for ( var j = 1; j < data.modes[i].length; j++ ) {
+					for ( var j = 0; j < data.modes[i].length; j++ ) {
+						if ( data.modes[i][j] === "+" || data.modes[i][j] === "-" ) {
+							continue;
+						}
 						// If a mode is 'unknown', return an ERR_UNKNOWNMODE error...once per query
 						if ( IRCProtocol.ChannelModes.indexOf( data.modes[i][j] ) === -1 ) {
 							// ERR_UNKNOWNMODE
@@ -2199,6 +2302,29 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 						if ( query === false ) {
 							// Set/remove modes
 							channel.setMode( socket, data.modes[i][j], set );
+						} else {
+							switch ( data.modes[i][j] ) {
+								case "i":
+									// RPL_INVITELIST
+									this.emitIRCError(
+										socket
+										,'RPL_INVITELIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_INVITELIST[0]
+										,data.target + " " + channel.getInvites().join( " " )
+									);
+
+									// RPL_ENDOFINVITELIST
+									this.emitIRCError(
+										socket
+										,'RPL_ENDOFINVITELIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[0]
+										,data.target + " " + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[1]
+									);
+									break;
+								default:
+									// Do nothing
+									break;
+							}
 						}
 					}
 				}
@@ -2448,6 +2574,109 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
 }
 
 /**
+ * Client INVITE command.
+ * @param {Object} data Data object, with the required 'nickname' and 'channel' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
+	// Validate parameters
+	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" || typeof data.channel === "undefined" || S( data.channel ).trim().s === "" ) {
+		// Issue an ERR_NONICKNAMEGIVEN error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// Check if nickname exists
+	var nicknamePosition = this._lcNicknames.indexOf( data.nickname.toLowerCase() )
+		,clientSocket;
+	if ( nicknamePosition === -1 ) {
+		this.emitIRCError(
+			socket
+			,'ERR_NOSUCHNICK'
+			,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+			,data.nickname + " :No such nick/channel"
+		);
+		return;
+	}
+	clientSocket = this._clientSockets[ nicknamePosition ];
+
+	// Check if channel exists
+	var channelPosition = this._lcChannelNames.indexOf( data.channel.toLowerCase() )
+		,channel;
+	if ( channelPosition !== -1 ) {
+		channel = this._channels[ channelPosition ];
+		// Verify that the inviting user is on that channel
+		if ( channel._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() ) === -1 ) {
+			// If not, issue an ERR_NOTONCHANNEL
+			this.emitIRCError(
+				socket
+				,'ERR_NOTONCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.TOPIC.ERR_NOTONCHANNEL[0]
+				,socket.Client.getNickname() + " :" + IRCProtocol.NumericReplyConstants.Client.TOPIC.ERR_NOTONCHANNEL[1]
+			);
+			return;
+		}
+
+		// Verify that the target user is not already on that channel
+		if ( channel._lcUsers.indexOf( data.nickname.toLowerCase() ) !== -1 ) {
+			// If so, issue an ERR_USERONCHANNEL
+			this.emitIRCError(
+				socket
+				,'ERR_USERONCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.INVITE.ERR_USERONCHANNEL[0]
+				,data.nickname + " " + data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.INVITE.ERR_USERONCHANNEL[1]
+			);
+			return;
+		}
+
+		// TODO: Make sure that only channel operators make an invite, if +i
+	}
+
+	// RPL_AWAY
+	if ( clientSocket.Client.getMode( "a" ) ) {
+		socket.emit(
+			'RPL_AWAY'
+			,{
+				nick: data.nickname
+				,text: clientSocket.Client.getAway()
+			}
+		);
+	}
+
+	// Notify this user that we are inviting the target user
+	this.emitIRCError(
+		socket
+		,'RPL_INVITING'
+		,IRCProtocol.NumericReplyConstants.Client.INVITE.RPL_INVITING[0]
+		,data.channel + " " + data.nickname
+	);
+
+	// Notify the target user of an invite
+	clientSocket.emit(
+		'INVITE'
+		,{
+			channel: data.channel
+			,user: socket.Client.getUser()
+			,host: socket.Client.getHost()
+			,nick: socket.Client.getNickname()
+		}
+	);
+
+	// Add user to channel invite list
+	if ( channelPosition !== -1 ) {
+		channel.addInvite( data.nickname );
+	}
+	// Add invite to user
+	clientSocket.Client.addInvite( data.channel );
+}
+
+/**
  * Client WHO command.
  * @param {Object} data Data object, with the optional 'channels' and 'target' keys.
  * @param {Object} socket Socket object.
@@ -2568,6 +2797,7 @@ ChatServer = new Server( {
 		,WALLOPS: IRCClient.WALLOPS
 		,ISON: IRCClient.ISON
 		,USERHOST: IRCClient.USERHOST
+		,INVITE: IRCClient.INVITE
 	}
 	// New connection handler
 	,connection: IRCClient.connection
