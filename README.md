@@ -33,6 +33,7 @@ Supported Client to Server commands:
 - WALLOPS (As per RFC2812, this command can be abused. Limited access to IRC Operators)
 - ISON
 - USERHOST
+- INVITE
 
 Supported Server to Client commands:
 
@@ -98,3 +99,7 @@ Supported Server to Client commands:
 - WALLOPS
 - RPL_ISON
 - RPL_USERHOST
+- INVITE
+- RPL_INVITING
+- RPL_INVITELIST
+- RPL_ENDOFINVITELIST
