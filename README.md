@@ -105,4 +105,3 @@ Supported Server to Client commands:
 - RPL_ENDOFINVITELIST
 - ERR_CHANNELISFULL
 - ERR_BADCHANNELKEY
-- 
