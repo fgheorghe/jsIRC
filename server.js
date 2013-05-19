@@ -2399,7 +2399,7 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 
 					// Silently ignore 'a' modes, for '#' channels
 					// TODO: Only allow channel creators ('O') to make this change on ! channels (set, while any other operator may unset it)
-					if ( channel.getName()[0] === "#" ) {
+					if ( data.modes[j] === "a" && ( channel.getName()[0] === "#" || channel.getName()[0] === "+" ) ) {
 						continue;
 					}
 					// If a mode is 'unknown', return an ERR_UNKNOWNMODE error...once per query
