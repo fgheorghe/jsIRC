@@ -1391,6 +1391,7 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 		);
 
 		// RPL_WHOISCHANNELS
+		// TODO: Hide private, secret and anonymous channels
 		if ( clientSocket.Client.getChannels().length !== 0 ) {
 			socket.emit(
 				'RPL_WHOISCHANNELS'
@@ -2393,6 +2394,12 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 				var param = 0;
 				for ( var j = 0; j < data.modes.length; j++ ) {
 					if ( data.modes[j] === "+" || data.modes[j] === "-" ) {
+						continue;
+					}
+
+					// Silently ignore 'a' modes, for '#' channels
+					// TODO: Only allow channel creators ('O') to make this change on ! channels (set, while any other operator may unset it)
+					if ( channel.getName()[0] === "#" ) {
 						continue;
 					}
 					// If a mode is 'unknown', return an ERR_UNKNOWNMODE error...once per query
