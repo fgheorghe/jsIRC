@@ -199,6 +199,7 @@ Ext.onReady( function() {
 			,RPL_INVITING: ChatApplication.RPL_INVITING
 			,RPL_INVITELIST: ChatApplication.RPL_INVITELIST
 			,RPL_ENDOFINVITELIST: ChatApplication.RPL_ENDOFINVITELIST
+			,ERR_CHANNELISFULL: ChatApplication.ERR_CHANNELISFULL
 		}
 	} );
 

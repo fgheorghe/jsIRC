@@ -1505,7 +1505,19 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				socket
 				,'ERR_INVITEONLYCHAN'
 				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[0]
-				,channel.getName() + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[1]
+				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[1]
+			);
+			continue;
+		}
+
+		// ERR_CHANNELISFULL if +l and limit has been reached
+		if ( channel.getMode( 'l' ) && channel.getLimit() !== 0 && channel.getUsers().length == channel.getLimit() ) {
+			// ERR_CHANNELISFULL
+			this.emitIRCError(
+				socket
+				,'ERR_CHANNELISFULL'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[0]
+				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[1]
 			);
 			continue;
 		}
@@ -2295,17 +2307,33 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 			// Check if the user is only querying channel modes
 			// NOTE: Return 'simple' channel modes, as exception, invite and ban are returned by their own events
 			if ( typeof data.modes === "undefined" || data.modes.length === 0 ) {
+				var channelModes = channel.getSetModesString();
+				var params = [];
+
+				// Determine params
+				for ( var i = 0; i < channelModes.length; i++ ) {
+					switch ( channelModes[i] ) {
+						case "l":
+							params.push( channel.getLimit() );
+							break;
+						case "k":
+							params.push( channel.getKey() );
+							break;
+						default:
+							// Do nothing
+							break;
+					}
+				}
+
 				// RPL_CHANNELMODEIS
-				// TODO: Add channel name?
 				// TODO: RFC is not clear on this
 				socket.emit(
 					'RPL_CHANNELMODEIS'
 					// Only return set modes
 					,{
-						mode: "+" + channel.getSetModesString()
+						mode: "+" + channelModes
 						,channel: channel.getName()
-						// TODO: Add list
-						,params: []
+						,params: params
 					}
 				);
 
@@ -2350,8 +2378,8 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 						continue;
 					}
 
-					// Ignore if mode is already set
-					if ( set === true && channel.getMode( data.modes[j] ) ) {
+					// Ignore if mode is already set (except limit and key)
+					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" ) {
 						continue;
 					}
 

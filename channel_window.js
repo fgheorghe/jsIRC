@@ -210,27 +210,40 @@ ChannelWindow.prototype.init = function() {
 			,labelSeparator: ''
 			,listeners: {
 				change: function( checkbox, value ) {
-					// Set or remove the mode
-					this._config.parent.client.emit(
-						'MODE'
-						,{
-							target: this._config.channel
-							,modes: [ ( value === true ? "+" : "-" ) + mode ]
-						}
-					);
+					// Handle /mode command
+					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( ( value === true ? "+" : "-" ) + mode ) );
 				}.bind( this )
 			}
 		} );
 	}
 
 	// Create checkboxes
-	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l" ];
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k" ];
 	var modeCheckboxDockItems = [ '->' ];
 	this.modeCheckboxes = {};
 	for ( var i = 0; i < modes.length; i++ ) {
 		this.modeCheckboxes[modes[i]] = createModeCheckbox.bind( this )( modes[i] );
 		modeCheckboxDockItems.push( this.modeCheckboxes[modes[i]] );
 	}
+
+	// Channel limit box
+	this.limitInputBox = Ext.create( 'Ext.form.field.Text', {
+		width: 42
+		,fieldLabel: 'l'
+		,labelWidth: 8
+		,labelSeparator: ''
+		,enableKeyEvents: true
+		,listeners: {
+			keydown: function( field, e, eOpts ) {
+				if ( e.getKey() === 13 ) {
+					// Handle limit change
+					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( parseInt( field.getValue(), 10 ) ? "+l " + parseInt( field.getValue(), 10 ) : "-l" ) );
+				}
+			}.bind( this )
+		}
+	} );
+
+	modeCheckboxDockItems.push( this.limitInputBox );
 
 	// Prepare the text window
 	this.textPanel = Ext.create( 'Ext.panel.Panel', {

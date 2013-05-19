@@ -1503,6 +1503,16 @@ ChatJs.prototype.ERR_INVITEONLYCHAN = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_CHANNELISFULL' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_CHANNELISFULL = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'MODE' event.
  * @param {Object} data Data object.
  * @function
@@ -1512,12 +1522,23 @@ ChatJs.prototype.MODE = function( data ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
 
-		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
+		if ( data.mode[1] !== "l" ) {
+			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
 
-		// Update window
-		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].setValue( value );
+			// Update window
+			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].setValue( value );
 
-		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].resumeEvents();
+			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].resumeEvents();
+
+		} else if ( data.mode[1] === "l" ) {
+			if ( typeof data.parameter !== "undefined" && data.parameter !== 0 ) {
+				value = data.parameter;
+			} else {
+				value = "";
+			}
+
+			this._channelWindows[data.channel].limitInputBox.setValue( value );
+		}
 
 		// And notify user
 		this._channelWindows[data.channel].addText( '* ' + Ext.htmlEncode( data.nickname ) + ' sets mode ' + Ext.htmlEncode( data.mode ) + ( data.parameter ? " " + Ext.htmlEncode( data.parameter ) : "" ) + ' ' + Ext.htmlEncode( data.channel ) );
@@ -1531,19 +1552,30 @@ ChatJs.prototype.MODE = function( data ) {
  */
 ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
 	// Add text to window
-	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) );
+	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) + ( data.params ? " " + Ext.htmlEncode( data.params.join( " " ) ) : "" ) );
 
 	// Find the window, and set or unset modes
 	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l" ];
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
+		var param = 0;
 		for ( var i = 0; i < modes.length; i++ ) {
-			this._channelWindows[data.channel].modeCheckboxes[modes[i]].suspendEvents();
-			if ( data.mode.indexOf( modes[i] ) === -1 ) {
-				this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( false );
-			} else {
-				this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( true );
+			if ( modes[i] !== "l" ) {
+				this._channelWindows[data.channel].modeCheckboxes[modes[i]].suspendEvents();
+				if ( data.mode.indexOf( modes[i] ) === -1 ) {
+					this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( false );
+				} else {
+					this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( true );
+				}
+				this._channelWindows[data.channel].modeCheckboxes[modes[i]].resumeEvents();
+			} else if ( modes[i] === "l" ) {
+				if ( typeof data.params !== "undefined" && typeof data.params[0] !== "undefined" ) {
+					value = data.params[param];
+				} else {
+					value = "";
+				}
+				this._channelWindows[data.channel].limitInputBox.setValue( value );
+				param++;
 			}
-			this._channelWindows[data.channel].modeCheckboxes[modes[i]].resumeEvents();
 		}
 	}
 }
