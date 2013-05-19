@@ -243,7 +243,25 @@ ChannelWindow.prototype.init = function() {
 		}
 	} );
 
+	// Channel key box
+	this.keyInputBox = Ext.create( 'Ext.form.field.Text', {
+		width: 42
+		,fieldLabel: 'k'
+		,labelWidth: 8
+		,labelSeparator: ''
+		,enableKeyEvents: true
+		,listeners: {
+			keydown: function( field, e, eOpts ) {
+				if ( e.getKey() === 13 ) {
+					// Handle limit change
+					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( field.getValue() ? "+k " + field.getValue() : "-k" ) );
+				}
+			}.bind( this )
+		}
+	} );
+
 	modeCheckboxDockItems.push( this.limitInputBox );
+	modeCheckboxDockItems.push( this.keyInputBox );
 
 	// Prepare the text window
 	this.textPanel = Ext.create( 'Ext.panel.Panel', {

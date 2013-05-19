@@ -708,10 +708,19 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 						} else {
 							this.setLimit( 0 );
 						}
-						console.log( data );
 						break;
 					case "k":
-						this.setKey( param );
+						// TODO: DO NOT BROADCAST KEY VALUE TO NON-OPERATORS (as soon as channel operator mode is implemented!)
+						if ( value === true ) {
+							this.setKey( param );
+							if ( param !== "" ) {
+								data.parameter = param;
+							} else {
+								data.mode = "-k";
+							}
+						} else {
+							this.setKey( "" );
+						}
 						break;
 					default:
 						// Do nothing.
@@ -1464,8 +1473,8 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 	}
 
 	// Parse each channel
-	// TODO: Include key data
 	var channelName = "";
+	var param = 0;
 	for ( var i = 0; i < data.channels.length; i++ ) {
 		channelName = data.channels[i];
 
@@ -1510,7 +1519,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			continue;
 		}
 
-		// ERR_CHANNELISFULL if +l and limit has been reached
+		// ERR_CHANNELISFULL if +l and limit has been reached (override if user is invited)
 		if ( channel.getMode( 'l' ) && channel.getLimit() !== 0 && channel.getUsers().length == channel.getLimit() && !channel.isInvited( socket.Client.getNickname() ) ) {
 			// ERR_CHANNELISFULL
 			this.emitIRCError(
@@ -1518,6 +1527,18 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				,'ERR_CHANNELISFULL'
 				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[0]
 				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[1]
+			);
+			continue;
+		}
+
+		// ERR_BADCHANNELKEY if +k and invalid key is sent (override if user is invited)
+		if ( channel.getMode( 'k' ) && !channel.isInvited( socket.Client.getNickname() ) && ( typeof data.keys === "undefined" || typeof data.keys[param] === "undefined" || data.keys[param] !== channel.getKey() ) ) {
+			// ERR_BADCHANNELKEY
+			this.emitIRCError(
+				socket
+				,'ERR_BADCHANNELKEY'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BADCHANNELKEY[0]
+				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BADCHANNELKEY[1]
 			);
 			continue;
 		}
@@ -2413,6 +2434,25 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								}
 								break;
 							case "k":
+								if ( set === true ) {
+									if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
+										// Silently ignore
+										continue;
+									} else {
+										// Check if we are removing the mode
+										if ( data.parameters[param] === "" ) {
+											set = false;
+											channel.setMode( socket, data.modes[j], set, "" );
+										} else {
+											// Set mode
+											channel.setMode( socket, data.modes[j], set, data.parameters[param] );
+										}
+										// Increment param value, as this parameter had already been used
+										param++;
+									}
+								} else {
+									channel.setMode( socket, data.modes[j], set, "" );
+								}
 								break;
 							default:
 								// Set/remove generic modes

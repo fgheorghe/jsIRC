@@ -1513,6 +1513,16 @@ ChatJs.prototype.ERR_CHANNELISFULL = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_BADCHANNELKEY' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_BADCHANNELKEY = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'MODE' event.
  * @param {Object} data Data object.
  * @function
@@ -1522,7 +1532,7 @@ ChatJs.prototype.MODE = function( data ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
 
-		if ( data.mode[1] !== "l" ) {
+		if ( data.mode[1] !== "l" && data.mode[1] !== "k" ) {
 			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
 
 			// Update window
@@ -1538,6 +1548,14 @@ ChatJs.prototype.MODE = function( data ) {
 			}
 
 			this._channelWindows[data.channel].limitInputBox.setValue( value );
+		} else if ( data.mode[1] === "k" ) {
+			if ( typeof data.parameter !== "undefined" && data.parameter !== 0 ) {
+				value = data.parameter;
+			} else {
+				value = "";
+			}
+			
+			this._channelWindows[data.channel].keyInputBox.setValue( value );
 		}
 
 		// And notify user
@@ -1559,7 +1577,7 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		var param = 0;
 		for ( var i = 0; i < modes.length; i++ ) {
-			if ( modes[i] !== "l" ) {
+			if ( modes[i] !== "l" && modes[i] !== "k" ) {
 				this._channelWindows[data.channel].modeCheckboxes[modes[i]].suspendEvents();
 				if ( data.mode.indexOf( modes[i] ) === -1 ) {
 					this._channelWindows[data.channel].modeCheckboxes[modes[i]].setValue( false );
@@ -1574,6 +1592,14 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
 					value = "";
 				}
 				this._channelWindows[data.channel].limitInputBox.setValue( value );
+				param++;
+			} else if ( modes[i] === "k" ) {
+				if ( typeof data.params !== "undefined" && typeof data.params[0] !== "undefined" ) {
+					value = data.params[param];
+				} else {
+					value = "";
+				}
+				this._channelWindows[data.channel].keyInputBox.setValue( value );
 				param++;
 			}
 		}
