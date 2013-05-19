@@ -1511,7 +1511,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 		}
 
 		// ERR_CHANNELISFULL if +l and limit has been reached
-		if ( channel.getMode( 'l' ) && channel.getLimit() !== 0 && channel.getUsers().length == channel.getLimit() ) {
+		if ( channel.getMode( 'l' ) && channel.getLimit() !== 0 && channel.getUsers().length == channel.getLimit() && !channel.isInvited( socket.Client.getNickname() ) ) {
 			// ERR_CHANNELISFULL
 			this.emitIRCError(
 				socket
@@ -2398,14 +2398,14 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 										continue;
 									} else {
 										// Check if we are removing the mode
-										if ( parseInt( data.parameters[param], 10 ) === 0 ) {
+										if ( !parseInt( data.parameters[param], 10 ) ) {
 											set = false;
 											channel.setMode( socket, data.modes[j], set, 0 );
 										} else {
 											// Set mode
 											channel.setMode( socket, data.modes[j], set, parseInt( data.parameters[param], 10 ) );
-											// Increment param value, as this parameter had already been used
 										}
+										// Increment param value, as this parameter had already been used
 										param++;
 									}
 								} else {
