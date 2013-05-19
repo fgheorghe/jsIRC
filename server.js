@@ -854,16 +854,24 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// Method used for broadcasting a PRIVMSG command
 			// TODO: Move channel specific command names to their event names
 			this.PRIVMSG = function( message, socket ) {
+				var data = {
+					target: this.getName()
+					,message: message
+					,nickname: socket.Client.getNickname()
+					,user: socket.Client.getUser()
+					,host: socket.Client.getHost()
+					,servername: IRCProtocol.ServerName
+				};
+
+				// Check if mode is anonymous, if so, set anonymous for nickname, user and host, as per RFC
+				if ( this.getMode( 'a' ) ) {
+					data.nickname = "anonymous";
+					data.user = "anonymous";
+					data.host = "anonymous";
+				}
 				// Notify clients of a message
 				this._broadcastEvent( 'PRIVMSG'
-					,{
-						target: this.getName()
-						,message: message
-						,nickname: socket.Client.getNickname()
-						,user: socket.Client.getUser()
-						,host: socket.Client.getHost()
-						,servername: IRCProtocol.ServerName
-					}
+					,data
 				);
 
 				// Reset idle counter for this client
@@ -1132,7 +1140,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	var nickname = S( data.nickname ).trim().toString();
 
 	// Length or pattern
-	if ( nickname.length > IRCProtocol.OtherConstants.NICK_LENGTH || !IRCProtocol.OtherConstants.NICK_PATTERN.test( nickname ) ) {
+	if ( nickname.toLowerCase() === "anonymous" && nickname.length > IRCProtocol.OtherConstants.NICK_LENGTH || !IRCProtocol.OtherConstants.NICK_PATTERN.test( nickname ) ) {
 		// Issue an ERR_ERRONEUSNICKNAME error.
 		this.emitIRCError(
 			socket
