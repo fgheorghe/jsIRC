@@ -224,7 +224,7 @@ ChannelWindow.prototype.init = function() {
 	}
 
 	// Create checkboxes
-	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t" ];
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l" ];
 	var modeCheckboxDockItems = [ '->' ];
 	this.modeCheckboxes = {};
 	for ( var i = 0; i < modes.length; i++ ) {

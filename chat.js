@@ -451,9 +451,21 @@ ChatJs.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
+			// NOTE: If this is a channel, then the second (and following) set of "parameters" are...mode parameters
+			// NOTE: E.g. mode #channel +lk 100 channelkey
+			// NOTE: As opposed to regular modes, where the user may set/remove modes using the same command
+			var isChannel = this.CHANNEL_NAME_PATTERN.test( data.target );
+
 			// Modes
 			if ( parameters.length >= 2 ) {
-				data.modes = parameters.splice( 1 );
+				if ( !isChannel ) {
+					data.modes = parameters.splice( 1 );
+				} else {
+					data.modes = parameters[1];
+					if ( parameters.length >= 3 ) {
+						data.parameters = parameters.splice( 2 );
+					}
+				}
 			}
 
 			console.log( data );
@@ -1508,7 +1520,7 @@ ChatJs.prototype.MODE = function( data ) {
 		this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].resumeEvents();
 
 		// And notify user
-		this._channelWindows[data.channel].addText( '* ' + Ext.htmlEncode( data.nickname ) + ' sets mode ' + Ext.htmlEncode( data.mode ) + ' ' + Ext.htmlEncode( data.channel ) );
+		this._channelWindows[data.channel].addText( '* ' + Ext.htmlEncode( data.nickname ) + ' sets mode ' + Ext.htmlEncode( data.mode ) + ( data.parameter ? " " + Ext.htmlEncode( data.parameter ) : "" ) + ' ' + Ext.htmlEncode( data.channel ) );
 	}
 }
 
@@ -1522,7 +1534,7 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
 	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) );
 
 	// Find the window, and set or unset modes
-	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t" ];
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l" ];
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		for ( var i = 0; i < modes.length; i++ ) {
 			this._channelWindows[data.channel].modeCheckboxes[modes[i]].suspendEvents();

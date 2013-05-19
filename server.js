@@ -479,7 +479,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 
 			// Method used for setting user mode of specified type
-			this.setMode = function( mode, value ) {
+			this.setMode = function( mode, value, param ) {
 				this._modes[mode] = value;
 			}
 
@@ -617,6 +617,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._inviteNicknames = []; // Case insensitive
 			this._lcInviteNicknames = []; // Lower case
 
+			// Channel key and limit
+			this._key = "";
+			this._limit = 0;
+
 			// Topic
 			this._topic = "";
 
@@ -659,20 +663,66 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this.getMode = function( mode ) {
 				return this._modes[mode];
 			}
+
+			// Set channel key
+			this.setKey = function( key ) {
+				this._key = key; // Unset by passing an empty string
+			}
 			
+			// Get channel key
+			this.getKey = function() {
+				return this._key;
+			}
+
+			// Set channel limit
+			this.setLimit = function( limit ) {
+				this._limit = limit; // Unset by passing a value of 0
+			}
+			
+			// Get channel limit
+			this.getLimit = function() {
+				return this._limit;
+			}
+
 			// Method used for setting channel mode of specified type
-			this.setMode = function( socket, mode, value ) {
+			this.setMode = function( socket, mode, value, param ) {
+				// Broadcast data
+				var data = {
+					channel: this.getName()
+					,nickname: socket.Client.getNickname()
+					,user: socket.Client.getUser()
+					,host: socket.Client.getHost()
+					,mode: ( value === true ? "+" : "-" ) + mode
+				};
+
+				// Handle special modes
+				switch ( mode ) {
+					case "l":
+						if ( value === true ) {
+							this.setLimit( param );
+							if ( param !== 0 ) {
+								data.parameter = param;
+							} else {
+								data.mode = "-l";
+							}
+						} else {
+							this.setLimit( 0 );
+						}
+						console.log( data );
+						break;
+					case "k":
+						this.setKey( param );
+						break;
+					default:
+						// Do nothing.
+						break;
+				}
+
 				// Notify others of this change
 				this._broadcastEvent( 'MODE'
-					,{
-						channel: this.getName()
-						,nickname: socket.Client.getNickname()
-						,user: socket.Client.getUser()
-						,host: socket.Client.getHost()
-						,mode: ( value === true ? "+" : "-" ) + mode
-					}
+					,data
 				);
-
+				
 				this._modes[mode] = value;
 			}
 
@@ -2265,66 +2315,104 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 				// Set modes
 				var set = false; // Setting or removing modes
 				var query = false; // If only querying for special modes
-				for ( var i = 0; i < data.modes.length; i++ ) {
-					// Check if setting
-					if ( data.modes[i][0] === "+" ) {
-						set = true;
-						query = false;
-					} else if ( data.modes[i][0] === "-" ) {
-						query = false;
-						set = false;
-					} else if ( data.modes[i][0] !== "+" && data.modes[i][0] !== "-" ) {
-						set = false;
-						query = true;
+
+				// Check if setting
+				if ( data.modes[0] === "+" ) {
+					set = true;
+					query = false;
+				} else if ( data.modes[0] === "-" ) {
+					query = false;
+					set = false;
+				} else if ( data.modes[0] !== "+" && data.modes[0] !== "-" ) {
+					set = false;
+					query = true;
+				}
+
+				// Set or remove modes
+				// NOTE: Test command for setting all 'basic' modes: /mode #test +aimnqpsrt
+				// TODO: Add special modes
+				// TODO: Verify owner 'permissions' to change such modes
+				// Set/remove modes
+				var param = 0;
+				for ( var j = 0; j < data.modes.length; j++ ) {
+					if ( data.modes[j] === "+" || data.modes[j] === "-" ) {
+						continue;
+					}
+					// If a mode is 'unknown', return an ERR_UNKNOWNMODE error...once per query
+					if ( IRCProtocol.ChannelModes.indexOf( data.modes[j] ) === -1 ) {
+						// ERR_UNKNOWNMODE
+						this.emitIRCError(
+							socket
+							,'ERR_UNKNOWNMODE'
+							,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UNKNOWNMODE[0]
+							,data.modes[j] + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UNKNOWNMODE[1] + data.target
+						);
+						continue;
 					}
 
-					// Set or remove modes
-					// NOTE: Test command for setting all 'basic' modes: /mode #test +aimnqpsrt
-					// TODO: Add special modes
-					// TODO: Verify owner 'permissions' to change such modes
-					// Set/remove modes
-					for ( var j = 0; j < data.modes[i].length; j++ ) {
-						if ( data.modes[i][j] === "+" || data.modes[i][j] === "-" ) {
-							continue;
-						}
-						// If a mode is 'unknown', return an ERR_UNKNOWNMODE error...once per query
-						if ( IRCProtocol.ChannelModes.indexOf( data.modes[i][j] ) === -1 ) {
-							// ERR_UNKNOWNMODE
-							this.emitIRCError(
-								socket
-								,'ERR_UNKNOWNMODE'
-								,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UNKNOWNMODE[0]
-								,data.modes[i][j] + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_UNKNOWNMODE[1] + data.target
-							);
-							continue;
-						}
+					// Ignore if mode is already set
+					if ( set === true && channel.getMode( data.modes[j] ) ) {
+						continue;
+					}
 
-						if ( query === false ) {
-							// Set/remove modes
-							channel.setMode( socket, data.modes[i][j], set );
-						} else {
-							switch ( data.modes[i][j] ) {
-								case "i":
-									// RPL_INVITELIST
-									this.emitIRCError(
-										socket
-										,'RPL_INVITELIST'
-										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_INVITELIST[0]
-										,data.target + " " + channel.getInvites().join( " " )
-									);
+					// Ignore if removing and mode is not set
+					if ( set === false && query === false && !channel.getMode( data.modes[j] ) ) {
+						continue;
+					}
 
-									// RPL_ENDOFINVITELIST
-									this.emitIRCError(
-										socket
-										,'RPL_ENDOFINVITELIST'
-										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[0]
-										,data.target + " " + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[1]
-									);
-									break;
-								default:
-									// Do nothing
-									break;
-							}
+					if ( query === false ) {
+						// Handle special modes
+						switch ( data.modes[j] ) {
+							case "l":
+								if ( set === true ) {
+									if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
+										// Silently ignore
+										continue;
+									} else {
+										// Check if we are removing the mode
+										if ( parseInt( data.parameters[param], 10 ) === 0 ) {
+											set = false;
+											channel.setMode( socket, data.modes[j], set, 0 );
+										} else {
+											// Set mode
+											channel.setMode( socket, data.modes[j], set, parseInt( data.parameters[param], 10 ) );
+											// Increment param value, as this parameter had already been used
+										}
+										param++;
+									}
+								} else {
+									channel.setMode( socket, data.modes[j], set, 0 );
+								}
+								break;
+							case "k":
+								break;
+							default:
+								// Set/remove generic modes
+								channel.setMode( socket, data.modes[j], set );
+								break;
+						}
+					} else {
+						switch ( data.modes[j] ) {
+							case "i":
+								// RPL_INVITELIST
+								this.emitIRCError(
+									socket
+									,'RPL_INVITELIST'
+									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_INVITELIST[0]
+									,data.target + " " + channel.getInvites().join( " " )
+								);
+
+								// RPL_ENDOFINVITELIST
+								this.emitIRCError(
+									socket
+									,'RPL_ENDOFINVITELIST'
+									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[0]
+									,data.target + " " + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[1]
+								);
+								break;
+							default:
+								// Do nothing
+								break;
 						}
 					}
 				}
