@@ -782,6 +782,7 @@ ChatJs.prototype.JOIN = function( data ) {
 		this._channelWindows[data.channel].addClient( {
 			leaf: true
 			,text: Ext.htmlEncode( data.nickname )
+			,icon: 'img/face-smile.png'
 		} );
 	}
 
@@ -880,6 +881,7 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 			names.push( {
 				text: Ext.htmlEncode( data.names[i] )
 				,leaf: true
+				,icon: 'img/face-smile.png'
 			} );
 		}
 		this._channelWindows[data.channel].loadClientList( names );
