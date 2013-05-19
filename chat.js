@@ -1532,7 +1532,7 @@ ChatJs.prototype.MODE = function( data ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
 
-		if ( data.mode[1] !== "l" && data.mode[1] !== "k" ) {
+		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" ) {
 			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
 
 			// Update window
@@ -1556,6 +1556,8 @@ ChatJs.prototype.MODE = function( data ) {
 			}
 			
 			this._channelWindows[data.channel].keyInputBox.setValue( value );
+		} else if ( data.mode[1] === "o" ) {
+			// TODO: Implement
 		}
 
 		// And notify user
@@ -1612,6 +1614,16 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
  * @function
  */
 ChatJs.prototype.ERR_UNKNOWNMODE = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_USERNOTINCHANNEL' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_USERNOTINCHANNEL = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }

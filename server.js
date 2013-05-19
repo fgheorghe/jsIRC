@@ -188,6 +188,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 		,"t" // topic settable by channel operator only
 		,"k" // key
 		,"l" // limit
+		,"o" // Operator
 	]
 	,ChannelModeDefaults: {
 		a: false
@@ -201,6 +202,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 		,t: false
 		,k: ""
 		,l: 0
+		,o: []
 	}
 	/**
 	 * Method used for initialising a requested protocol
@@ -320,7 +322,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,ERR_NOCHANMODES: [ 477, "Channel doesn't support modes" ] // NOTE: For special types of channels
 				,ERR_CHANNELISFULL: [ 471, "Cannot join channel (+l)" ]
 				,ERR_CHANOPRIVSNEEDED: [ 482, "You're not channel operator" ]
-				,ERR_USERNOTINCHANNEL: [ 441, "<nick> <channel> :They aren't on that channel" ]
+				,ERR_USERNOTINCHANNEL: [ 441, " :They aren't on that channel" ]
 				,ERR_UNKNOWNMODE: [ 472, " :is unknown mode char to me for " ]
 				,RPL_CHANNELMODEIS: [ 324, "<channel> <mode> <mode params>" ]
 				,RPL_BANLIST: [ 367, "<channel> <banmask>" ]
@@ -616,6 +618,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// List of invited users
 			this._inviteNicknames = []; // Case insensitive
 			this._lcInviteNicknames = []; // Lower case
+			this._lcOperators = []; // Channel operators
 
 			// Channel key and limit
 			this._key = "";
@@ -629,6 +632,31 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._modes = {};
 			for ( var key in IRCProtocol.ChannelModeDefaults ) {
 				this._modes[key] = IRCProtocol.ChannelModeDefaults[key];
+			}
+
+			// Add a channel operator
+			this.addOperator = function( nickname ) {
+				if ( this._lcOperators.indexOf( nickname.toLowerCase() ) === -1 ) {
+					this._lcOperators.push( nickname.toLowerCase() );
+				}
+			}
+			
+			// Remove a channel operator
+			this.removeOperator = function( nickname ) {
+				var nicknamePosition = this._lcOperators.indexOf( nickname.toLowerCase() );
+				if ( nicknamePosition !== -1 ) {
+					this._lcOperators.splice( nicknamePosition, 1 );
+				}
+			}
+			
+			// Get operators
+			this.getOperators = function() {
+				return this._lcOperators;
+			}
+			
+			// Check if user is operator
+			this.isOperator = function( nickname ) {
+				return this._lcOperators.indexOf( nickname.toLowerCase() ) !== -1;
 			}
 
 			// Add user to invite list
@@ -722,6 +750,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 							this.setKey( "" );
 						}
 						break;
+					case "o":
+						data.parameter = param;
+						break;
 					default:
 						// Do nothing.
 						break;
@@ -731,8 +762,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				this._broadcastEvent( 'MODE'
 					,data
 				);
-				
-				this._modes[mode] = value;
+
+				if ( mode !== "o" ) {
+					this._modes[mode] = value;
+				}
 			}
 
 			// Method used for fetching channel modes, as a string
@@ -824,6 +857,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				var nicknamePosition = this._lcUsers.indexOf( initialNickname.toLowerCase() );
 				this._lcUsers[ nicknamePosition ] = nickname.toLowerCase();
 				this._users[ nicknamePosition ] = nickname;
+
+				var nicknamePosition = this._lcOperators.indexOf( initialNickname.toLowerCase() );
+				this._lcOperators[nicknamePosition] = nickname.toLowerCase();
 			}
 
 			// Method used for removing a user
@@ -837,6 +873,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 				// Remove socket, from this channel's list
 				this._sockets.splice( nicknamePosition, 1 );
+
+				// Remove from operators list
+				this.removeOperator( socket.Client.getNickname() );
 
 				// Notify clients of a part, except if this is a 'silent' PART (client quit)
 				if ( typeof silent === "undefined" || silent !== true ) {
@@ -2415,12 +2454,12 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 					}
 
 					// Ignore if mode is already set (except limit and key)
-					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" ) {
+					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" ) {
 						continue;
 					}
 
 					// Ignore if removing and mode is not set
-					if ( set === false && query === false && !channel.getMode( data.modes[j] ) ) {
+					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" ) {
 						continue;
 					}
 
@@ -2431,6 +2470,7 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								if ( set === true ) {
 									if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
 										// Silently ignore
+										param++;
 										continue;
 									} else {
 										// Check if we are removing the mode
@@ -2446,12 +2486,14 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 									}
 								} else {
 									channel.setMode( socket, data.modes[j], set, 0 );
+									param++;
 								}
 								break;
 							case "k":
 								if ( set === true ) {
 									if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
 										// Silently ignore
+										param++;
 										continue;
 									} else {
 										// Check if we are removing the mode
@@ -2467,7 +2509,63 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 									}
 								} else {
 									channel.setMode( socket, data.modes[j], set, "" );
+									param++;
 								}
+								break;
+							case "o":
+								// Channel operator mode (set/remove)
+								if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
+									// Silently ignore
+									param++;
+									continue;
+								} else if ( ( set === true && channel.isOperator( data.parameters[param] ) ) || ( set === false && !channel.isOperator( data.parameters[param] ) ) ) {
+									// Silently ignore, if already an operator
+									param++;
+									continue;
+								}
+
+								// Check if the user exists
+								var nicknamePosition = this._lcNicknames.indexOf( data.parameters[param].toLowerCase() )
+									,clientSocket;
+								if ( nicknamePosition !== -1 ) {
+									clientSocket = this._clientSockets[ nicknamePosition ];
+								} else {
+									// ERR_NOSUCHNICK
+									this.emitIRCError(
+										socket
+										,'ERR_NOSUCHNICK'
+										,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+										,data.parameters[param] + " :No such nick/channel"
+									);
+									param++;
+									continue;
+								}
+
+								// Check if the user is on the channel
+								if ( channel._lcUsers.indexOf( clientSocket.Client.getNickname().toLowerCase() ) === -1 ) {
+									// ERR_USERNOTINCHANNEL
+									this.emitIRCError(
+										socket
+										,'ERR_USERNOTINCHANNEL'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[0]
+										,data.parameters[param] + " " + channel.getName() + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[1]
+									);
+									param++;
+									continue;
+								}
+
+								// Add to operator list
+								if ( set === true ) {
+									channel.addOperator( data.parameters[param] );
+								} else {
+									channel.removeOperator( data.parameters[param] );
+								}
+
+								// Set mode, which is in fact only broadcasted to others
+								channel.setMode( socket, data.modes[j], set, clientSocket.Client.getNickname() );
+
+								// Increment parameters
+								param++;
 								break;
 							default:
 								// Set/remove generic modes
@@ -2492,6 +2590,8 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[0]
 									,data.target + " " + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[1]
 								);
+								break;
+							case "o":
 								break;
 							default:
 								// Do nothing
