@@ -819,7 +819,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				if ( nicknameAlreadyAdded === -1 ) {
 					// Add nickname
 					this._users.push( socket.Client.getNickname() );
-					this._lcUsers.push( socket.Client.getNickname() );
+					this._lcUsers.push( socket.Client.getNickname().toLowerCase() );
 
 					// Notify clients of a new join
 					this._broadcastEvent( 'JOIN'
