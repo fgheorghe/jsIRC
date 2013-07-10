@@ -1577,7 +1577,7 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
 	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) + ( data.params ? " " + Ext.htmlEncode( data.params.join( " " ) ) : "" ) );
 
 	// Find the window, and set or unset modes
-	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l", "v" ];
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l" ];
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		var param = 0;
 		for ( var i = 0; i < modes.length; i++ ) {
