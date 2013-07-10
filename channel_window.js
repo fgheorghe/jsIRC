@@ -84,6 +84,35 @@ ChannelWindow.prototype.init = function() {
 		var menu = Ext.create( 'Ext.menu.Menu', {
 			items: [
 				{
+					text: 'Give Ops'
+					,handler: function() {
+						// Issue a 'query' command
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " +o " + record.raw.text );
+					}.bind( this )
+				}
+				,{
+					text: 'Remove Ops'
+					,handler: function() {
+						// Issue a 'query' command
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " -o " + record.raw.text );
+					}.bind( this )
+				}
+				,{
+					text: 'Give Voice'
+					,handler: function() {
+						// Issue a 'query' command
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " +v " + record.raw.text );
+					}.bind( this )
+				}
+				,{
+					text: 'Remove Voice'
+					,handler: function() {
+						// Issue a 'query' command
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " -v " + record.raw.text );
+					}.bind( this )
+				}
+				,'-'
+				,{
 					text: 'Query'
 					,handler: function() {
 						// Issue a 'query' command
