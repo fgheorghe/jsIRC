@@ -1532,7 +1532,7 @@ ChatJs.prototype.MODE = function( data ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
 
-		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" ) {
+		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" && data.mode[1] !== "v" ) {
 			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
 
 			// Update window
@@ -1558,6 +1558,8 @@ ChatJs.prototype.MODE = function( data ) {
 			this._channelWindows[data.channel].keyInputBox.setValue( value );
 		} else if ( data.mode[1] === "o" ) {
 			// TODO: Implement
+		} else if ( data.mode[1] === "v" ) {
+			// TODO: Implement
 		}
 
 		// And notify user
@@ -1575,7 +1577,7 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
 	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) + ( data.params ? " " + Ext.htmlEncode( data.params.join( " " ) ) : "" ) );
 
 	// Find the window, and set or unset modes
-	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l" ];
+	var modes = [ "a" ,"i" ,"m" ,"n" ,"q" ,"p" ,"s" ,"r" ,"t", "k", "l", "v" ];
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		var param = 0;
 		for ( var i = 0; i < modes.length; i++ ) {

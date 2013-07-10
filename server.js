@@ -189,6 +189,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 		,"k" // key
 		,"l" // limit
 		,"o" // Operator
+		,"v" // Voice
 	]
 	,ChannelModeDefaults: {
 		a: false
@@ -619,6 +620,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._inviteNicknames = []; // Case insensitive
 			this._lcInviteNicknames = []; // Lower case
 			this._lcOperators = []; // Channel operators
+			this._lcVoice = []; // Voice operators
 
 			// Channel key and limit
 			this._key = "";
@@ -648,6 +650,21 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 					this._lcOperators.splice( nicknamePosition, 1 );
 				}
 			}
+
+			// Add a channel 'voiced' user
+			this.addVoice = function( nickname ) {
+				if ( this._lcVoice.indexOf( nickname.toLowerCase() ) === -1 ) {
+					this._lcVoice.push( nickname.toLowerCase() );
+				}
+			}
+			
+			// Remove a channel 'voiced' user
+			this.removeVoice = function( nickname ) {
+				var nicknamePosition = this._lcVoice.indexOf( nickname.toLowerCase() );
+				if ( nicknamePosition !== -1 ) {
+					this._lcVoice.splice( nicknamePosition, 1 );
+				}
+			}
 			
 			// Get operators
 			this.getOperators = function() {
@@ -657,6 +674,11 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// Check if user is operator
 			this.isOperator = function( nickname ) {
 				return this._lcOperators.indexOf( nickname.toLowerCase() ) !== -1;
+			}
+
+			// Check if user has 'voice'
+			this.hasVoice = function( nickname ) {
+				return this._lcVoice.indexOf( nickname.toLowerCase() ) !== -1;
 			}
 
 			// Add user to invite list
@@ -751,6 +773,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 						}
 						break;
 					case "o":
+					case "v":
 						data.parameter = param;
 						break;
 					default:
@@ -2564,6 +2587,62 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								// Set mode, which is in fact only broadcasted to others
 								channel.setMode( socket, data.modes[j], set, clientSocket.Client.getNickname() );
 
+								// Increment parameters
+								param++;
+								break;
+							case "v":
+								// Channel voice mode (set/remove)
+								if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
+									// Silently ignore
+									param++;
+									continue;
+								} else if ( ( set === true && channel.hasVoice( data.parameters[param] ) ) || ( set === false && !channel.hasVoice( data.parameters[param] ) ) ) {
+									// Silently ignore, if already 'voiced'
+									param++;
+									continue;
+								}
+
+
+								// Check if the user exists
+								var nicknamePosition = this._lcNicknames.indexOf( data.parameters[param].toLowerCase() )
+									,clientSocket;
+								if ( nicknamePosition !== -1 ) {
+									clientSocket = this._clientSockets[ nicknamePosition ];
+								} else {
+									// ERR_NOSUCHNICK
+									this.emitIRCError(
+										socket
+										,'ERR_NOSUCHNICK'
+										,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+										,data.parameters[param] + " :No such nick/channel"
+									);
+									param++;
+									continue;
+								}
+
+								// Check if the user is on the channel
+								if ( channel._lcUsers.indexOf( clientSocket.Client.getNickname().toLowerCase() ) === -1 ) {
+									// ERR_USERNOTINCHANNEL
+									this.emitIRCError(
+										socket
+										,'ERR_USERNOTINCHANNEL'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[0]
+										,data.parameters[param] + " " + channel.getName() + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[1]
+									);
+									param++;
+									continue;
+								}
+
+								// Add to 'voice' list
+								if ( set === true ) {
+									channel.addVoice( data.parameters[param] );
+								} else {
+									channel.removeVoice( data.parameters[param] );
+								}
+
+								// Set mode, which is in fact only broadcasted to others
+								channel.setMode( socket, data.modes[j], set, clientSocket.Client.getNickname() );
+								
 								// Increment parameters
 								param++;
 								break;
