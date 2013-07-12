@@ -317,6 +317,9 @@ ChannelWindow.prototype.init = function() {
 				change: function( checkbox, value ) {
 					// Handle /mode command
 					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( ( value === true ? "+" : "-" ) + mode ) );
+
+					// Emit a 'mode' command, to list modes (in case setting this mode fails)
+					this._config.parent.parseCommand( "/mode " + this._config.channel );
 				}.bind( this )
 			}
 		} );
@@ -343,6 +346,9 @@ ChannelWindow.prototype.init = function() {
 				if ( e.getKey() === 13 ) {
 					// Handle limit change
 					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( parseInt( field.getValue(), 10 ) ? "+l " + parseInt( field.getValue(), 10 ) : "-l" ) );
+
+					// Emit a 'mode' command, to list modes (in case setting this mode fails)
+					this._config.parent.parseCommand( "/mode " + this._config.channel );
 				}
 			}.bind( this )
 		}
@@ -358,8 +364,11 @@ ChannelWindow.prototype.init = function() {
 		,listeners: {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
-					// Handle limit change
+					// Handle key change
 					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( field.getValue() ? "+k " + field.getValue() : "-k" ) );
+
+					// Emit a 'mode' command, to list modes (in case setting this mode fails)
+					this._config.parent.parseCommand( "/mode " + this._config.channel );
 				}
 			}.bind( this )
 		}

@@ -2467,6 +2467,31 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 
 				return;
 			} else {
+				// Check if user has privileges (is operator) for that channel
+				if ( !channel.isOperator( socket.Client.getNickname() ) ) {
+					// ERR_CHANOPRIVSNEEDED
+					this.emitIRCError(
+						socket
+						,'ERR_CHANOPRIVSNEEDED'
+						,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[0]
+						,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[1]
+					);
+					return;
+				}
+
+				// Verify if the user is on that channel
+				var user = channel._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() );
+				if ( user === -1 ) {
+					// ERR_NOTONCHANNEL
+					this.emitIRCError(
+						socket
+						,'ERR_NOTONCHANNEL'
+						,IRCProtocol.NumericReplyConstants.Client.TOPIC.ERR_NOTONCHANNEL[0]
+						,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.TOPIC.ERR_NOTONCHANNEL[1]
+					);
+					return;
+				}
+
 				// Begin setting modes
 				// Set modes
 				var set = false; // Setting or removing modes

@@ -1647,6 +1647,16 @@ ChatJs.prototype.ERR_USERNOTINCHANNEL = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_CHANOPRIVSNEEDED' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_CHANOPRIVSNEEDED = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'RPL_UNAWAY' event.
  * @param {Object} data Data object.
  * @function
