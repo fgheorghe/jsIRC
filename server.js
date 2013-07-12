@@ -790,7 +790,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 					);
 				}
 
-				if ( mode !== "o" ) {
+				if ( mode !== "o" && mode !== "v" ) {
 					this._modes[mode] = value;
 				}
 			}
@@ -2510,13 +2510,13 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 						continue;
 					}
 
-					// Ignore if mode is already set (except limit and key)
-					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" ) {
+					// Ignore if mode is already set (except limit and key...o and v)
+					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" && data.modes[j] !== "v" ) {
 						continue;
 					}
 
 					// Ignore if removing and mode is not set
-					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" ) {
+					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" && data.modes[j] !== "v" ) {
 						continue;
 					}
 

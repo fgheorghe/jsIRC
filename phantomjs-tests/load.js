@@ -31,7 +31,7 @@ page.content = '<script src="http://' + config.ServerHost + ':' + config.ServerP
 page.onLoadFinished = function ( status ) {
 	console.log( "[+] Creating sockets..." );
 
-	for ( var i = 0; i < 200; i++ ) {
+	for ( var i = 0; i < 100; i++ ) {
 		console.log( "[+] Creating socket " + i + "..." );
 		page.evaluate( function( i, config ) {
 				// Force a new socket connection
