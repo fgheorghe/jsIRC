@@ -1697,6 +1697,16 @@ ChatJs.prototype.RPL_ENDOFWHO = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_CANNOTSENDTOCHAN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_CANNOTSENDTOCHAN = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'ERR_UMODEUNKNOWNFLAG' event.
  * @param {Object} data Data object.
  * @function

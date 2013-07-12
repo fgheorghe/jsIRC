@@ -264,7 +264,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 			,PRIVMSG: {
 				ERR_NORECIPIENT: [ 411, "No recipient given (<command>)" ]
-				,ERR_CANNOTSENDTOCHAN: [ 412, "No text to send" ]
+				,ERR_CANNOTSENDTOCHAN: [ 404, "Cannot send to channel" ]
 				,ERR_WILDTOPLEVEL: [ 413, "<mask> :No toplevel domain specified" ]
 				,ERR_NOTEXTTOSEND: [ 412, "No text to send" ]
 				,ERR_NOTOPLEVEL: [ 413, "<mask> :No toplevel domain specified" ]
@@ -1812,6 +1812,17 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 		if ( channelPosition !== -1 ) {
 			// Get the channel object, at this position
 			channel = this._channels[ channelPosition ];
+
+			// Check if mode '+n' is set...if so, prevent external users from sending messages
+			if ( channel.getMode( "n" ) && channel._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() ) === -1 ) {
+				this.emitIRCError(
+					socket
+					,'ERR_CANNOTSENDTOCHAN'
+					,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[0]
+					,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[1]
+				);
+				return;
+			}
 
 			// Broadcast message
 			channel.PRIVMSG( data.message, socket );
