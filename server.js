@@ -2052,6 +2052,18 @@ IRCProtocol.ClientProtocol.prototype.TOPIC = function( data, socket ) {
 			return;
 		}
 
+		// Verify that if the channel has the +t mode set and user is not operator, they can not set topic...unless making a query
+		if ( typeof data.topic !== "undefined" && channel.getMode( 't' ) && !channel.isOperator( socket.Client.getNickname() ) ) {
+			// ERR_CHANOPRIVSNEEDED
+			this.emitIRCError(
+				socket
+				,'ERR_CHANOPRIVSNEEDED'
+				,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[0]
+				,data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[1]
+			);
+			return;
+		}
+
 		// If the topic parameter is missing, return the topic
 		if ( typeof data.topic === "undefined" ) {
 			// RPL_TOPIC or RPL_NOTOPIC

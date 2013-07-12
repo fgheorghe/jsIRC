@@ -299,8 +299,16 @@ ChannelWindow.prototype.init = function() {
 		,listeners: {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
-					// TODO: Handle failed topic update
+					// Set topic
 					this._config.parent.parseCommand( "/topic " + this._config.channel + " " + field.getValue() );
+
+					// Get topic...
+					// TODO: Handle this differently if a topic change is successful...otherwise it would return something similar to:
+					// TODO: * flaviu has changed topic to: test
+					// TODO: * Topic for #test is: test
+					this._config.parent.client.emit( "TOPIC", {
+						channel: this._config.channel
+					} );
 				}
 			}.bind( this )
 		}
