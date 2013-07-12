@@ -929,6 +929,8 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 				// Remove from operators list
 				this.removeOperator( socket.Client.getNickname() );
+				// Remove from voice list
+				this.removeVoice( socket.Client.getNickname() );
 
 				// Notify clients of a part, except if this is a 'silent' PART (client quit)
 				if ( typeof silent === "undefined" || silent !== true ) {

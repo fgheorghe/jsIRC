@@ -68,6 +68,26 @@ ChannelWindow.prototype.addText = function( text, noAlert ) {
 }
 
 /**
+ * Method used for sorting channel users: first by operator status, then voice, then regular. Each sorted by name.
+ * @function
+ */
+ChannelWindow.prototype.sortUsers = function() {
+	// Set sorting
+	this.clientList.getStore().sort( [
+		{
+			property : 'operator'
+			,direction: 'desc'
+		},{
+			property : 'voice'
+			,direction: 'desc'
+		}, {
+			property : 'text'
+			,direction: 'asc'
+		}
+	] );
+}
+
+/**
  * Method used for initiating the channel window.
  * @function
  */
@@ -148,6 +168,7 @@ ChannelWindow.prototype.init = function() {
 			data: {
 				children: []
 			}
+			,fields: [ 'text', 'operator', 'voice' ]
 		} )
 		,width: 180
 		,minWidth: 180
@@ -178,17 +199,28 @@ ChannelWindow.prototype.init = function() {
 		node.set( 'text', Ext.htmlEncode( nickname ) );
 		node.raw.text = Ext.htmlEncode( nickname );
 		node.save();
+		this.sortUsers();
 	}
 
 	// Method used for adding a new user to the list
 	// TODO: Sort by op, voice, non-op etc
 	this.addClient = function( client ) {
 		this.clientList.getRootNode().appendChild( client );
+		this.sortUsers();
 	}
 
-	// Set 'node' icon, based on status (operator, voice or none)
+	// Set 'node' icon (and sort), based on status (operator, voice or none)
 	this.setNodeIcon = function( node ) {
+		// Set icon
 		node.set( 'icon', node.raw.operator === true ? 'img/face-smile-big.png' : node.raw.voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png' );
+
+		// Save node properties
+		node.set( 'voice', node.raw.voice );
+		node.set( 'operator', node.raw.operator );
+		node.save();
+
+		// Sort
+		this.sortUsers();
 	}
 
 	// Set nickname as operator

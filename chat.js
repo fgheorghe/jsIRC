@@ -902,6 +902,7 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 			} );
 		}
 		this._channelWindows[data.channel].loadClientList( names );
+		this._channelWindows[data.channel].sortUsers();
 	}
 }
 
