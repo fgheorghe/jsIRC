@@ -735,7 +735,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 
 			// Method used for setting channel mode of specified type
-			this.setMode = function( socket, mode, value, param ) {
+			// NOTE: If silent is present, and set to true, do not broadcast message
+			// NOTE: Used when creating a channel, and setting the first user as operator
+			this.setMode = function( socket, mode, value, param, silent ) {
 				// Broadcast data
 				var data = {
 					channel: this.getName()
@@ -782,9 +784,11 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				}
 
 				// Notify others of this change
-				this._broadcastEvent( 'MODE'
-					,data
-				);
+				if ( typeof silent === "undefined" || silent !== true ) {
+					this._broadcastEvent( 'MODE'
+						,data
+					);
+				}
 
 				if ( mode !== "o" ) {
 					this._modes[mode] = value;
@@ -805,6 +809,32 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			// Method used for getting the channel name
 			this.getName = function() {
 				return this._name;
+			}
+
+			// Method used for getting names list, required for returning a NAMES command response, and names LIST upon joining a channel
+			// NOTE: This function deviates from the standard RFC specification (if details is set to true), by adding
+			// NOTE: a list of voiced and operator users for the requested channel.
+			// NOTE: This allows for better daata handling in the user interface.
+			// Format:
+			// [
+			//  {
+			//	operator: true/false
+			//	voice: true/false
+			//	user: user object, as stored in this._users
+			//  }
+			// ]
+			this.getNames = function() {
+				var response = []; // Prepare response array
+				var users = this.getUsers(); // Get all channel users, and construct response
+				for ( var i = 0; i < users.length; i++ ) {
+					response.push( {
+						operator: this.isOperator( users[i] )
+						,voice: this.hasVoice( users[i] )
+						,nick: users[i]
+					} );
+				}
+
+				return response;
 			}
 
 			// Method used for setting a topic
@@ -940,8 +970,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				socket.Client.setIdle( 0 );
 			}
 
-			// Method used for getting users
-			this.getUsers = function() {
+			// Method used for getting users.
+			this.getUsers = function( details ) {
+				// Return the standard list of users
 				return this._users;
 			}
 		}
@@ -1574,6 +1605,9 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			channel = new IRCProtocol.IrcState.Channel( channelName );
 			this._channels.push( channel );
 
+			// Set user as operator, upon joining
+			channel.addOperator( socket.Client.getNickname() );
+
 			// Update the number of channels
 			this._stats.channels++;
 		}
@@ -1651,7 +1685,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				'RPL_NAMREPLY'
 				,{
 					channel: channel.getName()
-					,names: channel.getUsers()
+					,names: channel.getNames()
 				}
 			);
 
@@ -2758,7 +2792,9 @@ IRCProtocol.ClientProtocol.prototype.NAMES = function( data, socket ) {
 		if ( data.channels.indexOf( channels[i].toLowerCase() ) !== -1 ) {
 			// Get channel users
 			var channelPosition = this._lcChannelNames.indexOf( channels[i] )
-				,channel;
+				,channel
+				,names = [] // Array of objects, describing names
+				,users = []; // Array of users (nicknames that is)
 
 			// Ignore non existing channels
 			if ( channelPosition !== -1 ) {
@@ -2770,7 +2806,7 @@ IRCProtocol.ClientProtocol.prototype.NAMES = function( data, socket ) {
 					'RPL_NAMREPLY'
 					,{
 						channel: channel.getName()
-						,names: channel.getUsers()
+						,names: channel.getNames()
 					}
 				);
 

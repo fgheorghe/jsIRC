@@ -891,9 +891,10 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 		// Convert to tree items
 		for ( var i = 0; i < data.names.length; i++ ) {
 			names.push( {
-				text: Ext.htmlEncode( data.names[i] )
+				text: Ext.htmlEncode( data.names[i].nick )
 				,leaf: true
-				,icon: 'img/face-smile.png'
+				// TODO: Move to a function
+				,icon: data.names[i].operator === true ? 'img/face-smile-big.png' : data.names[i].voice === true ? 'img/face-smile.png' : 'img/face-glasses.png'
 			} );
 		}
 		this._channelWindows[data.channel].loadClientList( names );
