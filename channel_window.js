@@ -80,6 +80,8 @@ ChannelWindow.prototype.init = function() {
 
 	// Context menu handler
 	this.userListContextMenu = function( tree, record, item, index, e, eOpts ) {
+		var node = this.findClient( record.raw.text );
+		
 		// Create the menu
 		var menu = Ext.create( 'Ext.menu.Menu', {
 			items: [
@@ -89,6 +91,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +o " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.operator === true
 				}
 				,{
 					text: 'Remove Ops'
@@ -96,6 +99,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " -o " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.operator === false
 				}
 				,{
 					text: 'Give Voice'
@@ -103,6 +107,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +v " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.voice === true
 				}
 				,{
 					text: 'Remove Voice'
@@ -110,6 +115,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " -v " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.voice === false
 				}
 				,'-'
 				,{
@@ -182,7 +188,7 @@ ChannelWindow.prototype.init = function() {
 
 	// Set 'node' icon, based on status (operator, voice or none)
 	this.setNodeIcon = function( node ) {
-		node.set( 'icon', node.operator === true ? 'img/face-smile-big.png' : node.voice === true ? 'img/face-smile.png' : 'img/face-glasses.png' );
+		node.set( 'icon', node.raw.operator === true ? 'img/face-smile-big.png' : node.raw.voice === true ? 'img/face-smile.png' : 'img/face-glasses.png' );
 	}
 
 	// Set nickname as operator
@@ -190,7 +196,7 @@ ChannelWindow.prototype.init = function() {
 	this.setOperator = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.operator = true;
+		node.raw.operator = true;
 		this.setNodeIcon( node );
 	}
 
@@ -198,7 +204,7 @@ ChannelWindow.prototype.init = function() {
 	this.removeOperator = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.operator = false;
+		node.raw.operator = false;
 		this.setNodeIcon( node );
 	}
 
@@ -206,7 +212,7 @@ ChannelWindow.prototype.init = function() {
 	this.setVoice = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.voice = true;
+		node.raw.voice = true;
 		this.setNodeIcon( node );
 	}
 	
@@ -214,7 +220,7 @@ ChannelWindow.prototype.init = function() {
 	this.removeVoice = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.voice = false;
+		node.raw.voice = false;
 		this.setNodeIcon( node );
 	}
 

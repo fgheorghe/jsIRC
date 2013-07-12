@@ -893,6 +893,8 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 			names.push( {
 				text: Ext.htmlEncode( data.names[i].nick )
 				,leaf: true
+				,operator: data.names[i].operator
+				,voice: data.names[i].voice
 				// TODO: Move to a function
 				,icon: data.names[i].operator === true ? 'img/face-smile-big.png' : data.names[i].voice === true ? 'img/face-smile.png' : 'img/face-glasses.png'
 			} );
