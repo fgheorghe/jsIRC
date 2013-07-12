@@ -793,8 +793,10 @@ ChatJs.prototype.JOIN = function( data ) {
 		// Append to user list
 		this._channelWindows[data.channel].addClient( {
 			leaf: true
+			,operator: false // Upon client join, these are both false
+			,voice: false
 			,text: Ext.htmlEncode( data.nickname )
-			,icon: 'img/face-smile.png'
+			,icon: 'img/face-glasses.png'
 		} );
 	}
 
