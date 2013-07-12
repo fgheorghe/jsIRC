@@ -796,7 +796,7 @@ ChatJs.prototype.JOIN = function( data ) {
 			,operator: false // Upon client join, these are both false
 			,voice: false
 			,text: Ext.htmlEncode( data.nickname )
-			,icon: 'img/face-glasses.png'
+			,icon: 'img/face-smile-big-3.png'
 		} );
 	}
 
@@ -898,7 +898,7 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 				,operator: data.names[i].operator
 				,voice: data.names[i].voice
 				// TODO: Move to a function
-				,icon: data.names[i].operator === true ? 'img/face-smile-big.png' : data.names[i].voice === true ? 'img/face-smile.png' : 'img/face-glasses.png'
+				,icon: data.names[i].operator === true ? 'img/face-smile-big.png' : data.names[i].voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png'
 			} );
 		}
 		this._channelWindows[data.channel].loadClientList( names );

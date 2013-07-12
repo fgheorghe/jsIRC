@@ -188,7 +188,7 @@ ChannelWindow.prototype.init = function() {
 
 	// Set 'node' icon, based on status (operator, voice or none)
 	this.setNodeIcon = function( node ) {
-		node.set( 'icon', node.raw.operator === true ? 'img/face-smile-big.png' : node.raw.voice === true ? 'img/face-smile.png' : 'img/face-glasses.png' );
+		node.set( 'icon', node.raw.operator === true ? 'img/face-smile-big.png' : node.raw.voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png' );
 	}
 
 	// Set nickname as operator
