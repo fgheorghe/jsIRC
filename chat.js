@@ -1558,9 +1558,19 @@ ChatJs.prototype.MODE = function( data ) {
 			
 			this._channelWindows[data.channel].keyInputBox.setValue( value );
 		} else if ( data.mode[1] === "o" ) {
-			// TODO: Implement
+			// Set client operator mode
+			if ( data.mode[0] === "+" ) {
+				this._channelWindows[data.channel].setOperator( data.parameter );
+			} else {
+				this._channelWindows[data.channel].removeOperator( data.parameter );
+			}
 		} else if ( data.mode[1] === "v" ) {
-			// TODO: Implement
+			// Set client voice mode
+			if ( data.mode[0] === "+" ) {
+				this._channelWindows[data.channel].setVoice( data.parameter );
+			} else {
+				this._channelWindows[data.channel].removeVoice( data.parameter );
+			}
 		}
 
 		// And notify user

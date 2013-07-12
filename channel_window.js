@@ -180,6 +180,44 @@ ChannelWindow.prototype.init = function() {
 		this.clientList.getRootNode().appendChild( client );
 	}
 
+	// Set 'node' icon, based on status (operator, voice or none)
+	this.setNodeIcon = function( node ) {
+		node.set( 'icon', node.operator === true ? 'img/face-smile-big.png' : node.voice === true ? 'img/face-smile.png' : 'img/face-glasses.png' );
+	}
+
+	// Set nickname as operator
+	// TODO: Remove redundant code
+	this.setOperator = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.operator = true;
+		this.setNodeIcon( node );
+	}
+
+	// Remove operator
+	this.removeOperator = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.operator = false;
+		this.setNodeIcon( node );
+	}
+
+	// Set nickname as voice
+	this.setVoice = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.voice = true;
+		this.setNodeIcon( node );
+	}
+	
+	// Remove voice
+	this.removeVoice = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.voice = false;
+		this.setNodeIcon( node );
+	}
+
 	// Method used for removing a user from the list
 	this.removeClient = function( nickname ) {
 		var node = this.findClient( nickname );
