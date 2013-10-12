@@ -3237,4 +3237,4 @@ ChatServer = new Server( {
 	}
 	// New connection handler
 	,connection: IRCClient.connection
- } ).init();
+} ).init();
