@@ -1590,7 +1590,7 @@ ChatJs.prototype.MODE = function( data ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
 
-		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" && data.mode[1] !== "v" ) {
+		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" && data.mode[1] !== "v" && data.mode[1] !== "b" && data.mode[1] !== "e" ) {
 			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
 
 			// Update window

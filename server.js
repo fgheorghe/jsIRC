@@ -190,6 +190,8 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 		,"l" // limit
 		,"o" // Operator
 		,"v" // Voice
+		,"b" // Ban
+		,"e" // Ban Exception
 	]
 	,ChannelModeDefaults: {
 		a: false
@@ -780,6 +782,8 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 						break;
 					case "o":
 					case "v":
+					case "b":
+					case "e":
 						data.parameter = param;
 						break;
 					default:
@@ -794,19 +798,34 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 					);
 				}
 
-				if ( mode !== "o" && mode !== "v" ) {
+				if ( mode !== "o" && mode !== "v" && mode !== "b" && mode !== "e" ) {
 					this._modes[mode] = value;
 				}
 			}
 
 			// Method used for adding a ban
-			this.addBan = function( mask ) {
-				// TODO: Implement
+			this.addBan = function( socket, mask ) {
+				// Add to list, if an identical value doesn't exist yet
+				if ( this._bans.indexOf( mask ) === -1 ) {
+					this._bans.push( mask );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "b", true, mask );
+				}
+				console.log( this._bans );
 			}
 
 			// Method used for removing a ban
-			this.removeBan = function( mask ) {
-				// TODO: Implement
+			this.removeBan = function( socket, mask ) {
+				// Remove from list, if ban exists
+				var banPosition = this._bans.indexOf( mask );
+				if ( banPosition !== -1 ) {
+					this._bans.splice( banPosition, 1 );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "b", false, mask );
+				}
+				console.log( this._bans );
 			}
 
 			// Method used for listing bans
@@ -815,13 +834,28 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			}
 
 			// Method used for adding a ban exception
-			this.addBanException = function( mask ) {
-				// TODO: Implement
+			this.addBanException = function( socket, mask ) {
+				// Add to list, if an identical value doesn't exist yet
+				if ( this._banExceptions.indexOf( mask ) === -1 ) {
+					this._banExceptions.push( mask );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "e", true, mask );
+				}
+				console.log( this._banExceptions );
 			}
 
 			// Method used for removing a ban exception
-			this.removeBanException = function( mask ) {
-				// TODO: Implement
+			this.removeBanException = function( socket, mask ) {
+				// Remove from list, if ban exception exists
+				var banExceptionPosition = this._banExceptions.indexOf( mask );
+				if ( banExceptionPosition !== -1 ) {
+					this._banExceptions.splice( banExceptionPosition, 1 );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "b", false, mask );
+				}
+				console.log( this._banExceptions );
 			}
 
 			// Method used for listing ban exceptions
@@ -2616,13 +2650,13 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 						continue;
 					}
 
-					// Ignore if mode is already set (except limit and key...o and v)
-					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" && data.modes[j] !== "v" ) {
+					// Ignore if mode is already set (except limit and key...o and v...b and e)
+					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" && data.modes[j] !== "v" && data.modes[j] !== "b" && data.modes[j] !== "e" ) {
 						continue;
 					}
 
 					// Ignore if removing and mode is not set
-					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" && data.modes[j] !== "v" ) {
+					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" && data.modes[j] !== "v" && data.modes[j] !== "b" && data.modes[j] !== "e" ) {
 						continue;
 					}
 
@@ -2784,6 +2818,26 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								channel.setMode( socket, data.modes[j], set, clientSocket.Client.getNickname() );
 								
 								// Increment parameters
+								param++;
+								break;
+							case "b":
+								// Add to 'ban' list
+								if ( set === true ) {
+									channel.addBan( socket, data.parameters[param] );
+								} else {
+									channel.removeBan( socket, data.parameters[param] );
+								}
+
+								param++;
+								break;
+							case "e":
+								// Add to ban 'exception' list
+								if ( set === true ) {
+									channel.addBanException( socket, data.parameters[param] );
+								} else {
+									channel.removeBanException( socket, data.parameters[param] );
+								}
+
 								param++;
 								break;
 							default:
