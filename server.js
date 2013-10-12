@@ -622,6 +622,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._lcOperators = []; // Channel operators
 			this._lcVoice = []; // Voice operators
 
+			// Lists of ban and ban exception masks
+			this._bans = [];
+			this._banExceptions = [];
+
 			// Channel key and limit
 			this._key = "";
 			this._limit = 0;
@@ -793,6 +797,36 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				if ( mode !== "o" && mode !== "v" ) {
 					this._modes[mode] = value;
 				}
+			}
+
+			// Method used for adding a ban
+			this.addBan = function( mask ) {
+				// TODO: Implement
+			}
+
+			// Method used for removing a ban
+			this.removeBan = function( mask ) {
+				// TODO: Implement
+			}
+
+			// Method used for listing bans
+			this.getBanList = function() {
+				// TODO: Implement
+			}
+
+			// Method used for adding a ban exception
+			this.addBanException = function( mask ) {
+				// TODO: Implement
+			}
+
+			// Method used for removing a ban exception
+			this.removeBanException = function( mask ) {
+				// TODO: Implement
+			}
+
+			// Method used for listing ban exceptions
+			this.getBanExceptionList = function() {
+				// TODO: Implement
 			}
 
 			// Method used for fetching channel modes, as a string
