@@ -915,6 +915,12 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				this._lcOperators[nicknamePosition] = nickname.toLowerCase();
 			}
 
+			// Method used for kicking a user
+			// NOTE: Relies on silent 'removeUser'
+			this.kickUser = function( socket ) {
+				// TODO: Implement
+			}
+
 			// Method used for removing a user
 			this.removeUser = function( socket, silent ) {
 				// Remove from lists, and notify users
@@ -3146,10 +3152,24 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 				socket
 				,'ERR_NOSUCHCHANNEL'
 				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
-				,data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+				,data.channel[i] + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
 			);
 
 			// Ignore this channel
+			continue;
+		}
+
+		// Check if user is operator on this channel
+		if ( !channel.isOperator( socket.Client.getNickname() ) ) {
+			// And if not, emit an ERR_CHANOPRIVSNEEDED error
+			this.emitIRCError(
+				socket
+				,'ERR_CHANOPRIVSNEEDED'
+				,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[0]
+				,data.channel[i] + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[1]
+			);
+
+			// Ignore channel...
 			continue;
 		}
 
@@ -3168,7 +3188,8 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 				// Ignore this user
 				continue;
 			} else {
-				// TODO: Implement
+				// Kick user
+				channel.kickUser( data.user[j] );
 			}
 		}
 	}
