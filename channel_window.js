@@ -68,6 +68,26 @@ ChannelWindow.prototype.addText = function( text, noAlert ) {
 }
 
 /**
+ * Method used for sorting channel users: first by operator status, then voice, then regular. Each sorted by name.
+ * @function
+ */
+ChannelWindow.prototype.sortUsers = function() {
+	// Set sorting
+	this.clientList.getStore().sort( [
+		{
+			property : 'operator'
+			,direction: 'desc'
+		},{
+			property : 'voice'
+			,direction: 'desc'
+		}, {
+			property : 'text'
+			,direction: 'asc'
+		}
+	] );
+}
+
+/**
  * Method used for initiating the channel window.
  * @function
  */
@@ -80,6 +100,8 @@ ChannelWindow.prototype.init = function() {
 
 	// Context menu handler
 	this.userListContextMenu = function( tree, record, item, index, e, eOpts ) {
+		var node = this.findClient( record.raw.text );
+		
 		// Create the menu
 		var menu = Ext.create( 'Ext.menu.Menu', {
 			items: [
@@ -89,6 +111,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +o " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.operator === true
 				}
 				,{
 					text: 'Remove Ops'
@@ -96,6 +119,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " -o " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.operator === false
 				}
 				,{
 					text: 'Give Voice'
@@ -103,6 +127,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +v " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.voice === true
 				}
 				,{
 					text: 'Remove Voice'
@@ -110,6 +135,7 @@ ChannelWindow.prototype.init = function() {
 						// Issue a 'query' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " -v " + record.raw.text );
 					}.bind( this )
+					,hidden: node.raw.voice === false
 				}
 				,'-'
 				,{
@@ -142,6 +168,7 @@ ChannelWindow.prototype.init = function() {
 			data: {
 				children: []
 			}
+			,fields: [ 'text', 'operator', 'voice' ]
 		} )
 		,width: 180
 		,minWidth: 180
@@ -172,12 +199,61 @@ ChannelWindow.prototype.init = function() {
 		node.set( 'text', Ext.htmlEncode( nickname ) );
 		node.raw.text = Ext.htmlEncode( nickname );
 		node.save();
+		this.sortUsers();
 	}
 
 	// Method used for adding a new user to the list
 	// TODO: Sort by op, voice, non-op etc
 	this.addClient = function( client ) {
 		this.clientList.getRootNode().appendChild( client );
+		this.sortUsers();
+	}
+
+	// Set 'node' icon (and sort), based on status (operator, voice or none)
+	this.setNodeIcon = function( node ) {
+		// Set icon
+		node.set( 'icon', node.raw.operator === true ? 'img/face-smile-big.png' : node.raw.voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png' );
+
+		// Save node properties
+		node.set( 'voice', node.raw.voice );
+		node.set( 'operator', node.raw.operator );
+		node.save();
+
+		// Sort
+		this.sortUsers();
+	}
+
+	// Set nickname as operator
+	// TODO: Remove redundant code
+	this.setOperator = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.raw.operator = true;
+		this.setNodeIcon( node );
+	}
+
+	// Remove operator
+	this.removeOperator = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.raw.operator = false;
+		this.setNodeIcon( node );
+	}
+
+	// Set nickname as voice
+	this.setVoice = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.raw.voice = true;
+		this.setNodeIcon( node );
+	}
+	
+	// Remove voice
+	this.removeVoice = function( nickname ) {
+		var node = this.findClient( nickname );
+		
+		node.raw.voice = false;
+		this.setNodeIcon( node );
 	}
 
 	// Method used for removing a user from the list
@@ -223,8 +299,16 @@ ChannelWindow.prototype.init = function() {
 		,listeners: {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
-					// TODO: Handle failed topic update
+					// Set topic
 					this._config.parent.parseCommand( "/topic " + this._config.channel + " " + field.getValue() );
+
+					// Get topic...
+					// TODO: Handle this differently if a topic change is successful...otherwise it would return something similar to:
+					// TODO: * flaviu has changed topic to: test
+					// TODO: * Topic for #test is: test
+					this._config.parent.client.emit( "TOPIC", {
+						channel: this._config.channel
+					} );
 				}
 			}.bind( this )
 		}
@@ -241,6 +325,9 @@ ChannelWindow.prototype.init = function() {
 				change: function( checkbox, value ) {
 					// Handle /mode command
 					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( ( value === true ? "+" : "-" ) + mode ) );
+
+					// Emit a 'mode' command, to list modes (in case setting this mode fails)
+					this._config.parent.parseCommand( "/mode " + this._config.channel );
 				}.bind( this )
 			}
 		} );
@@ -267,6 +354,9 @@ ChannelWindow.prototype.init = function() {
 				if ( e.getKey() === 13 ) {
 					// Handle limit change
 					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( parseInt( field.getValue(), 10 ) ? "+l " + parseInt( field.getValue(), 10 ) : "-l" ) );
+
+					// Emit a 'mode' command, to list modes (in case setting this mode fails)
+					this._config.parent.parseCommand( "/mode " + this._config.channel );
 				}
 			}.bind( this )
 		}
@@ -282,8 +372,11 @@ ChannelWindow.prototype.init = function() {
 		,listeners: {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
-					// Handle limit change
+					// Handle key change
 					this._config.parent.parseCommand( "/mode " + this._config.channel + " " + ( field.getValue() ? "+k " + field.getValue() : "-k" ) );
+
+					// Emit a 'mode' command, to list modes (in case setting this mode fails)
+					this._config.parent.parseCommand( "/mode " + this._config.channel );
 				}
 			}.bind( this )
 		}

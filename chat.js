@@ -793,8 +793,10 @@ ChatJs.prototype.JOIN = function( data ) {
 		// Append to user list
 		this._channelWindows[data.channel].addClient( {
 			leaf: true
+			,operator: false // Upon client join, these are both false
+			,voice: false
 			,text: Ext.htmlEncode( data.nickname )
-			,icon: 'img/face-smile.png'
+			,icon: 'img/face-smile-big-3.png'
 		} );
 	}
 
@@ -891,12 +893,16 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 		// Convert to tree items
 		for ( var i = 0; i < data.names.length; i++ ) {
 			names.push( {
-				text: Ext.htmlEncode( data.names[i] )
+				text: Ext.htmlEncode( data.names[i].nick )
 				,leaf: true
-				,icon: 'img/face-smile.png'
+				,operator: data.names[i].operator
+				,voice: data.names[i].voice
+				// TODO: Move to a function
+				,icon: data.names[i].operator === true ? 'img/face-smile-big.png' : data.names[i].voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png'
 			} );
 		}
 		this._channelWindows[data.channel].loadClientList( names );
+		this._channelWindows[data.channel].sortUsers();
 	}
 }
 
@@ -1557,9 +1563,19 @@ ChatJs.prototype.MODE = function( data ) {
 			
 			this._channelWindows[data.channel].keyInputBox.setValue( value );
 		} else if ( data.mode[1] === "o" ) {
-			// TODO: Implement
+			// Set client operator mode
+			if ( data.mode[0] === "+" ) {
+				this._channelWindows[data.channel].setOperator( data.parameter );
+			} else {
+				this._channelWindows[data.channel].removeOperator( data.parameter );
+			}
 		} else if ( data.mode[1] === "v" ) {
-			// TODO: Implement
+			// Set client voice mode
+			if ( data.mode[0] === "+" ) {
+				this._channelWindows[data.channel].setVoice( data.parameter );
+			} else {
+				this._channelWindows[data.channel].removeVoice( data.parameter );
+			}
 		}
 
 		// And notify user
@@ -1631,6 +1647,16 @@ ChatJs.prototype.ERR_USERNOTINCHANNEL = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_CHANOPRIVSNEEDED' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_CHANOPRIVSNEEDED = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'RPL_UNAWAY' event.
  * @param {Object} data Data object.
  * @function
@@ -1666,6 +1692,16 @@ ChatJs.prototype.RPL_WHOREPLY = function( data ) {
  * @function
  */
 ChatJs.prototype.RPL_ENDOFWHO = function( data ) {
+	// Add text to window
+	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_CANNOTSENDTOCHAN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_CANNOTSENDTOCHAN = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
