@@ -3018,7 +3018,7 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
 IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
 	// Validate parameters
 	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" || typeof data.channel === "undefined" || S( data.channel ).trim().s === "" ) {
-		// Issue an ERR_NONICKNAMEGIVEN error.
+		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
 			,'ERR_NEEDMOREPARAMS'
@@ -3110,6 +3110,70 @@ IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
 	}
 	// Add invite to user
 	clientSocket.Client.addInvite( data.channel );
+}
+
+/**
+ * Client KICK command.
+ * @param {Object} data Data object, with the required array 'channel' and 'user' keys and the optional string 'comment' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
+	// Validate parameters
+	if ( typeof data.channel === "undefined" || typeof data.user === "undefined" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// For each channel
+	for ( var i = 0; i < data.channel.length; i++ ) {
+		var channelPosition = this._lcChannelNames.indexOf( data.channel[i].toLowerCase() )
+			,channel;
+
+		// Check if channel exists
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+		} else {
+			// Emit an ERR_NOSUCHCHANNEL error
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
+				,data.channel + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+			);
+
+			// Ignore this channel
+			continue;
+		}
+
+		// For each user
+		for ( var j = 0; j < data.user.length; j++ ) {
+			// Check if user is on channel
+			if ( channel._lcUsers.indexOf( data.user[j].toLowerCase() ) === -1 ) {
+				// Emit an ERR_USERNOTINCHANNEL error
+				this.emitIRCError(
+					socket
+					,'ERR_USERNOTINCHANNEL'
+					,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[0]
+					,data.user[j] + " " + channel.getName() + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[1]
+				);
+
+				// Ignore this user
+				continue;
+			} else {
+				// TODO: Implement
+			}
+		}
+	}
+
+	console.log( data );
 }
 
 /**
@@ -3234,6 +3298,7 @@ ChatServer = new Server( {
 		,ISON: IRCClient.ISON
 		,USERHOST: IRCClient.USERHOST
 		,INVITE: IRCClient.INVITE
+		,KICK: IRCClient.KICK
 	}
 	// New connection handler
 	,connection: IRCClient.connection

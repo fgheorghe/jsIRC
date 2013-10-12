@@ -34,6 +34,7 @@ Supported Client to Server commands:
 - ISON
 - USERHOST
 - INVITE
+- KICK
 
 Supported Server to Client commands:
 

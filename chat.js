@@ -471,6 +471,26 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "kick":
+			// Construct a kick command
+			// NOTE: Implemented for a single user and channel
+			// TODO: Add multiple users and channels
+
+			// Channel
+			if ( parameters.length >= 1 ) {
+				data.channel = [];
+				data.channel.push( parameters[0] );
+			}
+
+			// User
+			if ( parameters.length >= 2 ) {
+				data.user = [];
+				data.user.push( parameters[1] );
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "version":
 			// Construct a version command
 			if ( parameters.length >= 1 ) {
