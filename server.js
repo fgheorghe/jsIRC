@@ -917,8 +917,23 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Method used for kicking a user
 			// NOTE: Relies on silent 'removeUser'
-			this.kickUser = function( socket ) {
-				// TODO: Implement
+			// NOTE: The kicked user is stored in the target property
+			this.kickUser = function( sourceClientSocket, targetClientSocket, comment ) {
+				// Notify channel members, including this user, that there has been a kick
+				this._broadcastEvent( 'KICK'
+					,{
+						channel: this.getName()
+						,nickname: sourceClientSocket.Client.getNickname()
+						,user: sourceClientSocket.Client.getUser()
+						,host: sourceClientSocket.Client.getHost()
+						,target: targetClientSocket.Client.getNickname()
+						,comment: comment
+					}
+				);
+
+				// Remove user, silently
+				this.removeUser( targetClientSocket, true );
+				console.log( this._users );
 			}
 
 			// Method used for removing a user
@@ -3125,6 +3140,7 @@ IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
  * @function
  */
 IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
+	// NOTE: Channel masks not supported!
 	// Validate parameters
 	if ( typeof data.channel === "undefined" || typeof data.user === "undefined" ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
@@ -3188,8 +3204,20 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 				// Ignore this user
 				continue;
 			} else {
-				// Kick user
-				channel.kickUser( data.user[j] );
+				// Find the target user socket
+				var nicknamePosition = this._lcNicknames.indexOf( data.user[i].toLowerCase() );
+
+				if ( nicknamePosition !== -1 ) {
+					var clientSocket = this._clientSockets[ nicknamePosition ];
+
+					// Kick user
+					channel.kickUser(
+						socket
+						,clientSocket
+						// Either the user's comment or the nickname if missing
+						,data.comment || clientSocket.Client.getNickname()
+					);
+				}
 			}
 		}
 	}

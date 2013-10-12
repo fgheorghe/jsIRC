@@ -488,6 +488,14 @@ ChatJs.prototype.parseCommand = function( text ) {
 				data.user.push( parameters[1] );
 			}
 
+			// Comment (optional)
+			if ( parameters.length >= 3 ) {
+				data.comment = "";
+				for ( var i = 2; i < parameters.length; i++ ) {
+					data.comment += ( i !== 2 ? " " : "" ) + parameters[i];
+				}
+			}
+
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
@@ -828,6 +836,30 @@ ChatJs.prototype.JOIN = function( data ) {
 	);
 
 	// TODO: Handle out of synch 'JOIN' reply (display event in status window, if the channel window doesn't exist)
+}
+
+/**
+ * Method used for handling 'KICK' event, and close the channel window, or update the client list
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.KICK = function( data ) {
+	// If the user being kicked is the same as this user, then display the text accordingly (in the status window)
+	if ( data.target.toLowerCase() === this._nickname.toLowerCase() ) {
+		this.addText( '* You have beem kicked from ' + data.channel + ' by ' + data.nickname + ' (' + Ext.htmlEncode( data.comment ) + ')' );
+
+		// Close channel window
+		this._channelWindows[data.channel].chatWindow.hide();
+	} else {
+		// Only display a message, that that user has been kicked, and update the user list
+		var channelWindow = this._channelWindows[ data.channel ];
+
+		// Display text
+		channelWindow.addText( '* ' + data.nickname + ' has kicked ' + data.target + ' from ' + data.channel + ' (' + Ext.htmlEncode( data.comment ) + ')' );
+
+		// Remove from list of users
+		this._channelWindows[data.channel].removeClient( data.target );
+	}
 }
 
 /**
