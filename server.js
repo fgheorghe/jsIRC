@@ -1166,6 +1166,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 		}
 
 		// Remove channel if empty
+		// TODO: Remove redundant code
 		if ( channel.getUsers().length === 0 ) {
 			// Remove channel from lists, if empty
 			this._channels.splice( channelPosition, 1 );
@@ -3217,6 +3218,17 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 						// Either the user's comment or the nickname if missing
 						,data.comment || clientSocket.Client.getNickname()
 					);
+				}
+
+				// Remove channel if empty
+				// TODO: Remove redundant code
+				if ( channel.getUsers().length === 0 ) {
+					// Remove channel from lists, if empty
+					this._channels.splice( channelPosition, 1 );
+					this._lcChannelNames.splice( channelPosition, 1 );
+
+					// Update the number of channels
+					this._stats.channels--;
 				}
 			}
 		}
