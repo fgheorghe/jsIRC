@@ -1999,6 +1999,28 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 				return;
 			}
 
+			// Check if channel mode is +m and user is not operator or does not have voice
+			if ( channel.getMode( "m" ) && !channel.isOperator( socket.Client.getNickname() ) && !channel.hasVoice( socket.Client.getNickname() ) ) {
+				this.emitIRCError(
+					socket
+					,'ERR_CANNOTSENDTOCHAN'
+					,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[0]
+					,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[1]
+				);
+				return;
+			}
+
+			// Check if user is banned, and does not have voice or is not operator
+			if ( !channel.isException( socket ) && channel.isBanned( socket ) && !channel.isOperator( socket.Client.getNickname() ) && !channel.hasVoice( socket.Client.getNickname() ) ) {
+				this.emitIRCError(
+					socket
+					,'ERR_CANNOTSENDTOCHAN'
+					,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[0]
+					,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[1]
+				);
+				return;
+			}
+
 			// Broadcast message
 			channel.PRIVMSG( data.message, socket );
 		} else {
