@@ -117,10 +117,10 @@ var IRCProtocol = {
 	// Daemon version
 	Version: "0.1"
 	// Server info
-	,ServerName: Config.Server.ServerName
-	,ServerInfo: Config.Server.ServerInfo
-	,ServerComments: Config.Server.ServerComments
-	,AdminInfo: Config.Server.AdminInfo
+	,ServerName: Config.Server.IRCProtocol.ServerName
+	,ServerInfo: Config.Server.IRCProtocol.ServerInfo
+	,ServerComments: Config.Server.IRCProtocol.ServerComments
+	,AdminInfo: Config.Server.IRCProtocol.AdminInfo
 	,Info: "IRC 2.0 (JSON Based Web IRC Server).\n\
 Based on RFC2812. Copyright (C) The Internet Society (2000). All Rights Reserved.\n\
 \n\
@@ -152,9 +152,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\
 \n\
 Contribute or fork:\n\
 https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
-	,MotdFile: Config.Server.MotdFile
-	,PingFrequency: Config.Server.PingFrequency // In seconds
-	,MaxChannelList: Config.Server.MaxChannelList // Maximum number of channels returned in a RPL_LIST event
+	,MotdFile: Config.Server.IRCProtocol.MotdFile
+	,PingFrequency: Config.Server.IRCProtocol.PingFrequency // In seconds
+	,MaxChannelList: Config.Server.IRCProtocol.MaxChannelList // Maximum number of channels returned in a RPL_LIST event
 	,OperPassword: 'password' // TODO: Encrypt, and add host support
 	,DebugLevel: 0 // TODO: Implement debug levels
 	,UserModes: [
