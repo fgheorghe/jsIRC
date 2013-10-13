@@ -266,7 +266,7 @@ jsIRC.prototype.parseCommand = function( text ) {
 			} else if ( parameters.length === 2 ) {
 				data.mask = parameters[1];
 			}
-			console.log( data );
+
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "names":
@@ -277,12 +277,10 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.channels = channels;
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "users":
 			// NOTE: Command is disabled
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "ison":
@@ -293,7 +291,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.nicknames = nicknames;
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "userhost":
@@ -304,7 +301,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.nicknames = nicknames;
 			}
 			
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "join":
@@ -322,7 +318,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.keys = keys;
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "part":
@@ -334,7 +329,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.channels = channels;
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "topic":
@@ -353,7 +347,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.topic = "";
 			}
 			
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "away":
@@ -363,7 +356,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.text = text.slice( text.indexOf( command ) + command.length + 1 );
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "wallops":
@@ -372,8 +364,7 @@ jsIRC.prototype.parseCommand = function( text ) {
 				// Text
 				data.text = text.slice( text.indexOf( command ) + command.length + 1 );
 			}
-			
-			console.log( data );
+
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "quit":
@@ -383,7 +374,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.reason = text.slice( text.indexOf( command ) + command.length + 1 );
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "privmsg":
@@ -399,7 +389,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.message = text.slice( text.indexOf( data.target ) + data.target.length + 1 );
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "kill":
@@ -415,7 +404,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.comment = text.slice( text.indexOf( data.nickname ) + data.nickname.length + 1 );
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "who":
@@ -431,7 +419,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.o = parameters[1];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "motd":
@@ -441,7 +428,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "mode":
@@ -468,7 +454,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				}
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "kick":
@@ -496,7 +481,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				}
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "version":
@@ -506,7 +490,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "time":
@@ -516,7 +499,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "admin":
@@ -526,7 +508,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "info":
@@ -536,7 +517,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "lusers":
@@ -552,7 +532,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.target = parameters[0];
 			}
 
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "query": // NOTE: Not an IRC command. Opens a new client query window, if it doesn't already exist
@@ -582,7 +561,6 @@ jsIRC.prototype.parseCommand = function( text ) {
 				data.password = parameters[0];
 			}
 			
-			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "nick":
@@ -591,8 +569,7 @@ jsIRC.prototype.parseCommand = function( text ) {
 				// Nickname
 				data.nickname = parameters[0];
 			}
-			
-			console.log( data );
+
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		case "invite":
@@ -607,8 +584,7 @@ jsIRC.prototype.parseCommand = function( text ) {
 				// Nickname
 				data.channel = parameters[1];
 			}
-			
-			console.log( data );
+
 			this.client.emit( command.toUpperCase(), data );
 			break;
 		default:
@@ -985,7 +961,6 @@ jsIRC.prototype.RPL_TOPIC = function( data ) {
  * @function
  */
 jsIRC.prototype.RPL_NAMREPLY = function( data ) {
-	console.log( data.names );
 	// Load list of clients, if a window exists
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		var names = [];
@@ -1017,7 +992,6 @@ jsIRC.prototype.RPL_NOTOPIC = function( data ) {
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		this._channelWindows[data.channel].topicText.setValue( "" );
 	}
-	console.log( data );
 }
 
 /**
@@ -1277,8 +1251,6 @@ jsIRC.prototype.NICK = function( data ) {
 		this.addText( "* You are now known as " + Ext.htmlEncode( data.nickname ) );
 		this._nickname = data.nickname;
 	}
-
-	console.log( "Current: " + this._nickname );
 }
 
 /**

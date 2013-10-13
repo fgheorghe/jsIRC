@@ -884,8 +884,6 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 					// Let setMode broadcast the message to others
 					this.setMode( socket, "b", true, mask );
 				}
-
-				console.log( this._bans );
 			}
 
 			// Method used for removing a ban
@@ -898,7 +896,6 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 					// Let setMode broadcast the message to others
 					this.setMode( socket, "b", false, mask );
 				}
-				console.log( this._bans );
 			}
 
 			// Method used for listing bans
@@ -915,7 +912,6 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 					// Let setMode broadcast the message to others
 					this.setMode( socket, "e", true, mask );
 				}
-				console.log( this._banExceptions );
 			}
 
 			// Method used for removing a ban exception
@@ -928,7 +924,6 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 					// Let setMode broadcast the message to others
 					this.setMode( socket, "b", false, mask );
 				}
-				console.log( this._banExceptions );
 			}
 
 			// Method used for listing ban exceptions
@@ -1031,7 +1026,6 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 					// Add socket
 					this._sockets.push( socket );
 
-					console.log( this._users );
 					return true;
 				} else {
 					return false;
@@ -1721,7 +1715,6 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 	}
 
 	// TODO: Add mask functionality
-	console.log( data );
 }
 
 /**
@@ -1878,8 +1871,6 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			socket.Client.addChannel( channel.getName() );
 		}
 	}
-
-	console.log( data );
 }
 
 /**
@@ -2083,7 +2074,6 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 	}
 
 	// TODO: Handle user to user messages
-	console.log( data );
 }
 
 /**
@@ -3028,12 +3018,8 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 					}
 				}
 			}
-			console.log( "here" );
-			
 		}
 	}
-
-	console.log( data );
 }
 
 /**
@@ -3263,7 +3249,7 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
 			nicknames.push( data.nicknames[i] );
 		}
 	}
-	console.log( nicknames );
+
 	// Return list of nicknames, even if empty
 	socket.emit(
 		'RPL_ISON'
@@ -3475,8 +3461,6 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 			}
 		}
 	}
-
-	console.log( data );
 }
 
 /**
