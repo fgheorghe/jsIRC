@@ -1077,13 +1077,18 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 				// Remove user, silently
 				this.removeUser( targetClientSocket, true );
-				console.log( this._users );
 			}
 
 			// Method used for removing a user
 			this.removeUser = function( socket, silent ) {
 				// Remove from lists, and notify users
 				var nicknamePosition = this._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() );
+
+				// Check if user is on channel
+				if ( nicknamePosition === -1 ) {
+					// Silently ignore, if not on channel!
+					return;
+				}
 
 				// Remove nickname from lists
 				this._users.splice( nicknamePosition, 1 );
@@ -3444,11 +3449,10 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 				continue;
 			} else {
 				// Find the target user socket
-				var nicknamePosition = this._lcNicknames.indexOf( data.user[i].toLowerCase() );
+				var nicknamePosition = this._lcNicknames.indexOf( data.user[j].toLowerCase() );
 
 				if ( nicknamePosition !== -1 ) {
 					var clientSocket = this._clientSockets[ nicknamePosition ];
-
 					// Kick user
 					channel.kickUser(
 						socket
