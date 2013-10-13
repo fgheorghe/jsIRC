@@ -912,6 +912,42 @@ ChatJs.prototype.ERR_USERSDISABLED = function( data ) {
 }
 
 /**
+ * Method used for handling 'RPL_BANLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_BANLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFBANLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFBANLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_EXCEPTLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_EXCEPTLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFEXCEPTLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFEXCEPTLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'RPL_TOPIC' event.
  * @param {Object} data Data object.
  * @function

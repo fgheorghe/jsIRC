@@ -331,7 +331,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,RPL_BANLIST: [ 367, "<channel> <banmask>" ]
 				,RPL_ENDOFBANLIST: [ 368, "End of channel ban list" ]
 				,RPL_EXCEPTLIST: [ 348, "<channel> <exceptionmask>" ]
-				,RPL_ENDOFEXCEPTLIST: [ 349, "<channel> :End of channel exception list" ]
+				,RPL_ENDOFEXCEPTLIST: [ 349, "End of channel exception list" ]
 				,RPL_INVITELIST: [ 346, "<channel> <invitemask>" ]
 				,RPL_ENDOFINVITELIST: [ 347, ":End of channel invite list" ]
 				,RPL_UNIQOPIS: [ 325, "<channel> <nickname>" ]
@@ -805,6 +805,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Method used for adding a ban
 			this.addBan = function( socket, mask ) {
+				// TODO: Return a false when ban list has been reached
+				// ERR_BANLISTFULL
+
 				// Add to list, if an identical value doesn't exist yet
 				if ( this._bans.indexOf( mask ) === -1 ) {
 					this._bans.push( mask );
@@ -812,6 +815,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 					// Let setMode broadcast the message to others
 					this.setMode( socket, "b", true, mask );
 				}
+
 				console.log( this._bans );
 			}
 
@@ -830,7 +834,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Method used for listing bans
 			this.getBanList = function() {
-				// TODO: Implement
+				return this._bans;
 			}
 
 			// Method used for adding a ban exception
@@ -860,7 +864,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Method used for listing ban exceptions
 			this.getBanExceptionList = function() {
-				// TODO: Implement
+				return this._banExceptions;
 			}
 
 			// Method used for fetching channel modes, as a string
@@ -2864,7 +2868,47 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 									,data.target + " " + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[1]
 								);
 								break;
-							case "o":
+							case "b":
+								var banList = channel.getBanList();
+
+								// RPL_BANLIST
+								for ( var k = 0; k < banList.length; k++ ) {
+									this.emitIRCError(
+										socket
+										,'RPL_BANLIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_BANLIST[0]
+										,data.target + " " + banList[k]
+									);
+								}
+
+								// RPL_ENDOFBANLIST
+								this.emitIRCError(
+									socket
+									,'RPL_ENDOFBANLIST'
+									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFBANLIST[0]
+									,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFBANLIST[1]
+								);
+								break;
+							case "e":
+								var banExceptionList = channel.getBanExceptionList();
+
+								// RPL_EXCEPTLIST
+								for ( var k = 0; k < banExceptionList.length; k++ ) {
+									this.emitIRCError(
+										socket
+										,'RPL_EXCEPTLIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_EXCEPTLIST[0]
+										,data.target + " " + banExceptionList[k]
+									);
+								}
+
+								// RPL_ENDOFEXCEPTLIST
+								this.emitIRCError(
+									socket
+									,'RPL_ENDOFEXCEPTLIST'
+									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFEXCEPTLIST[0]
+									,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFEXCEPTLIST[1]
+								);
 								break;
 							default:
 								// Do nothing

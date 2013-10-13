@@ -205,6 +205,10 @@ Ext.onReady( function() {
 			,ERR_CHANOPRIVSNEEDED: this.ChatApplication.ERR_CHANOPRIVSNEEDED
 			,ERR_CANNOTSENDTOCHAN: this.ChatApplication.ERR_CANNOTSENDTOCHAN
 			,KICK: this.ChatApplication.KICK
+			,RPL_ENDOFBANLIST: this.ChatApplication.RPL_ENDOFBANLIST
+			,RPL_BANLIST: this.ChatApplication.RPL_BANLIST
+			,RPL_EXCEPTLIST: this.ChatApplication.RPL_EXCEPTLIST
+			,RPL_ENDOFEXCEPTLIST: this.ChatApplication.RPL_ENDOFEXCEPTLIST
 		}
 	} );
 
