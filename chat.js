@@ -849,7 +849,7 @@ ChatJs.prototype.KICK = function( data ) {
 		this.addText( '* You have beem kicked from ' + data.channel + ' by ' + data.nickname + ' (' + Ext.htmlEncode( data.comment ) + ')' );
 
 		// Close channel window
-		this._channelWindows[data.channel].chatWindow.hide();
+		this._channelWindows[data.channel].chatWindow.close();
 	} else {
 		// Only display a message, that that user has been kicked, and update the user list
 		var channelWindow = this._channelWindows[ data.channel ];
