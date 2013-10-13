@@ -109,19 +109,18 @@ var S = require( 'string' ); // http://stringjs.com/
 var _ = require('lodash'); // http://lodash.com/
 var fs = require('fs'); // Standard file system
 
+// Load configuration file, in current scope
+eval( fs.readFileSync('./public/config.js','utf8') );
+
 /** IRC Protocol */
 var IRCProtocol = {
 	// Daemon version
 	Version: "0.1"
 	// Server info
-	,ServerName: "grosan.co.uk"
-	,ServerInfo: "Oxford, Oxfordshire, UK, EU"
-	,ServerComments: "Development version."
-	,AdminInfo: {
-		Location: "Oxford, Oxfordshire, United Kingdom, European Union"
-		,Organization: "Grosan.co.uk"
-		,Email: "fgheorghe@grosan.co.uk"
-	}
+	,ServerName: Config.Server.ServerName
+	,ServerInfo: Config.Server.ServerInfo
+	,ServerComments: Config.Server.ServerComments
+	,AdminInfo: Config.Server.AdminInfo
 	,Info: "IRC 2.0 (JSON Based Web IRC Server).\n\
 Based on RFC2812. Copyright (C) The Internet Society (2000). All Rights Reserved.\n\
 \n\
@@ -151,11 +150,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n\
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\
 \n\
 \n\
-Contribute of fork:\n\
+Contribute or fork:\n\
 https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
-	,MotdFile: 'motd.txt'
-	,PingFrequency: 10 // In seconds
-	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
+	,MotdFile: Config.Server.MotdFile
+	,PingFrequency: Config.Server.PingFrequency // In seconds
+	,MaxChannelList: Config.Server.MaxChannelList // Maximum number of channels returned in a RPL_LIST event
 	,OperPassword: 'password' // TODO: Encrypt, and add host support
 	,DebugLevel: 0 // TODO: Implement debug levels
 	,UserModes: [
@@ -3538,9 +3537,6 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
-
-// Load configuration file, in current scope
-eval( fs.readFileSync('./public/config.js','utf8') );
 
 // Create server
 ChatServer = new Server( {

@@ -29,6 +29,20 @@ var Config = {
 	Server: {
 		Port: 80
 		,Host: 'server.jsirc.net'
+		// IRC Protocol configuration
+		,IRCProtocol: {
+			,ServerName: "server.jsirc.net"
+			,ServerInfo: "Oxford, Oxfordshire, UK, EU"
+			,ServerComments: "Development version."
+			,AdminInfo: {
+				Location: "Oxford, Oxfordshire, United Kingdom, European Union"
+				,Organization: "Grosan.co.uk"
+				,Email: "fgheorghe@grosan.co.uk"
+			}
+			,MotdFile: 'motd.txt'
+			,PingFrequency: 10 // In seconds
+			,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
+		}
 	}
 	,Client: {
 		// Server URL
