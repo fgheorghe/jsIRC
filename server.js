@@ -152,7 +152,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\
 \n\
 \n\
 Contribute of fork:\n\
-https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
+https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 	,MotdFile: 'motd.txt'
 	,PingFrequency: 10 // In seconds
 	,MaxChannelList: 10 // Maximum number of channels returned in a RPL_LIST event
@@ -1211,7 +1211,7 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 		socket
 		,'RPL_YOURHOST'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[0]
-		,"Your host is chatjs, running version " + IRCProtocol.Version
+		,"Your host is jsIRC, running version " + IRCProtocol.Version
 	);
 
 	// Send RPL_CREATED, with the date this server was started

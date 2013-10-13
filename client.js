@@ -109,7 +109,7 @@ Ext.onReady( function() {
 		,items: [ this.centerRegion ]
 	} );
 
-	this.ChatApplication = new ChatJs( {
+	this.ChatApplication = new jsIRC( {
 		renderTo: this.windowContainer
 		,taskbar: this.taskbar
 	} );

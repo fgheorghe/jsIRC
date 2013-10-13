@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * @class Provides chat functionality.
  * @constructor
  */
-var ChatJs = function( config ) {
+var jsIRC = function( config ) {
 	this._config = config;
 	// Constants
 	this.NICK_PATTERN = /^[a-zA-Z0-9]+$/; // Nickname pattern, as per RFC
@@ -212,7 +212,7 @@ var ChatJs = function( config ) {
  * @param {String} nickname Client nickname.
  * @function
  */
-ChatJs.prototype.findOrCreateQueryWindow = function( nickname ) {
+jsIRC.prototype.findOrCreateQueryWindow = function( nickname ) {
 	// Verify if already created
 	var queryWindowPosition = this._lcChatNicknames.indexOf( nickname.toLowerCase() )
 		,queryWindow;
@@ -242,7 +242,7 @@ ChatJs.prototype.findOrCreateQueryWindow = function( nickname ) {
  * @param {String} text String to parse.
  * @function
  */
-ChatJs.prototype.parseCommand = function( text ) {
+jsIRC.prototype.parseCommand = function( text ) {
 	// Trim command
 	text = Ext.util.Format.trim( text ).toString();
 
@@ -622,7 +622,7 @@ ChatJs.prototype.parseCommand = function( text ) {
  * TODO: Implement.
  * @function
  */
-ChatJs.prototype.reconnect = function() {
+jsIRC.prototype.reconnect = function() {
 	var i;
 
 	// Unmask chat windows, if any
@@ -648,7 +648,7 @@ ChatJs.prototype.reconnect = function() {
  * Method used for handling a lost connection.
  * @function
  */
-ChatJs.prototype.disconnectHandler = function() {
+jsIRC.prototype.disconnectHandler = function() {
 	var i;
 
 	// Mask chat windows, if any
@@ -682,7 +682,7 @@ ChatJs.prototype.disconnectHandler = function() {
  * Method used for creating the name prompt.
  * @function
  */
-ChatJs.prototype.createNamePrompt = function() {
+jsIRC.prototype.createNamePrompt = function() {
 	this.namePrompt = Ext.Msg.show( {
 		title: 'Name'
 		,msg: 'Please enter your name:'
@@ -714,7 +714,7 @@ ChatJs.prototype.createNamePrompt = function() {
  * @param {String} channel Channel name.
  * @function
  */
-ChatJs.prototype.removeChannelWindow = function( channel ) {
+jsIRC.prototype.removeChannelWindow = function( channel ) {
 	// Find in the list of windows
 	var _newList = {};
 	for ( var key in this._channelWindows ) {
@@ -729,7 +729,7 @@ ChatJs.prototype.removeChannelWindow = function( channel ) {
  * Method used for handling a successful connection.
  * @function
  */
-ChatJs.prototype.connectHandler = function() {
+jsIRC.prototype.connectHandler = function() {
 	// Ignore if we already went through this process...
 	if ( this._namePromptDisplayed ) {
 		return;
@@ -747,7 +747,7 @@ ChatJs.prototype.connectHandler = function() {
  * @param {Boolean} noAlert Ignore the window title alert.
  * @function
  */
-ChatJs.prototype.addText = function( text, noAlert ) {
+jsIRC.prototype.addText = function( text, noAlert ) {
 	// Apply extra formats
 	text = Ext.util.Format.nl2br( text );
 
@@ -773,7 +773,7 @@ ChatJs.prototype.addText = function( text, noAlert ) {
  * Handler for an 'ERR_NICKNAMEINUSE' event.
  * @function
  */
-ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
+jsIRC.prototype.ERR_NICKNAMEINUSE = function( data ) {
 	if ( this._registered === false ) {
 		// Show an error message, then the prompt asking for a new name
 		Ext.Msg.show( {
@@ -798,7 +798,7 @@ ChatJs.prototype.ERR_NICKNAMEINUSE = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.JOIN = function( data ) {
+jsIRC.prototype.JOIN = function( data ) {
 	// Create a new window, if the JOIN command is reffering to the current user AND a window for this channel doesn't exist
 	// TODO: Check if channel window exists!
 	if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && typeof this._channelWindows[data.channel] === "undefined" ) {
@@ -845,7 +845,7 @@ ChatJs.prototype.JOIN = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.KICK = function( data ) {
+jsIRC.prototype.KICK = function( data ) {
 	// If the user being kicked is the same as this user, then display the text accordingly (in the status window)
 	if ( data.target.toLowerCase() === this._nickname.toLowerCase() ) {
 		this.addText( '* You have beem kicked from ' + data.channel + ' by ' + data.nickname + ' (' + Ext.htmlEncode( data.comment ) + ')' );
@@ -869,7 +869,7 @@ ChatJs.prototype.KICK = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.PART = function( data ) {
+jsIRC.prototype.PART = function( data ) {
 	if ( data.nickname.toLowerCase() === this._nickname.toLowerCase() && typeof this._channelWindows[data.channel] === "undefined" ) {
 		// 'Terminate' the window
 		// TODO:
@@ -888,7 +888,7 @@ ChatJs.prototype.PART = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
+jsIRC.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -898,7 +898,7 @@ ChatJs.prototype.ERR_NONICKNAMEGIVEN = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NOPRIVILEGES = function( data ) {
+jsIRC.prototype.ERR_NOPRIVILEGES = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -908,7 +908,7 @@ ChatJs.prototype.ERR_NOPRIVILEGES = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_USERSDISABLED = function( data ) {
+jsIRC.prototype.ERR_USERSDISABLED = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -918,7 +918,7 @@ ChatJs.prototype.ERR_USERSDISABLED = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_BANLIST = function( data ) {
+jsIRC.prototype.RPL_BANLIST = function( data ) {
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
 
@@ -927,7 +927,7 @@ ChatJs.prototype.RPL_BANLIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_BANNEDFROMCHAN = function( data ) {
+jsIRC.prototype.ERR_BANNEDFROMCHAN = function( data ) {
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
 
@@ -936,7 +936,7 @@ ChatJs.prototype.ERR_BANNEDFROMCHAN = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFBANLIST = function( data ) {
+jsIRC.prototype.RPL_ENDOFBANLIST = function( data ) {
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
 
@@ -945,7 +945,7 @@ ChatJs.prototype.RPL_ENDOFBANLIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_EXCEPTLIST = function( data ) {
+jsIRC.prototype.RPL_EXCEPTLIST = function( data ) {
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
 
@@ -954,7 +954,7 @@ ChatJs.prototype.RPL_EXCEPTLIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFEXCEPTLIST = function( data ) {
+jsIRC.prototype.RPL_ENDOFEXCEPTLIST = function( data ) {
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
 
@@ -963,7 +963,7 @@ ChatJs.prototype.RPL_ENDOFEXCEPTLIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_TOPIC = function( data ) {
+jsIRC.prototype.RPL_TOPIC = function( data ) {
 	// Find the channel window
 	var channelWindow = this._channelWindows[ data.channel ];
 
@@ -984,7 +984,7 @@ ChatJs.prototype.RPL_TOPIC = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_NAMREPLY = function( data ) {
+jsIRC.prototype.RPL_NAMREPLY = function( data ) {
 	console.log( data.names );
 	// Load list of clients, if a window exists
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
@@ -1012,7 +1012,7 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_NOTOPIC = function( data ) {
+jsIRC.prototype.RPL_NOTOPIC = function( data ) {
 	// Find channel window, and set to an empty string
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		this._channelWindows[data.channel].topicText.setValue( "" );
@@ -1025,7 +1025,7 @@ ChatJs.prototype.RPL_NOTOPIC = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NEEDMOREPARAMS = function( data ) {
+jsIRC.prototype.ERR_NEEDMOREPARAMS = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1035,7 +1035,7 @@ ChatJs.prototype.ERR_NEEDMOREPARAMS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFNAMES = function( data ) {
+jsIRC.prototype.RPL_ENDOFNAMES = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1045,7 +1045,7 @@ ChatJs.prototype.RPL_ENDOFNAMES = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NOSUCHCHANNEL = function( data ) {
+jsIRC.prototype.ERR_NOSUCHCHANNEL = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1055,7 +1055,7 @@ ChatJs.prototype.ERR_NOSUCHCHANNEL = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_ALREADYREGISTRED = function( data ) {
+jsIRC.prototype.ERR_ALREADYREGISTRED = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1065,7 +1065,7 @@ ChatJs.prototype.ERR_ALREADYREGISTRED = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_VERSION = function( data ) {
+jsIRC.prototype.RPL_VERSION = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1075,7 +1075,7 @@ ChatJs.prototype.RPL_VERSION = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NOSUCHNICK = function( data ) {
+jsIRC.prototype.ERR_NOSUCHNICK = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1085,7 +1085,7 @@ ChatJs.prototype.ERR_NOSUCHNICK = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.PRIVMSG = function( data ) {
+jsIRC.prototype.PRIVMSG = function( data ) {
 	// Check if target is a channel, or current user
 	var isChannel = this.CHANNEL_NAME_PATTERN.test( data.target );
 	var isNickname = this.NICK_PATTERN.test( data.target );
@@ -1122,7 +1122,7 @@ ChatJs.prototype.PRIVMSG = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFWHOIS = function( data ) {
+jsIRC.prototype.RPL_ENDOFWHOIS = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] End of WHOIS list' );
 }
@@ -1132,7 +1132,7 @@ ChatJs.prototype.RPL_ENDOFWHOIS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WHOISIDLE = function( data ) {
+jsIRC.prototype.RPL_WHOISIDLE = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.idle ) + ' :seconds idle' );
 }
@@ -1142,7 +1142,7 @@ ChatJs.prototype.RPL_WHOISIDLE = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NOTONCHANNEL = function( data ) {
+jsIRC.prototype.ERR_NOTONCHANNEL = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1152,7 +1152,7 @@ ChatJs.prototype.ERR_NOTONCHANNEL = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_INVITELIST = function( data ) {
+jsIRC.prototype.RPL_INVITELIST = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1162,7 +1162,7 @@ ChatJs.prototype.RPL_INVITELIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFINVITELIST = function( data ) {
+jsIRC.prototype.RPL_ENDOFINVITELIST = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1172,7 +1172,7 @@ ChatJs.prototype.RPL_ENDOFINVITELIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.INVITE = function( data ) {
+jsIRC.prototype.INVITE = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.user ) + '@' + Ext.htmlEncode( data.host ) + ' invites you to join '  + Ext.htmlEncode( data.channel ) );
 }
@@ -1182,7 +1182,7 @@ ChatJs.prototype.INVITE = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_INVITING = function( data ) {
+jsIRC.prototype.RPL_INVITING = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1192,7 +1192,7 @@ ChatJs.prototype.RPL_INVITING = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_USERONCHANNEL = function( data ) {
+jsIRC.prototype.ERR_USERONCHANNEL = function( data ) {
 	// Add text to window
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
 }
@@ -1202,7 +1202,7 @@ ChatJs.prototype.ERR_USERONCHANNEL = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WHOISUSER = function( data ) {
+jsIRC.prototype.RPL_WHOISUSER = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] (' + Ext.htmlEncode( data.user ) + '@' + Ext.htmlEncode( data.host ) + '): '  + Ext.htmlEncode( data.realname ) );
 }
@@ -1212,7 +1212,7 @@ ChatJs.prototype.RPL_WHOISUSER = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WHOISSERVER = function( data ) {
+jsIRC.prototype.RPL_WHOISSERVER = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.server ) + ' :' + Ext.htmlEncode( data.serverinfo ) );
 }
@@ -1222,7 +1222,7 @@ ChatJs.prototype.RPL_WHOISSERVER = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.WALLOPS = function( data ) {
+jsIRC.prototype.WALLOPS = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.server ) + ' :' + Ext.htmlEncode( data.text ) );
 }
@@ -1232,7 +1232,7 @@ ChatJs.prototype.WALLOPS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WHOISCHANNELS = function( data ) {
+jsIRC.prototype.RPL_WHOISCHANNELS = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + Ext.htmlEncode( data.channels.join( " " ) ) );
 }
@@ -1242,7 +1242,7 @@ ChatJs.prototype.RPL_WHOISCHANNELS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.QUIT = function( data ) {
+jsIRC.prototype.QUIT = function( data ) {
 	// Remove from all windows
 	// TODO: Handle out of synch quits, and optimize the process
 	for ( var channel in this._channelWindows ) {
@@ -1258,7 +1258,7 @@ ChatJs.prototype.QUIT = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.NICK = function( data ) {
+jsIRC.prototype.NICK = function( data ) {
 	// Add text to all channel windows
 	for ( var channel in this._channelWindows ) {
 		if ( this._channelWindows[ channel ].findClient( data.initial ) ) {
@@ -1286,7 +1286,7 @@ ChatJs.prototype.NICK = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_MYINFO = function( data ) {
+jsIRC.prototype.RPL_MYINFO = function( data ) {
 	// Add text to window
 	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 
@@ -1299,7 +1299,7 @@ ChatJs.prototype.RPL_MYINFO = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_CREATED = function( data ) {
+jsIRC.prototype.RPL_CREATED = function( data ) {
 	// Add text to window
 	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1309,7 +1309,7 @@ ChatJs.prototype.RPL_CREATED = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_YOURHOST = function( data ) {
+jsIRC.prototype.RPL_YOURHOST = function( data ) {
 	// Add text to window
 	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1319,7 +1319,7 @@ ChatJs.prototype.RPL_YOURHOST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
+jsIRC.prototype.ERR_NORECIPIENT = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1329,7 +1329,7 @@ ChatJs.prototype.ERR_NORECIPIENT = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_USERHOST = function( data ) {
+jsIRC.prototype.RPL_USERHOST = function( data ) {
 	// Add text to window
 	for ( var i = 0; i < data.nicknames.length; i++ ) {
 		this.addText( '* USERHOST: ' + Ext.htmlEncode( data.nicknames[i].nickname ) + "=" + Ext.htmlEncode( data.nicknames[i].user ) + "@" + Ext.htmlEncode( data.nicknames[i].host ) );
@@ -1341,7 +1341,7 @@ ChatJs.prototype.RPL_USERHOST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ISON = function( data ) {
+jsIRC.prototype.RPL_ISON = function( data ) {
 	// Add text to window
 	this.addText( '* ISON: ' + Ext.htmlEncode( data.nicknames.join( " " ) ) );
 }
@@ -1351,7 +1351,7 @@ ChatJs.prototype.RPL_ISON = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.PING = function( data ) {
+jsIRC.prototype.PING = function( data ) {
 	// Add text to window
 	// TODO: Clarify
 	// TODO: Add text back
@@ -1368,7 +1368,7 @@ ChatJs.prototype.PING = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NOTEXTTOSEND = function( data ) {
+jsIRC.prototype.ERR_NOTEXTTOSEND = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1378,7 +1378,7 @@ ChatJs.prototype.ERR_NOTEXTTOSEND = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_MOTDSTART = function( data ) {
+jsIRC.prototype.RPL_MOTDSTART = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1388,7 +1388,7 @@ ChatJs.prototype.RPL_MOTDSTART = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_MOTD = function( data ) {
+jsIRC.prototype.RPL_MOTD = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1398,7 +1398,7 @@ ChatJs.prototype.RPL_MOTD = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_INFO = function( data ) {
+jsIRC.prototype.RPL_INFO = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1408,7 +1408,7 @@ ChatJs.prototype.RPL_INFO = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFINFO = function( data ) {
+jsIRC.prototype.RPL_ENDOFINFO = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1418,7 +1418,7 @@ ChatJs.prototype.RPL_ENDOFINFO = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_TIME = function( data ) {
+jsIRC.prototype.RPL_TIME = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1428,7 +1428,7 @@ ChatJs.prototype.RPL_TIME = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ADMINME = function( data ) {
+jsIRC.prototype.RPL_ADMINME = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1438,7 +1438,7 @@ ChatJs.prototype.RPL_ADMINME = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ADMINLOC1 = function( data ) {
+jsIRC.prototype.RPL_ADMINLOC1 = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1448,7 +1448,7 @@ ChatJs.prototype.RPL_ADMINLOC1 = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ADMINLOC2 = function( data ) {
+jsIRC.prototype.RPL_ADMINLOC2 = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1458,7 +1458,7 @@ ChatJs.prototype.RPL_ADMINLOC2 = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ADMINEMAIL = function( data ) {
+jsIRC.prototype.RPL_ADMINEMAIL = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1468,7 +1468,7 @@ ChatJs.prototype.RPL_ADMINEMAIL = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_ERRONEUSNICKNAME = function( data ) {
+jsIRC.prototype.ERR_ERRONEUSNICKNAME = function( data ) {
 	if ( this._registered === false ) {
 		// Show an error message, then the prompt asking for a new name
 		Ext.Msg.show( {
@@ -1494,7 +1494,7 @@ ChatJs.prototype.ERR_ERRONEUSNICKNAME = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFMOTD = function( data ) {
+jsIRC.prototype.RPL_ENDOFMOTD = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1504,7 +1504,7 @@ ChatJs.prototype.RPL_ENDOFMOTD = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_NOMOTD = function( data ) {
+jsIRC.prototype.ERR_NOMOTD = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1514,7 +1514,7 @@ ChatJs.prototype.ERR_NOMOTD = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LUSERCLIENT = function( data ) {
+jsIRC.prototype.RPL_LUSERCLIENT = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1524,7 +1524,7 @@ ChatJs.prototype.RPL_LUSERCLIENT = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LUSEROP = function( data ) {
+jsIRC.prototype.RPL_LUSEROP = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1534,7 +1534,7 @@ ChatJs.prototype.RPL_LUSEROP = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LUSERUNKOWN = function( data ) {
+jsIRC.prototype.RPL_LUSERUNKOWN = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1544,7 +1544,7 @@ ChatJs.prototype.RPL_LUSERUNKOWN = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LUSERCHANNELS = function( data ) {
+jsIRC.prototype.RPL_LUSERCHANNELS = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1554,7 +1554,7 @@ ChatJs.prototype.RPL_LUSERCHANNELS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LUSERME = function( data ) {
+jsIRC.prototype.RPL_LUSERME = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1564,7 +1564,7 @@ ChatJs.prototype.RPL_LUSERME = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_YOUREOPER = function( data ) {
+jsIRC.prototype.RPL_YOUREOPER = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1574,7 +1574,7 @@ ChatJs.prototype.RPL_YOUREOPER = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_PASSWDMISMATCH = function( data ) {
+jsIRC.prototype.ERR_PASSWDMISMATCH = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1584,7 +1584,7 @@ ChatJs.prototype.ERR_PASSWDMISMATCH = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WHOISOPERATOR = function( data ) {
+jsIRC.prototype.RPL_WHOISOPERATOR = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + "is an IRC operator" );
 }
@@ -1594,7 +1594,7 @@ ChatJs.prototype.RPL_WHOISOPERATOR = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_UMODEIS = function( data ) {
+jsIRC.prototype.RPL_UMODEIS = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1604,7 +1604,7 @@ ChatJs.prototype.RPL_UMODEIS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_INVITEONLYCHAN = function( data ) {
+jsIRC.prototype.ERR_INVITEONLYCHAN = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1614,7 +1614,7 @@ ChatJs.prototype.ERR_INVITEONLYCHAN = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_CHANNELISFULL = function( data ) {
+jsIRC.prototype.ERR_CHANNELISFULL = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1624,7 +1624,7 @@ ChatJs.prototype.ERR_CHANNELISFULL = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_BADCHANNELKEY = function( data ) {
+jsIRC.prototype.ERR_BADCHANNELKEY = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1634,7 +1634,7 @@ ChatJs.prototype.ERR_BADCHANNELKEY = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.MODE = function( data ) {
+jsIRC.prototype.MODE = function( data ) {
 	if ( typeof this._channelWindows[data.channel] !== "undefined" ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
@@ -1689,7 +1689,7 @@ ChatJs.prototype.MODE = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
+jsIRC.prototype.RPL_CHANNELMODEIS = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.channel ) + " " + Ext.htmlEncode( data.mode ) + ( data.params ? " " + Ext.htmlEncode( data.params.join( " " ) ) : "" ) );
 
@@ -1732,7 +1732,7 @@ ChatJs.prototype.RPL_CHANNELMODEIS = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_UNKNOWNMODE = function( data ) {
+jsIRC.prototype.ERR_UNKNOWNMODE = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1742,7 +1742,7 @@ ChatJs.prototype.ERR_UNKNOWNMODE = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_USERNOTINCHANNEL = function( data ) {
+jsIRC.prototype.ERR_USERNOTINCHANNEL = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1752,7 +1752,7 @@ ChatJs.prototype.ERR_USERNOTINCHANNEL = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_CHANOPRIVSNEEDED = function( data ) {
+jsIRC.prototype.ERR_CHANOPRIVSNEEDED = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1762,7 +1762,7 @@ ChatJs.prototype.ERR_CHANOPRIVSNEEDED = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_UNAWAY = function( data ) {
+jsIRC.prototype.RPL_UNAWAY = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1772,7 +1772,7 @@ ChatJs.prototype.RPL_UNAWAY = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_NOWAWAY = function( data ) {
+jsIRC.prototype.RPL_NOWAWAY = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1782,7 +1782,7 @@ ChatJs.prototype.RPL_NOWAWAY = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WHOREPLY = function( data ) {
+jsIRC.prototype.RPL_WHOREPLY = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.channel !== "" ? data.channel + " " : "" ) + Ext.htmlEncode( data.user ) + " " + Ext.htmlEncode( data.host ) + " " + Ext.htmlEncode( data.server ) + " " + Ext.htmlEncode( data.nick ) + ": " + Ext.htmlEncode( data.realname ) );
 }
@@ -1792,7 +1792,7 @@ ChatJs.prototype.RPL_WHOREPLY = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_ENDOFWHO = function( data ) {
+jsIRC.prototype.RPL_ENDOFWHO = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1802,7 +1802,7 @@ ChatJs.prototype.RPL_ENDOFWHO = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_CANNOTSENDTOCHAN = function( data ) {
+jsIRC.prototype.ERR_CANNOTSENDTOCHAN = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1812,7 +1812,7 @@ ChatJs.prototype.ERR_CANNOTSENDTOCHAN = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_UMODEUNKNOWNFLAG = function( data ) {
+jsIRC.prototype.ERR_UMODEUNKNOWNFLAG = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1822,7 +1822,7 @@ ChatJs.prototype.ERR_UMODEUNKNOWNFLAG = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.ERR_USERSDONTMATCH = function( data ) {
+jsIRC.prototype.ERR_USERSDONTMATCH = function( data ) {
 	// Add text to window
 	this.addText( '* ' + Ext.htmlEncode( data.msg ) );
 }
@@ -1832,7 +1832,7 @@ ChatJs.prototype.ERR_USERSDONTMATCH = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_AWAY = function( data ) {
+jsIRC.prototype.RPL_AWAY = function( data ) {
 	// Add text to window
 	this.addText( '* [' + Ext.htmlEncode( data.nick ) + '] ' + "is away: " + data.text );
 }
@@ -1842,7 +1842,7 @@ ChatJs.prototype.RPL_AWAY = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LIST = function( data ) {
+jsIRC.prototype.RPL_LIST = function( data ) {
 	// Create if not already in place
 	if ( !this._channelListWindow ) {
 		this._channelListWindow = new ListWindow( {
@@ -1873,7 +1873,7 @@ ChatJs.prototype.RPL_LIST = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_LISTEND = function( data ) {
+jsIRC.prototype.RPL_LISTEND = function( data ) {
 	// Set as listed, so on next request it will be cleared
 	if ( this._channelListWindow ) {
 		this._channelListWindow.listed = true;
@@ -1888,7 +1888,7 @@ ChatJs.prototype.RPL_LISTEND = function( data ) {
  * @param {Object} data Data object.
  * @function
  */
-ChatJs.prototype.RPL_WELCOME = function( data ) {
+jsIRC.prototype.RPL_WELCOME = function( data ) {
 	// Set client as 'registered'
 	this._registered = true;
 
