@@ -1875,4 +1875,15 @@ jsIRC.prototype.RPL_WELCOME = function( data ) {
 
 	// Add text to window
 	this.addText( '*** ' + Ext.htmlEncode( data.msg ) );
+
+	// Join channel, if the url points to something similar to http://domain/#channel
+	// TODO: Move code to proper location
+	var documentLocation = location.href
+		// TODO: Make use of CHANNEL_NAME_PATTERN
+		,channelName = /[#&+!]+[a-zA-Z0-9\-\_]+/.exec( documentLocation );
+	if ( channelName ) {
+		// Emit a join command
+		this.parseCommand( "/join " + channelName );
+	}
+	
 }
