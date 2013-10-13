@@ -921,6 +921,15 @@ ChatJs.prototype.RPL_BANLIST = function( data ) {
 }
 
 /**
+ * Method used for handling 'ERR_BANNEDFROMCHAN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_BANNEDFROMCHAN = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'RPL_ENDOFBANLIST' event.
  * @param {Object} data Data object.
  * @function

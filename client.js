@@ -209,6 +209,7 @@ Ext.onReady( function() {
 			,RPL_BANLIST: this.ChatApplication.RPL_BANLIST
 			,RPL_EXCEPTLIST: this.ChatApplication.RPL_EXCEPTLIST
 			,RPL_ENDOFEXCEPTLIST: this.ChatApplication.RPL_ENDOFEXCEPTLIST
+			,ERR_BANNEDFROMCHAN: this.ChatApplication.RPL_ENDOFEXCEPTLIST
 		}
 	} );
 
