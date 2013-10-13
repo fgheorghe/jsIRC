@@ -263,6 +263,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,ERR_INVITEONLYCHAN: [ 473, " :Cannot join channel (+i)" ]
 				,ERR_CHANNELISFULL: [ 471, "Cannot join channel (+l)" ]
 				,ERR_BADCHANNELKEY: [ 475, "Cannot join channel (+k)" ]
+				,ERR_BANNEDFROMCHAN: [ 474, "Cannot join channel (+b)" ]
 			}
 			,PRIVMSG: {
 				ERR_NORECIPIENT: [ 411, "No recipient given (<command>)" ]
@@ -331,7 +332,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				,RPL_BANLIST: [ 367, "<channel> <banmask>" ]
 				,RPL_ENDOFBANLIST: [ 368, "End of channel ban list" ]
 				,RPL_EXCEPTLIST: [ 348, "<channel> <exceptionmask>" ]
-				,RPL_ENDOFEXCEPTLIST: [ 349, "<channel> :End of channel exception list" ]
+				,RPL_ENDOFEXCEPTLIST: [ 349, "End of channel exception list" ]
 				,RPL_INVITELIST: [ 346, "<channel> <invitemask>" ]
 				,RPL_ENDOFINVITELIST: [ 347, ":End of channel invite list" ]
 				,RPL_UNIQOPIS: [ 325, "<channel> <nickname>" ]
@@ -803,6 +804,77 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 				}
 			}
 
+			// Method used for extracting components of a ban / exception mask (nick, user and host)
+			// NOTE: Returns false if mask is invalid (does not have the required components)
+			this._getBanComponents = function( mask ) {
+				var temp = mask.split( "!" );
+
+				if ( temp.length !== 2 ) {
+					return false;
+				}
+				var nick = temp[0];
+				temp = temp[1].split( "@" );
+
+				if ( temp.length !== 2 ) {
+					return false;
+				}
+				var host = temp[1];
+				var user = temp[0];
+
+				return {
+					nick: nick
+					,user: user
+					,host: host
+				};
+			}
+
+			// Method used for checking a ban mask component against the user's value
+			// Returns true if component matches, false if not
+			this._checkBanMask = function( ban, user ) {
+				// Build regex pattern
+				var expression = new RegExp( "^" + ban.replace( /\*/g, "(.*)" ) + "$", "g" );
+				if ( user.search( expression ) === -1 ) {
+					return false;
+				}
+				return true;
+			}
+
+			// Method used for checking if a user is banned or exception
+			this._isExceptionOrBanned = function( socket, list ) {
+				// Prepare values
+				var host = socket.Client.getHost()
+					,user = socket.Client.getUser()
+					,nick = socket.Client.getNickname();
+
+				// Loop list
+				for ( var i = 0; i < list.length; i++ ) {
+					// Construct components for each
+					var components = this._getBanComponents( list[i] );
+
+					// If a valid mask, then verify
+					if ( components !== false ) {
+						// Compare each item
+						if ( this._checkBanMask( components.host, host ) && this._checkBanMask( components.nick, nick ) && this._checkBanMask( components.user, user ) ) {
+							// User is banned
+							return true;
+						}
+					}
+				}
+
+				// User is not banned
+				return false;
+			}
+
+			// Method used for checking if a user is banned or not
+			this.isBanned = function( socket ) {
+				return this._isExceptionOrBanned( socket, this.getBanList() );
+			}
+
+			// Method used for checking if a user is exception or not
+			this.isException = function( socket ) {
+				return this._isExceptionOrBanned( socket, this.getBanExceptionList() );
+			}
+
 			// Method used for adding a ban
 			this.addBan = function( socket, mask ) {
 				// Add to list, if an identical value doesn't exist yet
@@ -812,6 +884,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 					// Let setMode broadcast the message to others
 					this.setMode( socket, "b", true, mask );
 				}
+
 				console.log( this._bans );
 			}
 
@@ -830,7 +903,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Method used for listing bans
 			this.getBanList = function() {
-				// TODO: Implement
+				return this._bans;
 			}
 
 			// Method used for adding a ban exception
@@ -860,7 +933,7 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 			// Method used for listing ban exceptions
 			this.getBanExceptionList = function() {
-				// TODO: Implement
+				return this._banExceptions;
 			}
 
 			// Method used for fetching channel modes, as a string
@@ -899,6 +972,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 						operator: this.isOperator( users[i] )
 						,voice: this.hasVoice( users[i] )
 						,nick: users[i]
+						// Include host, and user
+						,user: this._sockets[i].Client.getUser()
+						,host: this._sockets[i].Client.getHost()
 					} );
 				}
 
@@ -1001,13 +1077,18 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 				// Remove user, silently
 				this.removeUser( targetClientSocket, true );
-				console.log( this._users );
 			}
 
 			// Method used for removing a user
 			this.removeUser = function( socket, silent ) {
 				// Remove from lists, and notify users
 				var nicknamePosition = this._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() );
+
+				// Check if user is on channel
+				if ( nicknamePosition === -1 ) {
+					// Silently ignore, if not on channel!
+					return;
+				}
 
 				// Remove nickname from lists
 				this._users.splice( nicknamePosition, 1 );
@@ -1704,6 +1785,18 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 			this._stats.channels++;
 		}
 
+		// ERR_BANNEDFROMCHAN if the user banned, not invited or not on an exception list
+		if ( !channel.isException( socket ) && channel.isBanned( socket ) && !channel.isInvited( socket.Client.getNickname() ) ) {
+			// ERR_BANNEDFROMCHAN
+			this.emitIRCError(
+				socket
+				,'ERR_BANNEDFROMCHAN'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BANNEDFROMCHAN[0]
+				,channel.getName() + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BANNEDFROMCHAN[1]
+			);
+			continue;
+		}
+
 		// ERR_INVITEONLYCHAN if invite only, and user is not on the channel invite list
 		if ( channel.getMode( 'i' ) && !channel.isInvited( socket.Client.getNickname() ) ) {
 			// ERR_INVITEONLYCHAN
@@ -1711,7 +1804,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				socket
 				,'ERR_INVITEONLYCHAN'
 				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[0]
-				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[1]
+				,channel.getName() + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_INVITEONLYCHAN[1]
 			);
 			continue;
 		}
@@ -1723,7 +1816,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				socket
 				,'ERR_CHANNELISFULL'
 				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[0]
-				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[1]
+				,channel.getName() + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_CHANNELISFULL[1]
 			);
 			continue;
 		}
@@ -1735,7 +1828,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				socket
 				,'ERR_BADCHANNELKEY'
 				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BADCHANNELKEY[0]
-				,channel.getName() + " " + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BADCHANNELKEY[1]
+				,channel.getName() + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_BADCHANNELKEY[1]
 			);
 			continue;
 		}
@@ -1905,6 +1998,28 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 
 			// Check if mode '+n' is set...if so, prevent external users from sending messages
 			if ( channel.getMode( "n" ) && channel._lcUsers.indexOf( socket.Client.getNickname().toLowerCase() ) === -1 ) {
+				this.emitIRCError(
+					socket
+					,'ERR_CANNOTSENDTOCHAN'
+					,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[0]
+					,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[1]
+				);
+				return;
+			}
+
+			// Check if channel mode is +m and user is not operator or does not have voice
+			if ( channel.getMode( "m" ) && !channel.isOperator( socket.Client.getNickname() ) && !channel.hasVoice( socket.Client.getNickname() ) ) {
+				this.emitIRCError(
+					socket
+					,'ERR_CANNOTSENDTOCHAN'
+					,IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[0]
+					,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.PRIVMSG.ERR_CANNOTSENDTOCHAN[1]
+				);
+				return;
+			}
+
+			// Check if user is banned, and does not have voice or is not operator
+			if ( !channel.isException( socket ) && channel.isBanned( socket ) && !channel.isOperator( socket.Client.getNickname() ) && !channel.hasVoice( socket.Client.getNickname() ) ) {
 				this.emitIRCError(
 					socket
 					,'ERR_CANNOTSENDTOCHAN'
@@ -2864,7 +2979,47 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 									,data.target + " " + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFINVITELIST[1]
 								);
 								break;
-							case "o":
+							case "b":
+								var banList = channel.getBanList();
+
+								// RPL_BANLIST
+								for ( var k = 0; k < banList.length; k++ ) {
+									this.emitIRCError(
+										socket
+										,'RPL_BANLIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_BANLIST[0]
+										,data.target + " " + banList[k]
+									);
+								}
+
+								// RPL_ENDOFBANLIST
+								this.emitIRCError(
+									socket
+									,'RPL_ENDOFBANLIST'
+									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFBANLIST[0]
+									,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFBANLIST[1]
+								);
+								break;
+							case "e":
+								var banExceptionList = channel.getBanExceptionList();
+
+								// RPL_EXCEPTLIST
+								for ( var k = 0; k < banExceptionList.length; k++ ) {
+									this.emitIRCError(
+										socket
+										,'RPL_EXCEPTLIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_EXCEPTLIST[0]
+										,data.target + " " + banExceptionList[k]
+									);
+								}
+
+								// RPL_ENDOFEXCEPTLIST
+								this.emitIRCError(
+									socket
+									,'RPL_ENDOFEXCEPTLIST'
+									,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFEXCEPTLIST[0]
+									,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFEXCEPTLIST[1]
+								);
 								break;
 							default:
 								// Do nothing
@@ -3294,11 +3449,10 @@ IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
 				continue;
 			} else {
 				// Find the target user socket
-				var nicknamePosition = this._lcNicknames.indexOf( data.user[i].toLowerCase() );
+				var nicknamePosition = this._lcNicknames.indexOf( data.user[j].toLowerCase() );
 
 				if ( nicknamePosition !== -1 ) {
 					var clientSocket = this._clientSockets[ nicknamePosition ];
-
 					// Kick user
 					channel.kickUser(
 						socket

@@ -825,6 +825,8 @@ ChatJs.prototype.JOIN = function( data ) {
 			,voice: false
 			,text: Ext.htmlEncode( data.nickname )
 			,icon: 'img/face-smile-big-3.png'
+			,user: data.user
+			,host: data.host
 		} );
 	}
 
@@ -912,6 +914,51 @@ ChatJs.prototype.ERR_USERSDISABLED = function( data ) {
 }
 
 /**
+ * Method used for handling 'RPL_BANLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_BANLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'ERR_BANNEDFROMCHAN' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.ERR_BANNEDFROMCHAN = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFBANLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFBANLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_EXCEPTLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_EXCEPTLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
+ * Method used for handling 'RPL_ENDOFEXCEPTLIST' event.
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.RPL_ENDOFEXCEPTLIST = function( data ) {
+	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+/**
  * Method used for handling 'RPL_TOPIC' event.
  * @param {Object} data Data object.
  * @function
@@ -949,6 +996,8 @@ ChatJs.prototype.RPL_NAMREPLY = function( data ) {
 				,leaf: true
 				,operator: data.names[i].operator
 				,voice: data.names[i].voice
+				,user: data.names[i].user
+				,host: data.names[i].host
 				// TODO: Move to a function
 				,icon: data.names[i].operator === true ? 'img/face-smile-big.png' : data.names[i].voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png'
 			} );
