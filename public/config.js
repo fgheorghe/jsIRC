@@ -31,7 +31,7 @@ var Config = {
 		,Host: 'server.jsirc.net'
 		// IRC Protocol configuration
 		,IRCProtocol: {
-			,ServerName: "server.jsirc.net"
+			ServerName: "server.jsirc.net"
 			,ServerInfo: "Oxford, Oxfordshire, UK, EU"
 			,ServerComments: "Development version."
 			,AdminInfo: {
