@@ -86,7 +86,7 @@ Server.prototype.init = function() {
 	this.loadLibraries();
 
 	// Open port for incoming connections
-	this._httpServer.listen( this._config.port );
+	this._httpServer.listen( this._config.port, this._config.host );
 
 	// Attach a Socket.Io connection handler
 	// This handler in turn will attach application specific event handlers.
@@ -3539,9 +3539,13 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
+// Load configuration file, in current scope
+eval( fs.readFileSync('config.js','utf8') );
+
 // Create server
 ChatServer = new Server( {
-	port: 10000 // Listening port
+	port: Config.Server.Port // Listening port
+	,host: Config.Server.Host
 	,socket: { // Socket configuration
 		log: false // Disable loggings
 	}
