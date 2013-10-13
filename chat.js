@@ -471,6 +471,34 @@ ChatJs.prototype.parseCommand = function( text ) {
 			console.log( data );
 			this.client.emit( command.toUpperCase(), data );
 			break;
+		case "kick":
+			// Construct a kick command
+			// NOTE: Implemented for a single user and channel
+			// TODO: Add multiple users and channels
+
+			// Channel
+			if ( parameters.length >= 1 ) {
+				data.channel = [];
+				data.channel.push( parameters[0] );
+			}
+
+			// User
+			if ( parameters.length >= 2 ) {
+				data.user = [];
+				data.user.push( parameters[1] );
+			}
+
+			// Comment (optional)
+			if ( parameters.length >= 3 ) {
+				data.comment = "";
+				for ( var i = 2; i < parameters.length; i++ ) {
+					data.comment += ( i !== 2 ? " " : "" ) + parameters[i];
+				}
+			}
+
+			console.log( data );
+			this.client.emit( command.toUpperCase(), data );
+			break;
 		case "version":
 			// Construct a version command
 			if ( parameters.length >= 1 ) {
@@ -808,6 +836,30 @@ ChatJs.prototype.JOIN = function( data ) {
 	);
 
 	// TODO: Handle out of synch 'JOIN' reply (display event in status window, if the channel window doesn't exist)
+}
+
+/**
+ * Method used for handling 'KICK' event, and close the channel window, or update the client list
+ * @param {Object} data Data object.
+ * @function
+ */
+ChatJs.prototype.KICK = function( data ) {
+	// If the user being kicked is the same as this user, then display the text accordingly (in the status window)
+	if ( data.target.toLowerCase() === this._nickname.toLowerCase() ) {
+		this.addText( '* You have beem kicked from ' + data.channel + ' by ' + data.nickname + ' (' + Ext.htmlEncode( data.comment ) + ')' );
+
+		// Close channel window
+		this._channelWindows[data.channel].chatWindow.close();
+	} else {
+		// Only display a message, that that user has been kicked, and update the user list
+		var channelWindow = this._channelWindows[ data.channel ];
+
+		// Display text
+		channelWindow.addText( '* ' + data.nickname + ' has kicked ' + data.target + ' from ' + data.channel + ' (' + Ext.htmlEncode( data.comment ) + ')' );
+
+		// Remove from list of users
+		this._channelWindows[data.channel].removeClient( data.target );
+	}
 }
 
 /**
@@ -1538,7 +1590,7 @@ ChatJs.prototype.MODE = function( data ) {
 		// Get set or remove type of update
 		var value = data.mode[0] === "+";
 
-		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" && data.mode[1] !== "v" ) {
+		if ( data.mode[1] !== "l" && data.mode[1] !== "k" && data.mode[1] !== "o" && data.mode[1] !== "v" && data.mode[1] !== "b" && data.mode[1] !== "e" ) {
 			this._channelWindows[data.channel].modeCheckboxes[data.mode[1]].suspendEvents();
 
 			// Update window

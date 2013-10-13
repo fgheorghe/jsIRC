@@ -190,6 +190,8 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 		,"l" // limit
 		,"o" // Operator
 		,"v" // Voice
+		,"b" // Ban
+		,"e" // Ban Exception
 	]
 	,ChannelModeDefaults: {
 		a: false
@@ -622,6 +624,10 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 			this._lcOperators = []; // Channel operators
 			this._lcVoice = []; // Voice operators
 
+			// Lists of ban and ban exception masks
+			this._bans = [];
+			this._banExceptions = [];
+
 			// Channel key and limit
 			this._key = "";
 			this._limit = 0;
@@ -776,6 +782,8 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 						break;
 					case "o":
 					case "v":
+					case "b":
+					case "e":
 						data.parameter = param;
 						break;
 					default:
@@ -790,9 +798,69 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 					);
 				}
 
-				if ( mode !== "o" && mode !== "v" ) {
+				if ( mode !== "o" && mode !== "v" && mode !== "b" && mode !== "e" ) {
 					this._modes[mode] = value;
 				}
+			}
+
+			// Method used for adding a ban
+			this.addBan = function( socket, mask ) {
+				// Add to list, if an identical value doesn't exist yet
+				if ( this._bans.indexOf( mask ) === -1 ) {
+					this._bans.push( mask );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "b", true, mask );
+				}
+				console.log( this._bans );
+			}
+
+			// Method used for removing a ban
+			this.removeBan = function( socket, mask ) {
+				// Remove from list, if ban exists
+				var banPosition = this._bans.indexOf( mask );
+				if ( banPosition !== -1 ) {
+					this._bans.splice( banPosition, 1 );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "b", false, mask );
+				}
+				console.log( this._bans );
+			}
+
+			// Method used for listing bans
+			this.getBanList = function() {
+				// TODO: Implement
+			}
+
+			// Method used for adding a ban exception
+			this.addBanException = function( socket, mask ) {
+				// Add to list, if an identical value doesn't exist yet
+				if ( this._banExceptions.indexOf( mask ) === -1 ) {
+					this._banExceptions.push( mask );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "e", true, mask );
+				}
+				console.log( this._banExceptions );
+			}
+
+			// Method used for removing a ban exception
+			this.removeBanException = function( socket, mask ) {
+				// Remove from list, if ban exception exists
+				var banExceptionPosition = this._banExceptions.indexOf( mask );
+				if ( banExceptionPosition !== -1 ) {
+					this._banExceptions.splice( banExceptionPosition, 1 );
+
+					// Let setMode broadcast the message to others
+					this.setMode( socket, "b", false, mask );
+				}
+				console.log( this._banExceptions );
+			}
+
+			// Method used for listing ban exceptions
+			this.getBanExceptionList = function() {
+				// TODO: Implement
 			}
 
 			// Method used for fetching channel modes, as a string
@@ -913,6 +981,27 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 
 				var nicknamePosition = this._lcOperators.indexOf( initialNickname.toLowerCase() );
 				this._lcOperators[nicknamePosition] = nickname.toLowerCase();
+			}
+
+			// Method used for kicking a user
+			// NOTE: Relies on silent 'removeUser'
+			// NOTE: The kicked user is stored in the target property
+			this.kickUser = function( sourceClientSocket, targetClientSocket, comment ) {
+				// Notify channel members, including this user, that there has been a kick
+				this._broadcastEvent( 'KICK'
+					,{
+						channel: this.getName()
+						,nickname: sourceClientSocket.Client.getNickname()
+						,user: sourceClientSocket.Client.getUser()
+						,host: sourceClientSocket.Client.getHost()
+						,target: targetClientSocket.Client.getNickname()
+						,comment: comment
+					}
+				);
+
+				// Remove user, silently
+				this.removeUser( targetClientSocket, true );
+				console.log( this._users );
 			}
 
 			// Method used for removing a user
@@ -1145,6 +1234,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 		}
 
 		// Remove channel if empty
+		// TODO: Remove redundant code
 		if ( channel.getUsers().length === 0 ) {
 			// Remove channel from lists, if empty
 			this._channels.splice( channelPosition, 1 );
@@ -2560,13 +2650,13 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 						continue;
 					}
 
-					// Ignore if mode is already set (except limit and key...o and v)
-					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" && data.modes[j] !== "v" ) {
+					// Ignore if mode is already set (except limit and key...o and v...b and e)
+					if ( set === true && channel.getMode( data.modes[j] ) && data.modes[j] !== "l" && data.modes[j] !== "k" && data.modes[j] !== "o" && data.modes[j] !== "v" && data.modes[j] !== "b" && data.modes[j] !== "e" ) {
 						continue;
 					}
 
 					// Ignore if removing and mode is not set
-					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" && data.modes[j] !== "v" ) {
+					if ( set === false && query === false && !channel.getMode( data.modes[j] ) && data.modes[j] !== "o" && data.modes[j] !== "v" && data.modes[j] !== "b" && data.modes[j] !== "e" ) {
 						continue;
 					}
 
@@ -2728,6 +2818,26 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								channel.setMode( socket, data.modes[j], set, clientSocket.Client.getNickname() );
 								
 								// Increment parameters
+								param++;
+								break;
+							case "b":
+								// Add to 'ban' list
+								if ( set === true ) {
+									channel.addBan( socket, data.parameters[param] );
+								} else {
+									channel.removeBan( socket, data.parameters[param] );
+								}
+
+								param++;
+								break;
+							case "e":
+								// Add to ban 'exception' list
+								if ( set === true ) {
+									channel.addBanException( socket, data.parameters[param] );
+								} else {
+									channel.removeBanException( socket, data.parameters[param] );
+								}
+
 								param++;
 								break;
 							default:
@@ -3018,7 +3128,7 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
 IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
 	// Validate parameters
 	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" || typeof data.channel === "undefined" || S( data.channel ).trim().s === "" ) {
-		// Issue an ERR_NONICKNAMEGIVEN error.
+		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
 			,'ERR_NEEDMOREPARAMS'
@@ -3110,6 +3220,109 @@ IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
 	}
 	// Add invite to user
 	clientSocket.Client.addInvite( data.channel );
+}
+
+/**
+ * Client KICK command.
+ * @param {Object} data Data object, with the required array 'channel' and 'user' keys and the optional string 'comment' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.KICK = function( data, socket ) {
+	// NOTE: Channel masks not supported!
+	// Validate parameters
+	if ( typeof data.channel === "undefined" || typeof data.user === "undefined" ) {
+		// Issue an ERR_NEEDMOREPARAMS error.
+		this.emitIRCError(
+			socket
+			,'ERR_NEEDMOREPARAMS'
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+			,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+		);
+		return;
+	}
+
+	// For each channel
+	for ( var i = 0; i < data.channel.length; i++ ) {
+		var channelPosition = this._lcChannelNames.indexOf( data.channel[i].toLowerCase() )
+			,channel;
+
+		// Check if channel exists
+		if ( channelPosition !== -1 ) {
+			// Get the channel object, at this position
+			channel = this._channels[ channelPosition ];
+		} else {
+			// Emit an ERR_NOSUCHCHANNEL error
+			this.emitIRCError(
+				socket
+				,'ERR_NOSUCHCHANNEL'
+				,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
+				,data.channel[i] + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+			);
+
+			// Ignore this channel
+			continue;
+		}
+
+		// Check if user is operator on this channel
+		if ( !channel.isOperator( socket.Client.getNickname() ) ) {
+			// And if not, emit an ERR_CHANOPRIVSNEEDED error
+			this.emitIRCError(
+				socket
+				,'ERR_CHANOPRIVSNEEDED'
+				,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[0]
+				,data.channel[i] + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_CHANOPRIVSNEEDED[1]
+			);
+
+			// Ignore channel...
+			continue;
+		}
+
+		// For each user
+		for ( var j = 0; j < data.user.length; j++ ) {
+			// Check if user is on channel
+			if ( channel._lcUsers.indexOf( data.user[j].toLowerCase() ) === -1 ) {
+				// Emit an ERR_USERNOTINCHANNEL error
+				this.emitIRCError(
+					socket
+					,'ERR_USERNOTINCHANNEL'
+					,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[0]
+					,data.user[j] + " " + channel.getName() + IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERNOTINCHANNEL[1]
+				);
+
+				// Ignore this user
+				continue;
+			} else {
+				// Find the target user socket
+				var nicknamePosition = this._lcNicknames.indexOf( data.user[i].toLowerCase() );
+
+				if ( nicknamePosition !== -1 ) {
+					var clientSocket = this._clientSockets[ nicknamePosition ];
+
+					// Kick user
+					channel.kickUser(
+						socket
+						,clientSocket
+						// Either the user's comment or the nickname if missing
+						,data.comment || clientSocket.Client.getNickname()
+					);
+				}
+
+				// Remove channel if empty
+				// TODO: Remove redundant code
+				if ( channel.getUsers().length === 0 ) {
+					// Remove channel from lists, if empty
+					this._channels.splice( channelPosition, 1 );
+					this._lcChannelNames.splice( channelPosition, 1 );
+
+					// Update the number of channels
+					this._stats.channels--;
+				}
+			}
+		}
+	}
+
+	console.log( data );
 }
 
 /**
@@ -3234,6 +3447,7 @@ ChatServer = new Server( {
 		,ISON: IRCClient.ISON
 		,USERHOST: IRCClient.USERHOST
 		,INVITE: IRCClient.INVITE
+		,KICK: IRCClient.KICK
 	}
 	// New connection handler
 	,connection: IRCClient.connection

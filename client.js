@@ -204,6 +204,7 @@ Ext.onReady( function() {
 			,ERR_USERNOTINCHANNEL: this.ChatApplication.ERR_USERNOTINCHANNEL
 			,ERR_CHANOPRIVSNEEDED: this.ChatApplication.ERR_CHANOPRIVSNEEDED
 			,ERR_CANNOTSENDTOCHAN: this.ChatApplication.ERR_CANNOTSENDTOCHAN
+			,KICK: this.ChatApplication.KICK
 		}
 	} );
 

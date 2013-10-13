@@ -34,6 +34,7 @@ Supported Client to Server commands:
 - ISON
 - USERHOST
 - INVITE
+- KICK
 
 Supported Server to Client commands:
 
@@ -107,3 +108,4 @@ Supported Server to Client commands:
 - ERR_BADCHANNELKEY
 - ERR_CANNOTSENDTOCHAN
 - ERR_CHANOPRIVSNEEDED
+- KICK

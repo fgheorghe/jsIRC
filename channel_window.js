@@ -108,7 +108,7 @@ ChannelWindow.prototype.init = function() {
 				{
 					text: 'Give Ops'
 					,handler: function() {
-						// Issue a 'query' command
+						// Issue a 'mode' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +o " + record.raw.text );
 					}.bind( this )
 					,hidden: node.raw.operator === true
@@ -116,7 +116,7 @@ ChannelWindow.prototype.init = function() {
 				,{
 					text: 'Remove Ops'
 					,handler: function() {
-						// Issue a 'query' command
+						// Issue a 'mode' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " -o " + record.raw.text );
 					}.bind( this )
 					,hidden: node.raw.operator === false
@@ -124,7 +124,7 @@ ChannelWindow.prototype.init = function() {
 				,{
 					text: 'Give Voice'
 					,handler: function() {
-						// Issue a 'query' command
+						// Issue a 'mode' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +v " + record.raw.text );
 					}.bind( this )
 					,hidden: node.raw.voice === true
@@ -132,10 +132,17 @@ ChannelWindow.prototype.init = function() {
 				,{
 					text: 'Remove Voice'
 					,handler: function() {
-						// Issue a 'query' command
+						// Issue a 'mode' command
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " -v " + record.raw.text );
 					}.bind( this )
 					,hidden: node.raw.voice === false
+				}
+				,{
+					text: 'Kick'
+					,handler: function() {
+						// Issue a 'kick' command
+						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.raw.text );
+					}.bind( this )
 				}
 				,'-'
 				,{
