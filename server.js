@@ -972,6 +972,9 @@ https://github.com/fgheorghe/ChatJS/tree/irc-client-rfc2812"
 						operator: this.isOperator( users[i] )
 						,voice: this.hasVoice( users[i] )
 						,nick: users[i]
+						// Include host, and user
+						,user: this._sockets[i].Client.getUser()
+						,host: this._sockets[i].Client.getHost()
 					} );
 				}
 
