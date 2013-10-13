@@ -3540,7 +3540,7 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 var IRCClient = IRCProtocol.init( 'client' );
 
 // Load configuration file, in current scope
-eval( fs.readFileSync('config.js','utf8') );
+eval( fs.readFileSync('./public/config.js','utf8') );
 
 // Create server
 ChatServer = new Server( {
