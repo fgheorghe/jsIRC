@@ -154,10 +154,11 @@ ChannelWindow.prototype.init = function() {
 				,{
 					text: 'Kick & Ban'
 					,handler: function() {
-						// Issue a 'kick' command
-						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.raw.text );
 						// Issue a 'ban' command, for the nick!user@host mask
 						this._config.parent.parseCommand( "/mode " + this._config.channel + " +b " + record.raw.text + "!" + record.raw.user + "@" + record.raw.host );
+
+						// Issue a 'kick' command
+						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.raw.text );
 					}.bind( this )
 				}
 				,'-'
