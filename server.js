@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // BIG TODO: Separate authenticated/non-authenticated user commands!
 
 /**
- * Messaging server.
- * @class Provides server functionality.
+ * Web Messaging server.
+ * @class Provides Web Socket server functionality.
  * @constructor
  * @param {Object} config Server configuration object. Supported keys are: port (listening port number), socket (socket listener configuration object),
  * optional 'scope' object used for maintaining a custom scope reference,
