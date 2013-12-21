@@ -54,7 +54,7 @@ ChatWindow.prototype.init = function() {
 			keydown: function( field, e, eOpts ) {
 				if ( e.getKey() === 13 ) {
 					if ( field.getValue().toString().charAt( 0 ) !== "/" ) {
-						this.addText( "<b>[" + this._config.parent.getTimeStamp() + " " + Ext.htmlEncode( this._config.parent._nickname ) + "]</b> " + Ext.htmlEncode( field.getValue() ) );
+						this.addText( "<b>[" + Ext.htmlEncode( this._config.parent._nickname ) + "]</b> " + Ext.htmlEncode( field.getValue() ) );
 					}
 					this._config.parent.handleSendText.bind( this._config.parent )( this.textField, this._config.nickname );
 				}
