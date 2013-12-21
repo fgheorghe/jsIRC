@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * optional 'connectionHandler' connection handler,
  * and an events object providing event handler functionality.
  */
-var Server = function( config ) {
+var WEBServer = function( config ) {
 	// Store configuation, in a 'private' property
 	this._config = config;
 }
@@ -48,10 +48,10 @@ var Server = function( config ) {
  * @param {Object} socket Socket object.
  * @function
  */
-Server.prototype.attachSocketEvents = function( socket ) {
+WEBServer.prototype.attachSocketEvents = function( socket ) {
 	var me = this;
 	Object.keys( this._config.events ).forEach( function( eventName ) {
-		socket.on( eventName, function( data ) {
+		socket.getRawSocket().on( eventName, function( data ) {
 			// Determine which scope to bind the event handler to
 			var scope = typeof me._config.scope !== "undefined" ? me._config.scope : me;
 
@@ -65,7 +65,7 @@ Server.prototype.attachSocketEvents = function( socket ) {
  * Method used for loading the 'http' and 'socket.io' classes, and creating the listeners.
  * @function
  */
-Server.prototype.loadLibraries = function() {
+WEBServer.prototype.loadLibraries = function() {
 	// HTTP Server, required for serving Socket.Io JS file
 	// NOTE: The HTML file that makes use of it, is served by a standard HTTP server.
 	this._httpServer = require('http').createServer();
@@ -81,7 +81,7 @@ Server.prototype.loadLibraries = function() {
  * Method used for preparing the server listeners, and attaching event handlers.
  * @function
  */
-Server.prototype.init = function() {
+WEBServer.prototype.init = function() {
 	// Load required libraries.
 	this.loadLibraries();
 
@@ -91,6 +91,9 @@ Server.prototype.init = function() {
 	// Attach a Socket.Io connection handler
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
+                // Create IRCSocket.
+                socket = new IRCSocket( socket );
+
 		// Call a custom connection event handler, if configured
 		if ( typeof this._config.connection !== "undefined" ) {
 			// Determine which scope to bind the event handler to
@@ -102,6 +105,35 @@ Server.prototype.init = function() {
 		// Attach the Application Specific Event handlers
 		this.attachSocketEvents( socket );
 	}.bind( this ) );
+}
+
+/**
+ * IRC Socket definition.
+ * @param {Object} socket Connection socket object.
+ * @construct
+ */
+var IRCSocket = function( socket ) {
+        // Store raw socket.
+        this._socket = socket;
+}
+
+/**
+ * Method used for fetching the raw socket.
+ * @function
+ * @return {Object} Raw socket.
+ */
+IRCSocket.prototype.getRawSocket = function() {
+        return this._socket;
+}
+
+/**
+ * Method used for emitting an IRC response.
+ * @function
+ * @param {String} command IRC Command string.
+ * @param {Object} parameters IRC Command parameters object.
+ */
+IRCSocket.prototype.emit = function( command, parameters ) {
+        this._socket.emit( command, parameters );
 }
 
 // Load various required libraries:
@@ -1272,14 +1304,14 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
 	this._clientSockets.push( socket );
 
 	// Store the array of socket ids, in this array, in order to find the socket position in the above array
-	this._clientSocketIds.push( socket.id );
+	this._clientSocketIds.push( socket.getRawSocket().id );
 	this._lcNicknames.push( "" ); // Add empty nick holder
 
 	// Attach IRC state object, used for performing various checks
 	socket.Client = new IRCProtocol.IrcState.Client( socket );
 
 	// Set host
-	socket.Client.setHost( socket.handshake.address.address );
+	socket.Client.setHost( socket.getRawSocket().handshake.address.address );
 
 	// Increase statistics number, for unknown clients
 	this._stats.unknown++;
@@ -1366,7 +1398,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 	}
 
 	// Find socket position, by id
-	var socketPosition = this._clientSocketIds.indexOf( socket.id );
+	var socketPosition = this._clientSocketIds.indexOf( socket.getRawSocket().id );
 
 	// Remove nickname from list
 	this._lcNicknames.splice( socketPosition, 1 );
@@ -1439,7 +1471,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	if ( socket.Client.isRegistered() && !socket.Client.welcomeSent() ) {
 		// Nickname appears to be ok...
 		// Store in the list of nicknames, at the position of the current socket
-		var socketPosition = this._clientSocketIds.indexOf( socket.id );
+		var socketPosition = this._clientSocketIds.indexOf( socket.getRawSocket().id );
 		this._lcNicknames[socketPosition] = nickname.toLowerCase();
 
 		// Set to true, and issue the welcome stream of messages
@@ -1451,7 +1483,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	} else if ( !socket.Client.isRegistered() && !socket.Client.welcomeSent()  ) {
 		// Nickname appears to be ok...
 		// Store in the list of nicknames, at the position of the current socket
-		var socketPosition = this._clientSocketIds.indexOf( socket.id );
+		var socketPosition = this._clientSocketIds.indexOf( socket.getRawSocket().id );
 		this._lcNicknames[socketPosition] = nickname.toLowerCase();
 		
 		return;
@@ -3539,9 +3571,9 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 var IRCClient = IRCProtocol.init( 'client' );
 
 // Create server
-ChatServer = new Server( {
-	port: Config.Server.Port // Listening port
-	,host: Config.Server.Host
+ChatServer = new WEBServer( {
+	port: Config.Server.WEB.Port // Listening port
+	,host: Config.Server.WEB.Host
 	,socket: { // Socket configuration
 		log: false // Disable loggings
 	}
