@@ -238,6 +238,17 @@ jsIRC.prototype.findOrCreateQueryWindow = function( nickname ) {
 }
 
 /**
+ * Method used for returning a timestamp, with the format: DD/MM/YYYY hh:mm:ss. Used by PRIVMSG for inclusion in message recevied text.
+ * TODO: Move to utility class.
+ * @function
+ * @return {String}
+*/
+jsIRC.prototype.getTimeStamp = function() {
+	var date = new Date();
+	return date.getDate() + "/" + ( date.getMonth() + 1 ) + "/" + date.getFullYear() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+}
+
+/**
  * Parse a command, prepare parameters, and send it.
  * @param {String} text String to parse.
  * @function
@@ -1069,7 +1080,7 @@ jsIRC.prototype.PRIVMSG = function( data ) {
 		// Find a channel window
 		// TODO: Handle non existing channel windows
 		if ( typeof this._channelWindows[data.target] !== "undefined" ) {
-			this._channelWindows[data.target].addText( "<b>[" + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
+			this._channelWindows[data.target].addText( "<b>[" + this.getTimeStamp() + " " + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
 		}
 	} else if ( isNickname ) {
 		// TODO: Handle target / nickname mismatch
@@ -1086,7 +1097,7 @@ jsIRC.prototype.PRIVMSG = function( data ) {
 			}
 
 			// Append text
-			queryWindow.addText( "<b>[" + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
+			queryWindow.addText( "<b>[" + this.getTimeStamp() + " " + Ext.htmlEncode( data.nickname ) + "]</b> " + Ext.htmlEncode( data.message ) );
 		}
 	}
 }
