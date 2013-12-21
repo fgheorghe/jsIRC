@@ -92,7 +92,7 @@ WEBServer.prototype.init = function() {
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
                 // Create IRCSocket.
-                socket = new IRCSocket( socket );
+                socket = new IRCSocket( socket, "web" );
 
 		// Call a custom connection event handler, if configured
 		if ( typeof this._config.connection !== "undefined" ) {
@@ -108,13 +108,140 @@ WEBServer.prototype.init = function() {
 }
 
 /**
+ * TCP Messaging server.
+ * TODO: Adjust documentation.
+ * @class Provides TCP server functionality.
+ * @constructor
+ * @param {Object} config Server configuration object. Supported keys are: port (listening port number), socket (socket listener configuration object),
+ * optional 'scope' object used for maintaining a custom scope reference,
+ * optional 'connectionHandler' connection handler,
+ * and an events object providing event handler functionality.
+ */
+var TCPServer = function( config ) {
+        // Store configuation, in a 'private' property
+        this._config = config;
+}
+
+
+/**
+ * Method used for preparing the server listeners, and attaching event handlers.
+ * @function
+ */
+TCPServer.prototype.init = function() {
+        // Load required libraries.
+        this.loadLibraries();
+}
+
+/**
+ * Method used for attaching socket events and their handlers.
+ * NOTE: In this case, we need to emulate a similar behaviour to socket.io event handlers.
+ * NOTE: By converting from text to JSON.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+TCPServer.prototype.attachSocketEvents = function( socket ) {
+        // Handle incoming text data.
+        socket.getRawSocket().on( 'data', function( data ) {
+                // NOTE: The IRC client might send a stream of multiple lines of text.
+                var lines = data.replace( /\r/g, "" ).split( '\n' )
+                        ,i
+                        ,temp // Temporary array
+                        ,command;
+
+                // Parse line by line
+                for ( i = 0; i < lines.length; i++ ) {
+                        // Ignore empty lines.
+                        if ( !lines[i] ) {
+                                continue;
+                        }
+
+                        // Split line by spaces.
+                        temp = lines[i].split( ' ' );
+                        // Get command.
+                        command = temp[0].toUpperCase();
+
+                        // Handle each event, if there is a listener configured for it.
+                        if ( typeof this._config.events[command] !== "undefined" ) {
+                                // Determine which scope to bind the event handler to
+                                // TODO: Perhaps redundant?!
+                                var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
+
+                                // TODO: Convert data.
+                                this._config.events[command].bind( scope )( data, socket );
+                        }
+
+                        // TODO: Handle an unkown command.
+                }
+        }.bind( this ) );
+}
+
+/**
+ * Method used for loading the 'net' classe, and creating the listeners.
+ * @function
+ */
+TCPServer.prototype.loadLibraries = function() {
+        // Load the net library and create server.
+        this._tcpServer = require( 'net' ).createServer(
+                // Socket configuration
+                this._config.socket
+
+                // Add listener.
+                ,function ( socket ) {
+                        // Set encoding.
+                        socket.setEncoding( 'utf8' );
+
+                        // Create IRCSocket.
+                        socket = new IRCSocket( socket, "tcp" );
+
+                        // Call a custom connection event handler, if configured
+                        if ( typeof this._config.connection !== "undefined" ) {
+                                // Determine which scope to bind the event handler to
+                                var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
+
+                                this._config.connection.bind( scope )( socket );
+
+                                // Add "event" listeners.
+                                this.attachSocketEvents( socket );
+                        }
+                }.bind( this )
+        );
+
+        // Create listener.
+        this._tcpServer.listen(
+                this._config.port
+                ,this._config.host
+        );
+}
+
+/**
  * IRC Socket definition.
  * @param {Object} socket Connection socket object.
+ * @param {String} type Connection socket type. Allowed values: tcp and web.
  * @construct
  */
-var IRCSocket = function( socket ) {
+var IRCSocket = function( socket, type ) {
         // Store raw socket.
         this._socket = socket;
+
+        // Store type.
+        this._type = type;
+}
+
+/**
+ * Method used for fetching the raw socket address (ip or hostname).
+ * @function
+ * @return {String} Address.
+ */
+IRCSocket.prototype.getAddress = function() {
+        var result = "";
+
+        if ( this._type === "web" ) {
+                result = this._socket.handshake.address.address;
+        } else if ( this._type === "tcp" ) {
+                result = this._socket.remoteAddress;
+        }
+
+        return result;
 }
 
 /**
@@ -133,7 +260,13 @@ IRCSocket.prototype.getRawSocket = function() {
  * @param {Object} parameters IRC Command parameters object.
  */
 IRCSocket.prototype.emit = function( command, parameters ) {
-        this._socket.emit( command, parameters );
+        if ( this._type === "web" ) {
+                // Write data as is.
+                this._socket.emit( command, parameters );
+        } else if ( this._type === "tcp" ) {
+                // TODO: Convert.
+                this._socket.write( "implement\r\n" );
+        }
 }
 
 // Load various required libraries:
@@ -1311,7 +1444,7 @@ IRCProtocol.ClientProtocol.prototype.connection = function( socket ) {
 	socket.Client = new IRCProtocol.IrcState.Client( socket );
 
 	// Set host
-	socket.Client.setHost( socket.getRawSocket().handshake.address.address );
+	socket.Client.setHost( socket.getAddress() );
 
 	// Increase statistics number, for unknown clients
 	this._stats.unknown++;
@@ -3570,11 +3703,11 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 // Create a new instance of the IRC Protocol implementation.
 var IRCClient = IRCProtocol.init( 'client' );
 
-// Create server
-ChatServer = new WEBServer( {
+// Create Web Socket server
+WEBChatServer = new WEBServer( {
 	port: Config.Server.WEB.Port // Listening port
 	,host: Config.Server.WEB.Host
-	,socket: { // Socket configuration
+	,socket: { // WEB Socket configuration
 		log: false // Disable loggings
 	}
 	// Set the scope to the instance of 'irc'
@@ -3622,3 +3755,57 @@ ChatServer = new WEBServer( {
 	// New connection handler
 	,connection: IRCClient.connection
 } ).init();
+
+// Create TCP Socket server
+TCPChatServer = new TCPServer( {
+        port: Config.Server.TCP.Port // Listening port
+        ,host: Config.Server.TCP.Host
+        ,socket: { // TCP Socket configuration
+                log: false // Disable loggings
+        }
+        // Set the scope to the instance of 'irc'
+        ,scope: IRCClient
+        // Add event handlers
+        ,events: {
+                // Disconnecting client
+                disconnect: IRCClient.disconnect
+                // IRC Client Connection Registration Commands (Events)
+                ,NICK: IRCClient.NICK
+                ,USER: IRCClient.USER
+                // User based queries
+                ,WHOIS: IRCClient.WHOIS
+                // Channel join/part commands
+                ,JOIN: IRCClient.JOIN
+                ,PART: IRCClient.PART
+                // Private message
+                ,PRIVMSG: IRCClient.PRIVMSG
+                // MOTD
+                ,MOTD: IRCClient.MOTD
+                // LUSERS
+                ,LUSERS: IRCClient.LUSERS
+                // PING? PONG!
+                ,PONG: IRCClient.PONG
+                ,TOPIC: IRCClient.TOPIC
+                ,LIST: IRCClient.LIST
+                ,OPER: IRCClient.OPER
+                ,VERSION: IRCClient.VERSION
+                ,TIME: IRCClient.TIME
+                ,ADMIN: IRCClient.ADMIN
+                ,INFO: IRCClient.INFO
+                ,KILL: IRCClient.KILL
+                ,MODE: IRCClient.MODE
+                ,AWAY: IRCClient.AWAY
+                ,QUIT: IRCClient.QUIT
+                ,NAMES: IRCClient.NAMES
+                ,WHO: IRCClient.WHO
+                ,USERS: IRCClient.USERS
+                ,WALLOPS: IRCClient.WALLOPS
+                ,ISON: IRCClient.ISON
+                ,USERHOST: IRCClient.USERHOST
+                ,INVITE: IRCClient.INVITE
+                ,KICK: IRCClient.KICK
+        }
+        // New connection handler
+        ,connection: IRCClient.connection
+} ).init();
+
