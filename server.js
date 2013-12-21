@@ -25,6 +25,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+// Load various required libraries:
+var S = require( 'string' ); // http://stringjs.com/
+var _ = require('lodash'); // http://lodash.com/
+var fs = require('fs'); // Standard file system
+
 // BIG TODO: Separate authenticated/non-authenticated user commands!
 
 /**
@@ -92,7 +97,7 @@ WEBServer.prototype.init = function() {
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
                 // Create IRCSocket.
-                socket = new IRCSocket( socket, "web" );
+                socket = new IRCSocket( socket, "web", this._config );
 
 		// Call a custom connection event handler, if configured
 		if ( typeof this._config.connection !== "undefined" ) {
@@ -133,6 +138,78 @@ TCPServer.prototype.init = function() {
 }
 
 /**
+ * Method used for converting a text command to JSON.
+ * @function
+ * @param {String} name Command name.
+ * @param {String} command Raw text command as received from client.
+ * @return {Object} JSON object for the requested command.
+ */
+TCPServer.prototype.textToJson = function( name, command ) {
+        console.log( command );
+        var responseObject = {}
+                ,temp; // Temporary variable, used for splitting a command.
+
+        // Begin constructing parameters
+        switch ( name ) {
+                case "NICK":
+                        // Split by spaces.
+                        temp = command.split( " " );
+
+                        // Construct a valid NICK JSON object.
+                        responseObject = {
+                                nickname: temp[1]
+                        }
+                        break;
+                case "USER":
+                        // Split by spaces.
+                        // NOTE: The user mode is not implemented.
+                        temp = command.split( " " );
+
+                        responseObject = {
+                                user: temp[1]
+                                ,mode: 0
+                        };
+
+                        // Split by ":" for constructing the real name.
+                        temp = command.split( ":" );
+                        responseObject.realname = temp.splice( 1 ).join( ":" );
+                        break;
+                case "PONG":
+                        responseObject = {};
+                        break;
+                case "PRIVMSG":
+                        // Split by spaces.
+                        temp = command.split( " " );
+
+                        // Set target.
+                        responseObject.target = temp[1];
+
+                        // Set message.
+                        temp = command.split( ":" );
+                        responseObject.message = temp.splice( 1 ).join( ":" );
+                        break;
+                case "JOIN":
+                        // Split by spaces.
+                        temp = command.split( " " );
+
+                        var channelsPart = temp.splice( 1, 1 ).join( " " ).split( "," );
+
+                        // Prepare response.
+                        responseObject.channels = channelsPart;
+
+                        // TODO: Handle keys.
+                        break;
+                default:
+                        // TODO: Implement.
+                        break;
+        }
+
+        console.log( name );
+        console.log( responseObject );
+        return responseObject;
+}
+
+/**
  * Method used for attaching socket events and their handlers.
  * NOTE: In this case, we need to emulate a similar behaviour to socket.io event handlers.
  * NOTE: By converting from text to JSON.
@@ -167,12 +244,23 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
                                 var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
 
                                 // TODO: Convert data.
-                                this._config.events[command].bind( scope )( data, socket );
+                                this._config.events[command].bind( scope )( this.textToJson( command, lines[i] ), socket );
                         }
 
                         // TODO: Handle an unkown command.
                 }
         }.bind( this ) );
+
+        // Handle connection close, if an event handler is defined.
+        if ( typeof this._config.events["disconnect"] !== "undefined" ) {
+                socket.getRawSocket().on( 'end', function() {
+                        // TODO: Perhaps redundant?!
+                        var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
+
+                        // Handle event.
+                        this._config.events.disconnect.bind( scope )( {}, socket );
+                }.bind( this ) );
+        }
 }
 
 /**
@@ -191,7 +279,7 @@ TCPServer.prototype.loadLibraries = function() {
                         socket.setEncoding( 'utf8' );
 
                         // Create IRCSocket.
-                        socket = new IRCSocket( socket, "tcp" );
+                        socket = new IRCSocket( socket, "tcp", this._config );
 
                         // Call a custom connection event handler, if configured
                         if ( typeof this._config.connection !== "undefined" ) {
@@ -217,14 +305,65 @@ TCPServer.prototype.loadLibraries = function() {
  * IRC Socket definition.
  * @param {Object} socket Connection socket object.
  * @param {String} type Connection socket type. Allowed values: tcp and web.
+ * @param {Object} config Configuration object.
  * @construct
  */
-var IRCSocket = function( socket, type ) {
+var IRCSocket = function( socket, type, config ) {
+        // Store configuration.
+        this._config = config;
+
         // Store raw socket.
         this._socket = socket;
 
         // Store type.
         this._type = type;
+}
+
+/**
+ * Method used for converting a JSON command to text.
+ * @function
+ * @param {String} command Command name.
+ * @param {Object} parameters JSON object.
+ * @return {String} Command string.
+ */
+IRCSocket.prototype.jsonToText = function( command, parameters ) {
+        var response = "";
+        console.log( command );
+        console.log( parameters );
+
+        // Construct response.
+        switch ( command ) {
+                case "RPL_WELCOME":
+                case "RPL_YOURHOST":
+                case "RPL_CREATED":
+                case "RPL_MYINFO":
+                        response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
+                        break;
+                case "PING":
+                        response = "PING :" + parameters.source;
+                        break;
+                case "PRIVMSG":
+                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " PRIVMSG " + this.Client.getNickname() + " :" + parameters.message;
+                        break;
+                default:
+                        // TODO: Implement.
+                        break;
+        }
+
+        console.log( "Text command:" + response );
+
+        // Return.
+        return response;
+}
+
+/**
+ * Method used for terminating a socket connection.
+ * @param {Object} data Empty object!
+ * @param {Object} socket Socket to terminate connection for.
+ * @function
+ */
+IRCSocket.prototype.disconnect = function( data, socket ) {
+        // TODO: Implement.
 }
 
 /**
@@ -264,15 +403,10 @@ IRCSocket.prototype.emit = function( command, parameters ) {
                 // Write data as is.
                 this._socket.emit( command, parameters );
         } else if ( this._type === "tcp" ) {
-                // TODO: Convert.
-                this._socket.write( "implement\r\n" );
+                // Convert JSON to text, and send the command over.
+                this._socket.write( this.jsonToText.bind( this )( command, parameters ) + "\r\n" );
         }
 }
-
-// Load various required libraries:
-var S = require( 'string' ); // http://stringjs.com/
-var _ = require('lodash'); // http://lodash.com/
-var fs = require('fs'); // Standard file system
 
 // Load configuration file, in current scope
 eval( fs.readFileSync('./public/config.js','utf8') );
