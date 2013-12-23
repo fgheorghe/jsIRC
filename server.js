@@ -320,6 +320,17 @@ var IRCSocket = function( socket, type, config ) {
 }
 
 /**
+ * Method used for constructing the first part of a response, with the format of :server code nick.
+ * @function
+ * @param {Integer} command Command numeric id.
+ * @param {String} nickname Nickname.
+ * @return {String} First part.
+ */
+IRCSocket.prototype.constructFirstMessagePart = function( command, nickname ) {
+        return ":" + IRCProtocol.ServerName + " " + command + " " + nickname + " ";
+}
+
+/**
  * Method used for converting a JSON command to text.
  * @function
  * @param {String} command Command name.
@@ -328,6 +339,7 @@ var IRCSocket = function( socket, type, config ) {
  */
 IRCSocket.prototype.jsonToText = function( command, parameters ) {
         var response = "";
+
         console.log( command );
         console.log( parameters );
 
@@ -343,7 +355,41 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         response = "PING :" + parameters.source;
                         break;
                 case "PRIVMSG":
-                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " PRIVMSG " + this.Client.getNickname() + " :" + parameters.message;
+                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " PRIVMSG " + parameters.target + " :" + parameters.message;
+                        break;
+                case "PART":
+                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " PART " + parameters.channel;
+                        break;
+                case "JOIN":
+                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " JOIN " + parameters.channel;
+                        break;
+                case "RPL_TOPIC":
+                        response = this.constructFirstMessagePart( 332, this.Client.getNickname() ) + parameters.channel + " :" + parameters.topic;
+                        break;
+                case "RPL_NOTOPIC":
+                        // TODO: Store text in constants!
+                        response = this.constructFirstMessagePart( 331, this.Client.getNickname() ) + parameters.channel + " :No topic is set.";
+                        break;
+                case "RPL_NAMREPLY":
+                        // First part.
+                        response = ":" + IRCProtocol.ServerName + " 353 " + this.Client.getNickname() + " ";
+                        // Channel part.
+                        // TODO: Handle channel types!
+                        response += "= " + parameters.channel + " ";
+                        // Nick part.
+                        var nickPart = ""
+                                ,prefix;
+                        for ( var i = 0; i < parameters.names.length; i++ ) {
+                                prefix = parameters.names[i].operator ? "@" : "";
+                                prefix += parameters.names[i].voice ? "+" : "";
+                                nickPart += ( i === 0 ? "" : " " ) + prefix + parameters.names[i].nick;
+                        }
+                        response += ":" + nickPart;
+
+                        break;
+                case "RPL_ENDOFNAMES":
+                        // TODO: Store text in constants!
+                        response = ":" + IRCProtocol.ServerName + " 366 " + this.Client.getNickname() + " :End of /NAMES list.";
                         break;
                 default:
                         // TODO: Implement.
@@ -403,8 +449,11 @@ IRCSocket.prototype.emit = function( command, parameters ) {
                 // Write data as is.
                 this._socket.emit( command, parameters );
         } else if ( this._type === "tcp" ) {
-                // Convert JSON to text, and send the command over.
-                this._socket.write( this.jsonToText.bind( this )( command, parameters ) + "\r\n" );
+                // Convert JSON to text, and send the command over...if any.
+                var response = this.jsonToText.bind( this )( command, parameters );
+                if ( response ) {
+                        this._socket.write( response + "\r\n" );
+                }
         }
 }
 
@@ -1331,9 +1380,13 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 			}
 
 			// Method used for broadcasting an event to all channel clients
-			this._broadcastEvent = function( eventName, data ) {
-				// Notify _ALL_ clients
+			this._broadcastEvent = function( eventName, data, ignoreSocket ) {
+				// Notify _ALL_ clients.
 				for ( var i = 0; i < this._sockets.length; i++ ) {
+                                        // Ignore current socket, if requested, and continue.
+                                        if ( ignoreSocket && this._sockets[i].Client.getNickname().toLowerCase() === ignoreSocket.Client.getNickname().toLowerCase() ) {
+                                                continue;
+                                        }
 					this._sockets[i].emit(
 						eventName
 						,data
@@ -1428,6 +1481,7 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 				// Notify clients of a message
 				this._broadcastEvent( 'PRIVMSG'
 					,data
+					,socket
 				);
 
 				// Reset idle counter for this client
@@ -1503,7 +1557,7 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 		socket
 		,'RPL_YOURHOST'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_YOURHOST[0]
-		,"Your host is jsIRC, running version " + IRCProtocol.Version
+		,"Your host is " + IRCProtocol.ServerName + ", running version " + IRCProtocol.Version
 	);
 
 	// Send RPL_CREATED, with the date this server was started
@@ -2138,20 +2192,13 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 				}
 			);
 
-			// RPL_TOPIC or RPL_NOTOPIC
+			// RPL_TOPIC if topic is set.
 			if ( channel.getTopic() ) {
 				socket.emit(
 					'RPL_TOPIC'
 					,{
 						channel: channel.getName()
 						,topic: channel.getTopic()
-					}
-				);
-			} else {
-				socket.emit(
-					'RPL_NOTOPIC'
-					,{
-						channel: channel.getName()
 					}
 				);
 			}
@@ -2164,6 +2211,15 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 					,names: channel.getNames()
 				}
 			);
+
+                        // RPL_ENDOFNAMES
+                        socket.emit(
+                                'RPL_ENDOFNAMES'
+                                ,{
+                                        channel: channel.getName()
+                                        ,msg: IRCProtocol.NumericReplyConstants.Client.NAMES.RPL_ENDOFNAMES[1]
+                                }
+                        );
 
 			// Update the user's channel list
 			socket.Client.addChannel( channel.getName() );
@@ -3409,13 +3465,14 @@ IRCProtocol.ClientProtocol.prototype.NAMES = function( data, socket ) {
 					}
 				);
 
-				// RPL_ENDOFNAMES
-				this.emitIRCError(
-					socket
-					,'RPL_ENDOFNAMES'
-					,IRCProtocol.NumericReplyConstants.Client.NAMES.RPL_ENDOFNAMES[0]
-					,IRCProtocol.NumericReplyConstants.Client.NAMES.RPL_ENDOFNAMES[1]
-				);
+                                // RPL_ENDOFNAMES
+                                socket.emit(
+                                        'RPL_ENDOFNAMES'
+                                        ,{
+                                                channel: channel.getName()
+                                                ,msg: IRCProtocol.NumericReplyConstants.Client.NAMES.RPL_ENDOFNAMES[1]
+                                        }
+                                );
 			}
 		}
 	}

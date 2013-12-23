@@ -302,18 +302,26 @@ ChannelWindow.prototype.init = function() {
 		width: 560
 		,enableKeyEvents: true
 		,listeners: {
-			keydown: function( field, e, eOpts ) {
-				if ( e.getKey() === 13 ) {
-					this._config.parent.handleSendText.bind( this._config.parent )( this.textField, this._config.channel );
-				}
-			}.bind( this )
+			keydown:  function( field, e, eOpts ) {
+                                if ( e.getKey() === 13 ) {
+                                        if ( field.getValue().toString().charAt( 0 ) !== "/" ) {
+                                                this.addText( "<b>[" + Ext.htmlEncode( this._config.parent._nickname ) + "]</b> " + Ext.htmlEncode( field.getValue() ) );
+                                        }
+                                        this._config.parent.handleSendText.bind( this._config.parent )( this.textField, this._config.channel );
+                                }
+                        }.bind( this )
 		}
 	} );
 
 	// Send button
 	this.sendButton = Ext.create( 'Ext.button.Button', {
 		text: 'Send'
-		,handler: this._config.parent.handleSendText.bind( this._config.parent, [ this.textField, this._config.channel ] )
+		,handler: function() {
+                        if ( this.textField.getValue().toString().charAt( 0 ) !== "/" ) {
+                                this.addText( "<b>[" + Ext.htmlEncode( this._config.parent._nickname ) + "]</b> " + Ext.htmlEncode( this.textField.getValue() ) );
+                        }
+                        this._config.parent.handleSendText.bind( this._config.parent )( this.textField, this._config.channel );
+                }
 	} );
 
 	// Topic text
