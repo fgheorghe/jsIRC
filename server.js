@@ -150,7 +150,7 @@ TCPServer.prototype.textToJson = function( name, command ) {
                 ,temp; // Temporary variable, used for splitting a command.
 
         // Begin constructing parameters
-        switch ( name ) {
+        switch ( name.toUpperCase() ) {
                 case "NICK":
                         // Split by spaces.
                         temp = command.split( " " );
@@ -375,11 +375,14 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
         console.log( parameters );
 
         // Construct response.
-        switch ( command ) {
+        switch ( command.toUpperCase() ) {
                 case "RPL_WELCOME":
                 case "RPL_YOURHOST":
                 case "RPL_CREATED":
                 case "RPL_MYINFO":
+                case "RPL_MOTDSTART":
+                case "RPL_MOTD":
+                case "RPL_ENDOFMOTD":
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
