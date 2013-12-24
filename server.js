@@ -199,6 +199,37 @@ TCPServer.prototype.textToJson = function( name, command ) {
 
                         // TODO: Handle keys.
                         break;
+                case "TOPIC":
+                        // TODO: Redundant with above!
+                        // Split by spaces.
+                        temp = command.split( " " );
+
+                        // Set target.
+                        responseObject.channel = temp[1];
+
+                        // Set message.
+                        temp = command.split( ":" );
+                        responseObject.topic = temp.splice( 1 ).join( ":" );
+                        break;
+                case "MODE":
+                        // Split by spaces
+                        temp = command.split( " " );
+
+                        // Second array entry is the target name, and is mandatory!
+                        responseObject = {
+                                target: temp[1]
+                        };
+
+                        // Optionally, the third item is the mode to change.
+                        if ( temp.length > 2 ) {
+                                responseObject.modes = temp[2];
+                        }
+
+                        // Optionally, all items from this point on, are added to the parameters array.
+                        if ( temp.length > 3 ) {
+                                responseObject.parameters = temp.slice( 3 );
+                        }
+                        break;
                 default:
                         // TODO: Implement.
                         break;
@@ -390,6 +421,15 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_ENDOFNAMES":
                         // TODO: Store text in constants!
                         response = ":" + IRCProtocol.ServerName + " 366 " + this.Client.getNickname() + " :End of /NAMES list.";
+                        break;
+                case "MODE":
+                        // NOTE: Redundant with similar commands above!
+                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " MODE " + parameters.channel + " " + parameters.mode;
+
+                        // Append "parameter", e.g.: for a +ovkl command.
+                        if ( parameters.parameter ) {
+                                response += " " + parameters.parameter;
+                        }
                         break;
                 default:
                         // TODO: Implement.
