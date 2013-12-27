@@ -174,6 +174,11 @@ TCPServer.prototype.textToJson = function( name, command ) {
                         temp = command.split( ":" );
                         responseObject.realname = temp.splice( 1 ).join( ":" );
                         break;
+                case "WHOIS":
+                        // Split by spaces.
+                        temp = command.split( " " );
+                        responseObject.target = temp[1];
+                        break;
                 case "PONG":
                         responseObject = {};
                         break;
@@ -399,6 +404,10 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "JOIN":
                         response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " JOIN " + parameters.channel;
                         break;
+                case "RPL_ENDOFWHOIS":
+                        // TODO: Store text in constants!
+                        response = this.constructFirstMessagePart( 318, this.Client.getNickname() ) + parameters.nick + " :End of /WHOIS list.";
+                        break;
                 case "RPL_TOPIC":
                         response = this.constructFirstMessagePart( 332, this.Client.getNickname() ) + parameters.channel + " :" + parameters.topic;
                         break;
@@ -423,14 +432,33 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         response += ":" + nickPart;
 
                         break;
+                case "RPL_WHOISOPERATOR":
+                        // TODO: Store text in constants!
+                        response = this.constructFirstMessagePart( 313, this.Client.getNickname() ) + parameters.nick + " :is an IRC operator.";
+                        break;
                 case "RPL_ENDOFNAMES":
                         // TODO: Store text in constants!
                         response = ":" + IRCProtocol.ServerName + " 366 " + this.Client.getNickname() + " :End of /NAMES list.";
                         break;
                 case "NICK":
                         response = ":" + parameters.initial + "!" + parameters.user + "@" + parameters.host + " NICK " + parameters.nickname;
-                        console.log( "--------------" );
-                        console.log( parameters );
+                        break;
+                case "RPL_WHOISSERVER":
+                        response += this.constructFirstMessagePart( 312, this.Client.getNickname() ) + parameters.nick + " " + parameters.server + " :" + parameters.serverinfo;
+                        break;
+                case "RPL_WHOISUSER":
+                        response = this.constructFirstMessagePart( 311, this.Client.getNickname() ) + parameters.nick + " " + parameters.user + " " + parameters.host + " * :" + parameters.realname;
+                        break;
+                case "RPL_WHOISIDLE":
+                        // TODO: Store text in constants!
+                        response = ":" + IRCProtocol.ServerName + " 317 " + this.Client.getNickname() + " " + parameters.nick + " " + parameters.idle + " :seconds idle";
+                        break;
+                case "RPL_AWAY":
+                        response = ":" + IRCProtocol.ServerName + " 301 " + this.Client.getNickname() + " " + parameters.nick + " :" + parameters.text;
+                        break;
+                case "RPL_WHOISCHANNELS":
+                        // TODO: Include operator / voice status.
+                        response = ":" + IRCProtocol.ServerName + " 319 " + this.Client.getNickname() + " " + parameters.nick + " :" + parameters.channels;
                         break;
                 case "MODE":
                         // NOTE: Redundant with similar commands above!
@@ -644,7 +672,7 @@ https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
 			}
 			,WHOIS: {
 				ERR_NOSUCHSERVER: [ 402, "No such server" ] // <server name> :
-				,RPL_WHOISUSER: [ 403, "<nick> <user> <host> * :<real name>" ]
+				,RPL_WHOISUSER: [ 311, "<nick> <user> <host> * :<real name>" ]
 				,RPL_WHOISCHANNELS: [ 319, "<nick> :*( ( \"@\" / \"+\" ) <channel> \" \" )" ]
 				,RPL_AWAY: [ 301, "<nick> :<away message>" ]
 				,RPL_WHOISIDLE: [ 317, "<nick> <integer> :seconds idle" ]
