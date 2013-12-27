@@ -29,11 +29,11 @@ var Config = {
         Server: {
                 WEB: {
                         Port: 10000
-                        ,Host: '127.0.0.1'
+                        ,Host: 'chatjs'
                 }
                 ,TCP: {
                         Port: 6667
-                        ,Host: '127.0.0.1'
+                        ,Host: 'chatjs'
                 }
                 // IRC Protocol configuration
                 ,IRCProtocol: {
@@ -53,6 +53,6 @@ var Config = {
         ,Client: {
                 // Server URL
                 // NOTE: Should be based on http:// + Server.Port + : + Server.Host + /
-                ServerUrl: "http://localhost:10000/"
+                ServerUrl: "http://chatjs:10000/"
         }
 }

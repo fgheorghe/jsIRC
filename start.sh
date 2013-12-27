@@ -2,7 +2,7 @@
 # Script used for starting a jsirc server
 
 # Path to nodejs binary
-NODEJS_PATH=/usr/local/bin/node
+NODEJS_PATH=/usr/bin/nodejs
 
 # Check if pid file exists
 if [ -f server.pid ]; then

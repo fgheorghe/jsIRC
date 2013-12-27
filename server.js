@@ -383,6 +383,8 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_MOTDSTART":
                 case "RPL_MOTD":
                 case "RPL_ENDOFMOTD":
+                case "ERR_NICKNAMEINUSE":
+                case "ERR_ERRONEUSNICKNAME":
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
@@ -424,6 +426,11 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_ENDOFNAMES":
                         // TODO: Store text in constants!
                         response = ":" + IRCProtocol.ServerName + " 366 " + this.Client.getNickname() + " :End of /NAMES list.";
+                        break;
+                case "NICK":
+                        response = ":" + parameters.initial + "!" + parameters.user + "@" + parameters.host + " NICK " + parameters.nickname;
+                        console.log( "--------------" );
+                        console.log( parameters );
                         break;
                 case "MODE":
                         // NOTE: Redundant with similar commands above!
@@ -1592,7 +1599,7 @@ IRCProtocol.ClientProtocol.prototype.emitIRCWelcome = function( socket ) {
 		socket
 		,'RPL_WELCOME'
 		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_WELCOME[0]
-		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_WELCOME[1]
+		,IRCProtocol.NumericReplyConstants.CommonNumericReplies.RPL_WELCOME[1] + ", " + socket.Client.getNickname()
 	);
 
 	// Send RPL_YOURHOST, with version details
