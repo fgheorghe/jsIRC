@@ -257,6 +257,8 @@ TCPServer.prototype.textToJson = function( name, command ) {
                 case "TIME":
                 case "ADMIN":
                 case "INFO":
+                case "PONG":
+                case "USERS":
                         // No parameters required.
                         break;
                 default:
@@ -442,6 +444,8 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 // Info
                 case "RPL_INFO":
                 case "RPL_ENDOFINFO":
+                // Users
+                case "ERR_USERSDISABLED":
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
