@@ -147,7 +147,8 @@ TCPServer.prototype.init = function() {
 TCPServer.prototype.textToJson = function( name, command ) {
         console.log( command );
         var responseObject = {}
-                ,temp; // Temporary variable, used for splitting a command.
+                ,temp // Temporary variable, used for splitting a command.
+                ,command = S( command ).trim().s; // Trim command
 
         // Begin constructing parameters
         switch ( name.toUpperCase() ) {
@@ -229,7 +230,14 @@ TCPServer.prototype.textToJson = function( name, command ) {
 
                         // Optionally, the third item is the mode to change.
                         if ( temp.length > 2 ) {
-                                responseObject.modes = temp[2];
+                                // If target is a nickname, pass in an array of modes
+                                if ( IRCProtocol.OtherConstants.NICK_LENGTH && IRCProtocol.OtherConstants.NICK_PATTERN.test( responseObject.target ) ) {
+                                        responseObject.modes = [ temp[2] ];
+                                } else {
+                                        // If channel, pass in a string
+                                        responseObject.modes = temp[2];
+                                        // TODO: Debu(nk)
+                                }
                         }
 
                         // Optionally, all items from this point on, are added to the parameters array.
@@ -238,6 +246,13 @@ TCPServer.prototype.textToJson = function( name, command ) {
                         }
                         break;
                 case "AWAY":
+                        temp = command.split( ":" );
+                        if ( temp.length > 1 ) {
+                                // Set message, if any.
+                                responseObject.text = temp.splice( 1 ).join( ":" );
+                        }
+                        break;
+                case "WALLOPS":
                         temp = command.split( ":" );
                         if ( temp.length > 1 ) {
                                 // Set message, if any.
@@ -429,9 +444,7 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_LUSERCHANNELS":
                 case "RPL_LUSERME":
                 // Operator
-                case "ERR_NEEDMOREPARAMS":
                 case "RPL_YOUREOPER":
-                case "ERR_PASSWDMISMATCH":
                 // Version
                 case "RPL_VERSION":
                 // Time
@@ -446,6 +459,25 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_ENDOFINFO":
                 // Users
                 case "ERR_USERSDISABLED":
+                // Generic
+                case "ERR_NEEDMOREPARAMS":
+                case "ERR_NOPRIVILEGES":
+                case "ERR_PASSWDMISMATCH":
+                case "ERR_UMODEUNKNOWNFLAG":
+                case "RPL_UMODEIS":
+                case "ERR_USERSDONTMATCH":
+                case "ERR_CHANOPRIVSNEEDED":
+                case "ERR_NOTONCHANNEL":
+                case "ERR_UNKNOWNMODE":
+                case "ERR_NOSUCHNICK":
+                case "ERR_USERNOTINCHANNEL":
+                case "RPL_INVITELIST":
+                case "RPL_ENDOFINVITELIST":
+                case "RPL_BANLIST":
+                case "RPL_ENDOFBANLIST":
+                case "RPL_EXCEPTLIST":
+                case "RPL_ENDOFEXCEPTLIST":
+                        // TODO: RPL_CHANNELMODEIS
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
@@ -523,6 +555,10 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         if ( parameters.parameter ) {
                                 response += " " + parameters.parameter;
                         }
+                        break;
+                case "WALLOPS":
+                        console.log( "HERE" );
+                        response += ":" + parameters.server  + " WALLOPS :" + parameters.text;
                         break;
                 default:
                         // TODO: Implement.
@@ -3094,7 +3130,6 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 					// Ingore...
 					continue;
 				}
-
 				// Set/remove modes
 				for ( var j = 1; j < data.modes[i].length; j++ ) {
 					// NOTE: As per RFC2812, o/O/a can not be set using this command!
