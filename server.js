@@ -787,7 +787,7 @@ eval( fs.readFileSync('./public/config.js','utf8') );
 /** IRC Protocol */
 var IRCProtocol = {
 	// Daemon version
-	Version: "0.1"
+	Version: "0.2"
 	// Server info
 	,ServerName: Config.Server.IRCProtocol.ServerName
 	,ServerInfo: Config.Server.IRCProtocol.ServerInfo
