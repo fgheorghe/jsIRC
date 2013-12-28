@@ -259,6 +259,17 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.reason = temp.splice( 1 ).join( ":" );
                         }
                         break;
+                case "KILL":
+                        temp = command.split( " " );
+                        if ( temp.length > 1 ) {
+                                // Kill nickname.
+                                responseObject.nickname = temp[1];
+                        }
+                        if ( temp.length > 2 ) {
+                                // Kill comment.
+                                responseObject.comment = temp[2].substring( 1 );
+                        }
+                        break;
                 case "WALLOPS":
                         temp = command.split( ":" );
                         if ( temp.length > 1 ) {
@@ -588,7 +599,8 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
  * @function
  */
 IRCSocket.prototype.disconnect = function( data, socket ) {
-        // TODO: Implement.
+        // Call protocol disconnect logic.
+        socket.getRawSocket().disconnect( data, socket );
 }
 
 /**
