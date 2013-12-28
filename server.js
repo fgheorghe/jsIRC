@@ -242,6 +242,10 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.text = temp.splice( 1 ).join( ":" );
                         }
                         break;
+                case "MOTD":
+                case "LUSERS":
+                        // No parameters required.
+                        break;
                 default:
                         // TODO: Implement.
                         break;
@@ -399,6 +403,11 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "ERR_ERRONEUSNICKNAME":
                 case "RPL_UNAWAY":
                 case "RPL_NOWAWAY":
+                case "RPL_LUSERCLIENT":
+                case "RPL_LUSEROP":
+                case "RPL_LUSERUNKOWN":
+                case "RPL_LUSERCHANNELS":
+                case "RPL_LUSERME":
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
