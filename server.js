@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 var S = require( 'string' ) // http://stringjs.com/
         ,_ = require('lodash') // http://lodash.com/
         ,fs = require('fs') // Standard file system
+        ,util = require( 'util' ) // Standard utility
         ,logFacility = require( 'log4js' ); // https://github.com/nomiddlename/log4js-node
 
 // BIG TODO: Separate authenticated/non-authenticated user commands!
@@ -88,10 +89,14 @@ WEBServer.prototype.loadLibraries = function() {
  * @function
  */
 WEBServer.prototype.init = function() {
+        // Log action.
+        logger.info( "Creating Web IRC server..." );
+
 	// Load required libraries.
 	this.loadLibraries();
 
 	// Open port for incoming connections
+        logger.info( "Binding on port: " + this._config.port + ", host: " + this._config.host + "." );
 	this._httpServer.listen( this._config.port, this._config.host );
 
 	// Attach a Socket.Io connection handler
@@ -111,6 +116,9 @@ WEBServer.prototype.init = function() {
 		// Attach the Application Specific Event handlers
 		this.attachSocketEvents( socket );
 	}.bind( this ) );
+
+        // Log action.
+        logger.info( "Web IRC server created." );
 }
 
 /**
@@ -146,7 +154,6 @@ TCPServer.prototype.init = function() {
  * @return {Object} JSON object for the requested command.
  */
 TCPServer.prototype.textToJson = function( name, command ) {
-        console.log( command );
         var responseObject = {}
                 ,temp // Temporary variable, used for splitting a command.
                 ,command = S( command ).trim().s; // Trim command
@@ -373,8 +380,6 @@ TCPServer.prototype.textToJson = function( name, command ) {
                         break;
         }
 
-        console.log( name );
-        console.log( responseObject );
         return responseObject;
 }
 
@@ -400,6 +405,9 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
                         if ( !lines[i] ) {
                                 continue;
                         }
+
+                        // Log debug data.
+                        logger.debug( "Received TCP data from " + socket.getRawSocket().remoteAddress + ": " + lines[i] );
 
                         // Split line by spaces.
                         temp = lines[i].split( ' ' );
@@ -437,6 +445,8 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
  * @function
  */
 TCPServer.prototype.loadLibraries = function() {
+        // Log action.
+        logger.info( "Creating TCP IRC server..." );
         // Load the net library and create server.
         this._tcpServer = require( 'net' ).createServer(
                 // Socket configuration
@@ -464,10 +474,15 @@ TCPServer.prototype.loadLibraries = function() {
         );
 
         // Create listener.
+        // Log action.
+        logger.info( "Binding on port: " + this._config.port + ", host: " + this._config.host + "." );
         this._tcpServer.listen(
                 this._config.port
                 ,this._config.host
         );
+
+        // Log action.
+        logger.info( "TCP IRC server created." );
 }
 
 /**
@@ -512,9 +527,6 @@ IRCSocket.prototype.constructFirstMessagePart = function( command, nickname ) {
  */
 IRCSocket.prototype.jsonToText = function( command, parameters ) {
         var response = "";
-
-        console.log( command );
-        console.log( parameters );
 
         // Construct response.
         switch ( command.toUpperCase() ) {
@@ -713,8 +725,6 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         break;
         }
 
-        console.log( "Text command:" + response );
-
         // Return.
         return response;
 }
@@ -774,10 +784,15 @@ IRCSocket.prototype.emit = function( command, parameters ) {
                 // Write data as is.
                 this._socket.emit( command, parameters );
         } else if ( this._type === "tcp" ) {
+                // Log debug data.
+                logger.debug( "Streaming JSON TCP event " + command + " to " + this._socket.remoteAddress + ": " + util.format( "%j", parameters ) );
+
                 // Convert JSON to text, and send the command over...if any.
                 var response = this.jsonToText.bind( this )( command, parameters );
                 if ( response ) {
                         this._socket.write( response + "\r\n" );
+                        // Log debug data.
+                        logger.debug( "Wrote TCP data to " + this._socket.remoteAddress + ": " + response );
                 }
         }
 }
@@ -793,6 +808,9 @@ var logger = logFacility.getLogger( 'ircd' );
 
 // Set log level
 logger.setLevel( Config.Log.Level );
+
+// Begin logging.
+logger.info( "Loaded log mechanism." );
 
 /** IRC Protocol */
 var IRCProtocol = {
