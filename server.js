@@ -270,6 +270,17 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.comment = temp[2].substring( 1 );
                         }
                         break;
+                case "INVITE":
+                        temp = command.split( " " );
+                        if ( temp.length > 1 ) {
+                                // Nickname.
+                                responseObject.nickname = temp[1];
+                        }
+                        if ( temp.length > 2 ) {
+                                // Channel.
+                                responseObject.channel = temp[2];
+                        }
+                        break;
                 case "WALLOPS":
                         temp = command.split( ":" );
                         if ( temp.length > 1 ) {
@@ -524,8 +535,13 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_EXCEPTLIST":
                 case "RPL_ENDOFEXCEPTLIST":
                 case "ERR_NOSUCHCHANNEL":
+                // Invite
+                case "ERR_USERONCHANNEL":
                         // TODO: RPL_CHANNELMODEIS
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
+                        break;
+                case "RPL_INVITING":
+                        response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " " + parameters.msg;
                         break;
                 case "PING":
                         response = "PING :" + parameters.source;
@@ -626,6 +642,9 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         break;
                 case "KICK":
                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " KICK " + parameters.channel + " " + parameters.target + " :" + parameters.comment;
+                       break;
+                case "INVITE":
+                       response = ":" + parameters.nick + "!" + parameters.user + "@" + parameters.host + " INVITE " + this.Client.getNickname() + " " + parameters.channel;
                        break;
                 default:
                         // TODO: Implement.
@@ -3945,7 +3964,7 @@ IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
 		socket
 		,'RPL_INVITING'
 		,IRCProtocol.NumericReplyConstants.Client.INVITE.RPL_INVITING[0]
-		,data.channel + " " + data.nickname
+		,data.nickname + " " + data.channel
 	);
 
 	// Notify the target user of an invite
