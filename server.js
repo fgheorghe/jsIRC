@@ -292,6 +292,25 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.nicknames = temp.splice( 1 );
                         }
                         break;
+                case "KICK":
+                        // Split by ":".
+                        // TODO: Allow multiple channels at a time!
+                        temp = command.split( ":" );
+                        var target = temp[0].split( " " );
+
+                        // Get target details
+                        if ( target.length > 1 ) {
+                                responseObject.channel = [ target[1] ];
+                        }
+                        if ( target.length > 2 ) {
+                                responseObject.user = [ target[2] ];
+                        }
+
+                        // Get comment, if any.
+                        if ( temp.length > 1 ) {
+                                responseObject.comment = temp.splice( 1 ).join( ":" );
+                        }
+                        break;
                 case "MOTD":
                 case "LUSERS":
                 case "VERSION":
@@ -504,6 +523,7 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_ENDOFBANLIST":
                 case "RPL_EXCEPTLIST":
                 case "RPL_ENDOFEXCEPTLIST":
+                case "ERR_NOSUCHCHANNEL":
                         // TODO: RPL_CHANNELMODEIS
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
@@ -604,6 +624,9 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         } );
                         response = this.constructFirstMessagePart( 302, this.Client.getNickname() ) + ":" + userhost;
                         break;
+                case "KICK":
+                       response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " KICK " + parameters.channel + " " + parameters.target + " :" + parameters.comment;
+                       break;
                 default:
                         // TODO: Implement.
                         break;

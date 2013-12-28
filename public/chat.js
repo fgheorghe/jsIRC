@@ -824,7 +824,7 @@ jsIRC.prototype.JOIN = function( data ) {
 jsIRC.prototype.KICK = function( data ) {
 	// If the user being kicked is the same as this user, then display the text accordingly (in the status window)
 	if ( data.target.toLowerCase() === this._nickname.toLowerCase() ) {
-		this.addText( '* You have beem kicked from ' + data.channel + ' by ' + data.nickname + ' (' + Ext.htmlEncode( data.comment ) + ')' );
+		this.addText( '* You have been kicked from ' + data.channel + ' by ' + data.nickname + ' (' + Ext.htmlEncode( data.comment ) + ')' );
 
 		// Close channel window
 		this._channelWindows[data.channel].chatWindow.close();
