@@ -3127,6 +3127,9 @@ IRCProtocol.ClientProtocol.prototype.OPER = function( data, socket ) {
 	// TODO: Check host
 	// Validate password, case insensitive
 	if ( data.password === IRCProtocol.OperPassword ) {
+                // Log this command.
+                logger.warn( "Successful OPER command issued by " + socket.getAddress() + " (" + socket.Client.getNickname() + ")." );
+
 		// RPL_YOUREOPER
 		this.emitIRCError(
 			socket
@@ -3138,6 +3141,9 @@ IRCProtocol.ClientProtocol.prototype.OPER = function( data, socket ) {
 		// Set user as local operator
 		socket.Client.setMode( 'O', true );
 	} else {
+                // Log this command.
+                logger.warn( "Failed OPER command issued by " + socket.getAddress() + " (" + socket.Client.getNickname() + ")." );
+
 		// ERR_PASSWDMISMATCH
 		this.emitIRCError(
 			socket
@@ -3275,6 +3281,9 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 
 	// TODO: ERR_CANTKILLSERVER
 	if ( !socket.Client.getMode( 'o' ) && !socket.Client.getMode( 'O' ) ) {
+                // Log this command.
+                logger.warn( "Failed KILL (ERR_NOPRIVILEGES) command issued by " + socket.getAddress() + " (" + socket.Client.getNickname() + ")." );
+
 		// ERR_NOPRIVILEGES
 		this.emitIRCError(
 			socket
@@ -3297,6 +3306,9 @@ IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 		} else {
 			// Issue a QUIT command "from" the target user, with a KILL message, and terminate connection
 			var clientSocket = this._clientSockets[ nicknamePosition ];
+
+                        // Log this command.
+                        logger.warn( "Successful KILL command issued by " + socket.getAddress() + " (" + socket.Client.getNickname() + "), on user " + clientSocket.getAddress() + " (" + clientSocket.Client.getNickname() + "), comment: " + data.comment + "." );
 
 			// TODO: Remove redundancy
 			// Set kill message
