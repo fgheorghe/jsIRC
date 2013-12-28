@@ -284,6 +284,13 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.password = temp[1];
                         }
                         break;
+                case "ISON":
+                        // Split by spaces.
+                        temp = command.split( " " );
+                        if ( temp.length > 1 ) {
+                                responseObject.nicknames = temp.splice( 1 );
+                        }
+                        break;
                 case "MOTD":
                 case "LUSERS":
                 case "VERSION":
@@ -580,6 +587,14 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         break;
                 case "QUIT":
                         response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " QUIT :" + parameters.reason;
+                        break;
+                case "RPL_ISON":
+                        // TODO: Test properly!
+                        var nicknames = "";
+                        _.each( parameters.nicknames, function( element ) {
+                                nicknames += ( nicknames !== "" ? " " : "" ) + element;
+                        } );
+                        response = this.constructFirstMessagePart( 303, this.Client.getNickname() ) + ":" + nicknames;
                         break;
                 default:
                         // TODO: Implement.
