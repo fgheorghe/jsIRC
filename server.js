@@ -252,6 +252,13 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.text = temp.splice( 1 ).join( ":" );
                         }
                         break;
+                case "QUIT":
+                        temp = command.split( ":" );
+                        if ( temp.length > 1 ) {
+                                // Set quit message, if any.
+                                responseObject.reason = temp.splice( 1 ).join( ":" );
+                        }
+                        break;
                 case "WALLOPS":
                         temp = command.split( ":" );
                         if ( temp.length > 1 ) {
@@ -558,8 +565,10 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         }
                         break;
                 case "WALLOPS":
-                        console.log( "HERE" );
                         response += ":" + parameters.server  + " WALLOPS :" + parameters.text;
+                        break;
+                case "QUIT":
+                        response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " QUIT :" + parameters.reason;
                         break;
                 default:
                         // TODO: Implement.
