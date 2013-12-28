@@ -177,7 +177,9 @@ TCPServer.prototype.textToJson = function( name, command ) {
                 case "WHOIS":
                         // Split by spaces.
                         temp = command.split( " " );
-                        responseObject.target = temp[1];
+                        if ( temp.length > 1 ) {
+                                responseObject.target = temp[1];
+                        }
                         break;
                 case "PONG":
                         responseObject = {};
@@ -242,8 +244,19 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.text = temp.splice( 1 ).join( ":" );
                         }
                         break;
+                case "OPER":
+                        // Split by spaces.
+                        temp = command.split( " " );
+                        if ( temp.length > 1 ) {
+                                responseObject.password = temp[1];
+                        }
+                        break;
                 case "MOTD":
                 case "LUSERS":
+                case "VERSION":
+                case "TIME":
+                case "ADMIN":
+                case "INFO":
                         // No parameters required.
                         break;
                 default:
@@ -392,22 +405,43 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
 
         // Construct response.
         switch ( command.toUpperCase() ) {
+                // "Welcome" sequence
                 case "RPL_WELCOME":
                 case "RPL_YOURHOST":
                 case "RPL_CREATED":
                 case "RPL_MYINFO":
+                // MOTD
                 case "RPL_MOTDSTART":
                 case "RPL_MOTD":
                 case "RPL_ENDOFMOTD":
+                // Nick command
                 case "ERR_NICKNAMEINUSE":
                 case "ERR_ERRONEUSNICKNAME":
+                // Away
                 case "RPL_UNAWAY":
                 case "RPL_NOWAWAY":
+                // Lusers
                 case "RPL_LUSERCLIENT":
                 case "RPL_LUSEROP":
                 case "RPL_LUSERUNKOWN":
                 case "RPL_LUSERCHANNELS":
                 case "RPL_LUSERME":
+                // Operator
+                case "ERR_NEEDMOREPARAMS":
+                case "RPL_YOUREOPER":
+                case "ERR_PASSWDMISMATCH":
+                // Version
+                case "RPL_VERSION":
+                // Time
+                case "RPL_TIME":
+                // Admin
+                case "RPL_ADMINME":
+                case "RPL_ADMINLOC1":
+                case "RPL_ADMINLOC2":
+                case "RPL_ADMINEMAIL":
+                // Info
+                case "RPL_INFO":
+                case "RPL_ENDOFINFO":
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
@@ -594,7 +628,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\
 \n\
 \n\
 Contribute or fork:\n\
-https://github.com/fgheorghe/jsIRC/tree/irc-client-rfc2812"
+https://github.com/fgheorghe/jsIRC"
 	,MotdFile: Config.Server.IRCProtocol.MotdFile
 	,PingFrequency: Config.Server.IRCProtocol.PingFrequency // In seconds
 	,MaxChannelList: Config.Server.IRCProtocol.MaxChannelList // Maximum number of channels returned in a RPL_LIST event
