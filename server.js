@@ -330,7 +330,8 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
 
         // Handle connection close, if an event handler is defined.
         if ( typeof this._config.events["disconnect"] !== "undefined" ) {
-                socket.getRawSocket().on( 'end', function() {
+                console.log( "FLAVIU" );
+                socket.getRawSocket().on( 'close', function() {
                         // TODO: Perhaps redundant?!
                         var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
 
@@ -1121,6 +1122,15 @@ https://github.com/fgheorghe/jsIRC"
 				}
 			}
 
+			// Method used for closing a client connection.
+			this.clientQuit = function() {
+                                // Clear intervals.
+                                clearInterval( this._idleTimer );
+                                clearInterval( this._pingTimer );
+
+                                // TODO: Add other events.
+                        }
+
 			return this;
 		}
 		// As per RFC2811 http://tools.ietf.org/html/rfc2811#section-4
@@ -1896,6 +1906,9 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 	this._clientSockets.splice( socketPosition, 1 );
 	// Remove id from socket id array
 	this._clientSocketIds.splice( socketPosition, 1 );
+
+        // Set client as quit.
+        socket.Client.clientQuit();
 }
 
 /**
