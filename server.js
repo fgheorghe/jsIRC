@@ -60,7 +60,10 @@ WEBServer.prototype.attachSocketEvents = function( socket ) {
 	Object.keys( this._config.events ).forEach( function( eventName ) {
 		socket.getRawSocket().on( eventName, function( data ) {
                         // Log debug data.
-                        logger.debug( "Received Web data from " + socket.getRawSocket().handshake.address.address + ": " + util.format( "%j", data ) );
+                        // Ignore PONG events.
+                        if ( eventName !== "PONG" ) {
+                                logger.debug( "Received Web data from " + socket.getRawSocket().handshake.address.address + ": " + util.format( "%j", data ) );
+                        }
 
 			// Determine which scope to bind the event handler to
 			var scope = typeof me._config.scope !== "undefined" ? me._config.scope : me;
@@ -412,13 +415,16 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
                                 continue;
                         }
 
-                        // Log debug data.
-                        logger.debug( "Received TCP data from " + socket.getRawSocket().remoteAddress + ": " + lines[i] );
-
                         // Split line by spaces.
                         temp = lines[i].split( ' ' );
                         // Get command.
                         command = temp[0].toUpperCase();
+
+                        // Log debug data.
+                        // Ignore PONG event.
+                        if ( command !== "PONG" ) {
+                                logger.debug( "Received TCP data from " + socket.getRawSocket().remoteAddress + ": " + lines[i] );
+                        }
 
                         // Handle each event, if there is a listener configured for it.
                         if ( typeof this._config.events[command] !== "undefined" ) {
@@ -798,18 +804,27 @@ IRCSocket.prototype.emit = function( command, parameters ) {
                 this._socket.emit( command, parameters );
 
                 // Log debug data.
-                logger.debug( "Wrote Web JSON " + command + " event data to " + this._socket.handshake.address.address + ": " + util.format( "%j", parameters ) );
+                // Ignore PING event.
+                if ( command !== "PING" ) {
+                        logger.debug( "Wrote Web JSON " + command + " event data to " + this._socket.handshake.address.address + ": " + util.format( "%j", parameters ) );
+                }
         } else if ( this._type === "tcp" ) {
                 // Log debug data.
                 // Include both original, and wrote data, for better debugging.
-                logger.debug( "Writing JSON TCP event " + command + " to " + this._socket.remoteAddress + ": " + util.format( "%j", parameters ) );
+                // Ignore PING event.
+                if ( command !== "PING" ) {
+                        logger.debug( "Writing JSON TCP event " + command + " to " + this._socket.remoteAddress + ": " + util.format( "%j", parameters ) );
+                }
 
                 // Convert JSON to text, and send the command over...if any.
                 var response = this.jsonToText.bind( this )( command, parameters );
                 if ( response ) {
                         this._socket.write( response + "\r\n" );
                         // Log debug data.
-                        logger.debug( "Wrote TCP data to " + this._socket.remoteAddress + ": " + response );
+                        // Ignore PING event.
+                        if ( command !== "PING" ) {
+                                logger.debug( "Wrote TCP data to " + this._socket.remoteAddress + ": " + response );
+                        }
                 }
         }
 }
@@ -1310,12 +1325,17 @@ https://github.com/fgheorghe/jsIRC"
 
 						// Send a ping event
 						if ( this.getPingIdle() >= IRCProtocol.PingFrequency ) {
-							this._socket.emit(
-								'PING'
-								,{
-									source: IRCProtocol.ServerName
-								}
-							);
+                                                      try {
+                                                              this._socket.emit(
+                                                                      'PING'
+                                                                      ,{
+                                                                                source: IRCProtocol.ServerName
+                                                                      }
+                                                              );
+                                                       } catch ( ex ) {
+                                                               // Log debug data.
+                                                               logger.debug( "Can not write PONG event data!" );
+                                                       }
 						}
 					}.bind( this ), 1000 );
 				}
