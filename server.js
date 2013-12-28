@@ -59,6 +59,9 @@ WEBServer.prototype.attachSocketEvents = function( socket ) {
 	var me = this;
 	Object.keys( this._config.events ).forEach( function( eventName ) {
 		socket.getRawSocket().on( eventName, function( data ) {
+                        // Log debug data.
+                        logger.debug( "Received Web data from " + socket.getRawSocket().handshake.address.address + ": " + util.format( "%j", data ) );
+
 			// Determine which scope to bind the event handler to
 			var scope = typeof me._config.scope !== "undefined" ? me._config.scope : me;
 
