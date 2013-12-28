@@ -96,14 +96,14 @@ WEBServer.prototype.init = function() {
 	// Attach a Socket.Io connection handler
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
+                // Determine which scope to bind the event handler to
+                var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
+
                 // Create IRCSocket.
-                socket = new IRCSocket( socket, "web", this._config );
+                socket = new IRCSocket( socket, "web", this._config, scope );
 
 		// Call a custom connection event handler, if configured
 		if ( typeof this._config.connection !== "undefined" ) {
-			// Determine which scope to bind the event handler to
-			var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
-
 			this._config.connection.bind( scope )( socket );
 		}
 
@@ -421,7 +421,6 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
 
         // Handle connection close, if an event handler is defined.
         if ( typeof this._config.events["disconnect"] !== "undefined" ) {
-                console.log( "FLAVIU" );
                 socket.getRawSocket().on( 'close', function() {
                         // TODO: Perhaps redundant?!
                         var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
@@ -447,14 +446,14 @@ TCPServer.prototype.loadLibraries = function() {
                         // Set encoding.
                         socket.setEncoding( 'utf8' );
 
+                        // Determine which scope to bind the event handler to
+                        var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
+
                         // Create IRCSocket.
-                        socket = new IRCSocket( socket, "tcp", this._config );
+                        socket = new IRCSocket( socket, "tcp", this._config, scope );
 
                         // Call a custom connection event handler, if configured
                         if ( typeof this._config.connection !== "undefined" ) {
-                                // Determine which scope to bind the event handler to
-                                var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
-
                                 this._config.connection.bind( scope )( socket );
 
                                 // Add "event" listeners.
@@ -475,9 +474,10 @@ TCPServer.prototype.loadLibraries = function() {
  * @param {Object} socket Connection socket object.
  * @param {String} type Connection socket type. Allowed values: tcp and web.
  * @param {Object} config Configuration object.
+ * @param {Object} scope Parent scope object.
  * @construct
  */
-var IRCSocket = function( socket, type, config ) {
+var IRCSocket = function( socket, type, config, scope ) {
         // Store configuration.
         this._config = config;
 
@@ -486,6 +486,9 @@ var IRCSocket = function( socket, type, config ) {
 
         // Store type.
         this._type = type;
+
+        // Store scope.
+        this._scope = scope;
 }
 
 /**
@@ -722,8 +725,15 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
  * @function
  */
 IRCSocket.prototype.disconnect = function( data, socket ) {
-        // Call protocol disconnect logic.
-        socket.getRawSocket().disconnect( data, socket );
+        // Call protocol specific disconnect logic.
+        // TODO: NOTE: This logic is flawed!
+        try {
+                socket.getRawSocket().disconnect( data, socket );
+        } catch ( ex ) {
+                // TODO: Add error handling.
+                // End the TCP "way"
+                socket.getRawSocket().end();
+        }
 }
 
 /**
