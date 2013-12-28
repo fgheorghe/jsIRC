@@ -231,6 +231,16 @@ TCPServer.prototype.textToJson = function( name, command ) {
 
                         // TODO: Handle keys.
                         break;
+                case "PART":
+                        // Split by spaces.
+                        // TODO: Handle multiple channels and part messages!
+                        temp = command.split( " " );
+
+                        // Prepare response.
+                        if ( temp.length > 1 ) {
+                                responseObject.channels = [ temp[1] ];
+                        }
+                        break;
                 case "TOPIC":
                         // TODO: Redundant with above!
                         // Split by spaces.
@@ -2553,6 +2563,7 @@ IRCProtocol.ClientProtocol.prototype.JOIN = function( data, socket ) {
 IRCProtocol.ClientProtocol.prototype.PART = function( data, socket ) {
 	// Reset pong interval
 	// TODO: Remove redundant code
+	// TODO: Handle part message!
 	socket.Client.setPingIdle( 0 );
 
 	// Validate required properties
