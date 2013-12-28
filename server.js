@@ -457,6 +457,7 @@ TCPServer.prototype.attachSocketEvents = function( socket ) {
  * @function
  */
 TCPServer.prototype.loadLibraries = function() {
+        var socketIds = [];
         // Log action.
         logger.info( "Creating TCP IRC server..." );
         // Load the net library and create server.
@@ -468,6 +469,13 @@ TCPServer.prototype.loadLibraries = function() {
                 ,function ( socket ) {
                         // Log debug data.
                         logger.debug( "Incoming TCP connection from: " + socket.remoteAddress );
+
+                        // Assign a unique id to this socket: http://stackoverflow.com/questions/6805432/how-to-uniquely-identify-a-socket-with-node-js
+                        socket.id = Math.floor( Math.random() * 1000 );
+                        while ( socketIds.indexOf( socket.id ) !== -1 ) {
+                                socket.id = Math.floor( Math.random() * 1000 );
+                        }
+                        logger.debug( "Assigned TCP socket id: " + socket.id );
 
                         // Set encoding.
                         socket.setEncoding( 'utf8' );
