@@ -161,6 +161,30 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 nickname: temp[1]
                         }
                         break;
+                case "WHO":
+                        // Split by spaces.
+                        temp = command.split( " " );
+
+                        if ( temp.length > 1 ) {
+                                responseObject.channels = temp[1];
+                        }
+
+                        if ( temp.length > 2 ) {
+                                responseObject.o = temp[2];
+                        }
+                        break;
+                case "NAMES":
+                        // Split by spaces.
+                        temp = command.split( " " );
+
+                        // Split by commas
+                        if ( temp.length > 1 ) {
+                                // TODO: Trim.
+                                responseObject = {
+                                        channels: temp[1].split( "," )
+                                }
+                        }
+                        break;
                 case "USER":
                         // Split by spaces.
                         // NOTE: The user mode is not implemented.
@@ -537,6 +561,8 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "ERR_NOSUCHCHANNEL":
                 // Invite
                 case "ERR_USERONCHANNEL":
+                // Who
+                case "RPL_ENDOFWHO":
                         // TODO: RPL_CHANNELMODEIS
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
@@ -646,6 +672,9 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "INVITE":
                        response = ":" + parameters.nick + "!" + parameters.user + "@" + parameters.host + " INVITE " + this.Client.getNickname() + " " + parameters.channel;
                        break;
+                case "RPL_WHOREPLY":
+                        response = this.constructFirstMessagePart( 352, this.Client.getNickname() ) + " " + parameters.channel + " " + parameters.user + " " + parameters.host + " " + parameters.server + " " + parameters.nick + " " + ( parameters.away ? "G" : "H" ) + " :" + parameters.hopcount + " " + parameters.realname;
+                        break;
                 default:
                         // TODO: Implement.
                         break;
@@ -4136,14 +4165,16 @@ IRCProtocol.ClientProtocol.prototype.WHO = function( data, socket ) {
 				socket.emit(
 					'RPL_WHOREPLY'
 					,{
-						// TODO: Display last active channel
-						// TODO: Add hopcount
+						// TODO: Display last active channel and @ or + status of the user.
 						channel: clientSocket.Client.getChannels()[0] || ""
 						,user: clientSocket.Client.getUser()
 						,host: clientSocket.Client.getHost()
 						,server: IRCProtocol.ServerName
 						,nick: clientSocket.Client.getNickname()
 						,realname: clientSocket.Client.getRealname()
+                                               // TODO: Add hopcount
+                                               ,hopcount: 0
+                                               ,away: clientSocket.Client.getAway() ? true : false
 					}
 				);
 			}

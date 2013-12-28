@@ -1756,7 +1756,7 @@ jsIRC.prototype.RPL_NOWAWAY = function( data ) {
  */
 jsIRC.prototype.RPL_WHOREPLY = function( data ) {
 	// Add text to window
-	this.addText( '* ' + Ext.htmlEncode( data.channel !== "" ? data.channel + " " : "" ) + Ext.htmlEncode( data.user ) + " " + Ext.htmlEncode( data.host ) + " " + Ext.htmlEncode( data.server ) + " " + Ext.htmlEncode( data.nick ) + ": " + Ext.htmlEncode( data.realname ) );
+	this.addText( '* ' + Ext.htmlEncode( data.channel !== "" ? data.channel + " " : "" ) + Ext.htmlEncode( data.user ) + " " + Ext.htmlEncode( data.host ) + " " + Ext.htmlEncode( data.server ) + " " + Ext.htmlEncode( data.nick ) + " " + ( data.away ? "G" : "H" ) + " :" + Ext.htmlEncode( data.hopcount ) + " " + Ext.htmlEncode( data.realname ) );
 }
 
 /**
