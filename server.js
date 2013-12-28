@@ -354,6 +354,7 @@ TCPServer.prototype.textToJson = function( name, command ) {
                 case "INFO":
                 case "PONG":
                 case "USERS":
+                case "LIST":
                         // No parameters required.
                         break;
                 default:
@@ -563,6 +564,8 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "ERR_USERONCHANNEL":
                 // Who
                 case "RPL_ENDOFWHO":
+                // List
+                case "RPL_LISTEND":
                         // TODO: RPL_CHANNELMODEIS
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
@@ -674,6 +677,22 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                        break;
                 case "RPL_WHOREPLY":
                         response = this.constructFirstMessagePart( 352, this.Client.getNickname() ) + " " + parameters.channel + " " + parameters.user + " " + parameters.host + " " + parameters.server + " " + parameters.nick + " " + ( parameters.away ? "G" : "H" ) + " :" + parameters.hopcount + " " + parameters.realname;
+                        break;
+                case "RPL_LIST":
+                        // NOTE: RPL_LISTSTART is obsolete, according to RFC 2812, however, for backwards compatibility, include in response.
+                        // TODO: Perhaps move somewhere else?
+                        response = this.constructFirstMessagePart( 321, this.Client.getNickname() ) + " Channel Users :Topic";
+                        this._socket.write( response + "\r\n" );
+                        _.each( parameters.channels, function( element, index ) {
+                                // Pepare response for each channel
+                                response = this.constructFirstMessagePart( 322, this.Client.getNickname() ) + " " + parameters.channels[index] + " " + parameters.users[index] + " :" + parameters.topics[index];
+
+                                // Write to socket
+                                // TODO: Perhaps move somewhere else?
+                                this._socket.write( response + "\r\n" );
+                        }, this );
+                        // Prevent standard output.
+                        return false;
                         break;
                 default:
                         // TODO: Implement.
@@ -2959,9 +2978,10 @@ IRCProtocol.ClientProtocol.prototype.LIST = function( data, socket ) {
 	// RPL_LIST
 	var channels = [];
 	var topics = [];
-	var users = [];
+	var users = []
+                ,count = 0;
 
-	for ( var i = 0; i < this._channels.length; i++ ) {
+	for ( var i = 0; i < this._channels.length || count === IRCClient.MaxChannelList; i++ ) {
 		// Do not list these channels
 		if ( this._channels[i].getMode( 's' ) || this._channels[i].getMode( 'p' ) ) {
 			continue;
@@ -2971,20 +2991,17 @@ IRCProtocol.ClientProtocol.prototype.LIST = function( data, socket ) {
 		topics.push( this._channels[i].getTopic() );
 		users.push( this._channels[i].getUsers().length );
 
-		if ( i % IRCClient.MaxChannelList === 0 || i === this._channels.length - 1 ) {
-			socket.emit(
-				'RPL_LIST'
-				,{
-					channels: channels
-					,users: users
-					,topics: topics
-				}
-			);
-			channels = [];
-			topics = [];
-			users = [];
-		}
+		count++;
 	}
+
+        socket.emit(
+                'RPL_LIST'
+                ,{
+                        channels: channels
+                        ,users: users
+                        ,topics: topics
+                }
+        );
 
 	// RPL_LISTEND (TODO: avoid same request from a user, twice)
 	this.emitIRCError(
