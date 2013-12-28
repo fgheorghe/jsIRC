@@ -235,6 +235,13 @@ TCPServer.prototype.textToJson = function( name, command ) {
                                 responseObject.parameters = temp.slice( 3 );
                         }
                         break;
+                case "AWAY":
+                        temp = command.split( ":" );
+                        if ( temp.length > 1 ) {
+                                // Set message, if any.
+                                responseObject.text = temp.splice( 1 ).join( ":" );
+                        }
+                        break;
                 default:
                         // TODO: Implement.
                         break;
@@ -390,6 +397,8 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                 case "RPL_ENDOFMOTD":
                 case "ERR_NICKNAMEINUSE":
                 case "ERR_ERRONEUSNICKNAME":
+                case "RPL_UNAWAY":
+                case "RPL_NOWAWAY":
                         response = ":" + IRCProtocol.ServerName + " " + parameters.num + " " + this.Client.getNickname() + " :" + parameters.msg;
                         break;
                 case "PING":
@@ -457,7 +466,6 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         response = ":" + IRCProtocol.ServerName + " 301 " + this.Client.getNickname() + " " + parameters.nick + " :" + parameters.text;
                         break;
                 case "RPL_WHOISCHANNELS":
-                        // TODO: Include operator / voice status.
                         response = ":" + IRCProtocol.ServerName + " 319 " + this.Client.getNickname() + " " + parameters.nick + " :" + parameters.channels;
                         break;
                 case "MODE":
@@ -2082,6 +2090,7 @@ IRCProtocol.ClientProtocol.prototype.WHOIS = function( data, socket ) {
 
 		// RPL_WHOISCHANNELS
 		// TODO: Hide private, secret and anonymous channels
+                // TODO: Include voice / operator status.
 		if ( clientSocket.Client.getChannels().length !== 0 ) {
 			socket.emit(
 				'RPL_WHOISCHANNELS'
