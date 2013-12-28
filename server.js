@@ -745,6 +745,9 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
  * @function
  */
 IRCSocket.prototype.disconnect = function( data, socket ) {
+        // Set client as quit.
+        socket.Client.clientQuit();
+
         // Call protocol specific disconnect logic.
         // TODO: NOTE: This logic is flawed!
         try {
@@ -2102,9 +2105,6 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
 	this._clientSockets.splice( socketPosition, 1 );
 	// Remove id from socket id array
 	this._clientSocketIds.splice( socketPosition, 1 );
-
-        // Set client as quit.
-        socket.Client.clientQuit();
 }
 
 /**
