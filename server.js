@@ -26,9 +26,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 // Load various required libraries:
-var S = require( 'string' ); // http://stringjs.com/
-var _ = require('lodash'); // http://lodash.com/
-var fs = require('fs'); // Standard file system
+var S = require( 'string' ) // http://stringjs.com/
+        ,_ = require('lodash') // http://lodash.com/
+        ,fs = require('fs') // Standard file system
+        ,logFacility = require( 'log4js' ); // https://github.com/nomiddlename/log4js-node
 
 // BIG TODO: Separate authenticated/non-authenticated user commands!
 
@@ -783,6 +784,15 @@ IRCSocket.prototype.emit = function( command, parameters ) {
 
 // Load configuration file, in current scope
 eval( fs.readFileSync('./public/config.js','utf8') );
+
+// Configure logger
+logFacility.configure( Config.Log.Configuration );
+
+// Load logger
+var logger = logFacility.getLogger( 'ircd' );
+
+// Set log level
+logger.setLevel( Config.Log.Level );
 
 /** IRC Protocol */
 var IRCProtocol = {

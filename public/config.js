@@ -55,4 +55,18 @@ var Config = {
                 // NOTE: Should be based on http:// + Server.Port + : + Server.Host + /
                 ServerUrl: "http://chatjs:10000/"
         }
+        ,Log: {
+                // Log4js configuration (https://github.com/nomiddlename/log4js-node)
+                Configuration: {
+                        appenders: [
+                                { type: 'console' }
+                                ,{
+                                        type: 'file'
+                                        ,filename: 'logs/ircd.log'
+                                        ,category: 'ircd'
+                                }
+                        ]
+                }
+                ,Level: "DEBUG"
+        }
 }
