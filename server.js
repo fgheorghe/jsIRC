@@ -102,6 +102,9 @@ WEBServer.prototype.init = function() {
 	// Attach a Socket.Io connection handler
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
+                // Log debug data.
+                logger.debug( "Incoming Web connection from: " + socket.handshake.address.address );
+
                 // Determine which scope to bind the event handler to
                 var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
 
@@ -454,6 +457,9 @@ TCPServer.prototype.loadLibraries = function() {
 
                 // Add listener.
                 ,function ( socket ) {
+                        // Log debug data.
+                        logger.debug( "Incoming TCP connection from: " + socket.remoteAddress );
+
                         // Set encoding.
                         socket.setEncoding( 'utf8' );
 
@@ -739,6 +745,7 @@ IRCSocket.prototype.disconnect = function( data, socket ) {
         // Call protocol specific disconnect logic.
         // TODO: NOTE: This logic is flawed!
         try {
+                // Log debug data.
                 socket.getRawSocket().disconnect( data, socket );
         } catch ( ex ) {
                 // TODO: Add error handling.
@@ -783,9 +790,13 @@ IRCSocket.prototype.emit = function( command, parameters ) {
         if ( this._type === "web" ) {
                 // Write data as is.
                 this._socket.emit( command, parameters );
+
+                // Log debug data.
+                logger.debug( "Wrote Web JSON " + command + " event data to " + this._socket.handshake.address.address + ": " + util.format( "%j", parameters ) );
         } else if ( this._type === "tcp" ) {
                 // Log debug data.
-                logger.debug( "Streaming JSON TCP event " + command + " to " + this._socket.remoteAddress + ": " + util.format( "%j", parameters ) );
+                // Include both original, and wrote data, for better debugging.
+                logger.debug( "Writing JSON TCP event " + command + " to " + this._socket.remoteAddress + ": " + util.format( "%j", parameters ) );
 
                 // Convert JSON to text, and send the command over...if any.
                 var response = this.jsonToText.bind( this )( command, parameters );
