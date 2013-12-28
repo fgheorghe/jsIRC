@@ -24,16 +24,15 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 var Config = {
         Server: {
                 WEB: {
-                        Port: 10000
-                        ,Host: 'chatjs'
+                        Port: 80
+                        ,Host: 'server.jsirc.net'
                 }
                 ,TCP: {
                         Port: 6667
-                        ,Host: 'chatjs'
+                        ,Host: 'server.jsirc.net'
                 }
                 // IRC Protocol configuration
                 ,IRCProtocol: {
@@ -52,8 +51,8 @@ var Config = {
         }
         ,Client: {
                 // Server URL
-                // NOTE: Should be based on http:// + Server.Port + : + Server.Host + /
-                ServerUrl: "http://chatjs:10000/"
+                // NOTE: Should be based on http:// + Server.Web.Host + : + Server.Web.Port + /
+                ServerUrl: "http://server.jsirc.net/"
         }
         ,Log: {
                 // Log4js configuration (https://github.com/nomiddlename/log4js-node)
