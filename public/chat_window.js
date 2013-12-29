@@ -138,6 +138,7 @@ ChatWindow.prototype.init = function() {
                                         this._config.leftbar.addItem( {
                                                text: this._config.nickname
                                                ,id: this._config.nickname
+                                               ,icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACF0lEQVQ4T81Sz2sTQRR+szuzM9tNq6lgCoIgmIO3gpAWS23pSYVCPEhFE7R4MYXgRYSYHnqS9B+oh0BEgz8wIhYKoqCIhzYiwkIRPAiKBGoVhMYV9/f6Zm2kCIVALx14zOPNvO+973uPwA4P2WE+7BKA0wvPx4ze5Ejg26v3p0eXkFbULTVy9s7K5d8+WQCiEIKEDKos3V2cz0KjEUiQUqm0zzCMhPSFEDGubdvx7fv+d5KtrTQVqg0xxiCKInBdF9qtDyMvZ/PLhUIhWSwW1zRN42igqmqcGIYheJ4HjuO8IpO15gvBxQTnIn5wHBtY6J55cGH4UblcPpDL5VqysgSglIJsMwiCuBB2YpJTN19f1BOJW4xuduA5EPnewyeXjk2Zpjmt63qtb2MRGKOgei2IkqNA1++BNXAFrHC/SWB8nE7mb7RVlelSOxXCz6nQOX7+iJbtEWIOq/f3CAoakxSwf4VjgV9g+/RvBxLg5NRcO1KIrgCseoH/iX57nx901ng6nYZMJrPOOScdDToUpAYI8CYGGMteu02Ick5n2rOnMxMnto6wWq0eRYH3Sv4dEaUGOAGwLOvjv00cqjy+ShX1uv12+dC7xvxG13vQ7cft/pFKpbInlUodxPb68VMfctTQ4sX5/+CeWGguxttI4weO8gup1+uHMWEYHwYkAFoCfQyRXqn5JkiIsZ8YkytuSQD0v2Ks+Qc+pdj5ZazyPgAAAABJRU5ErkJggg=='
                                                ,itemclick: function( panel, record, item, index, e, eOpts ) {
                                                        // Focus
                                                        this.chatWindow.show();

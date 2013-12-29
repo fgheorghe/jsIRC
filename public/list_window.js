@@ -131,16 +131,21 @@ ListWindow.prototype.init = function() {
                                         this._config.leftbar.addItem( {
                                                text: 'Channel List'
                                                ,id: 'list-window'
+                                               ,icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACuElEQVQ4T6VSXU8TQRS9d3a3u6UVKiqWh6YkQIhRaENM1EffjInRB/+XP8QnQnxQQE3wg1oEYqjQD6EC5VMo2NLdndmZ8c7Gf8BsdmYze8+55957EK648Ip4wPVqteCAnQgVV5xzHYZK+UGoAl8qAA5Ka22SMES0rCRzXXCYZAwcAIxkF39u1t44lpOVIJWKVCSkkrQis0ea8EoSAQIyhhZiggEkAdFG1DoIeAWr9e0NL50a1RQiKZsJpxOUAk0PpBMInkUSjA5SQfd4SUFaCtlpt0v463drU/QNjHVIlh8pCCKFfkTs9G3UF65bkEsxUwqQCDgXDMqnEdxCIfqD0xLWd/arbZYebQtggVDQEwp7QupAUEqt4FHWwbGMoxWlpj7AUQAwu9WDkWQkxuzuMlYaO+vHOjVx2JNWN5RwyRWa7EJpIPXwOJ+EiRuJWA3h4aAj9WylDfk08Lzb/YKlSmO56buTtRNuU+a4RtN3U3KSOv1k/BrcGUoSAf2gu4MLoWdWjiCXYWHW/ruAn1ar5bU/ONk4Dh2N2iQxLwEAPAfh6d0M3BtOUVOJgH7snwUws9SC3KAdZL3ePH4sb3xbOZRTjUPfMdMyBGbuhsAlgmeFm1DM98clGBXtDofV2gkMeCwAcTGPH0qVpe+7vFhrdR1lCKhUcpAZY0zw4v4QFEeIgC7MJGiSEFGPuBBBc6c1hwtffyyVt/xidbfjkHGQekeBABFtHtnm5YPbMD2WiQnMsiyyE5GEXPhbzd05nP+8VirXu4W6UWDAtEXUCqpZew6D5w+HYXo8Y7Ax0LZtMiUDsr3f2N57h+8XlxfPfZg663JbE5hE/K/XKLD1RK4fsoN9SCjyAdnVsmM/mBIazdZ7fD3z9pXrJHLkTgsNAwXGDaDDdRPas0kyIc0FqY9PCkHOo2jv4GjjH3wDnYCRfzA/AAAAAElFTkSuQmCC'
                                                ,itemclick: function( panel, record, item, index, e, eOpts ) {
                                                        // Focus
                                                        this.listWindow.show();
-                                                       this.textField.focus( false, 200 );
                                                }.bind( this )
                                         } );
                                         this._config.leftbar.selectItem( 'list-window' );
                                 }
 			}.bind( this )
 			,activate: function() {
+                                // Select empty in the rightbar
+                                if ( this._config.rightbar ) {
+                                        this._config.rightbar.selectEmptyPanel();
+                                }
+
                                 // If a leftbar is configured, select button
                                 if ( this._config.leftbar ) {
                                         this._config.leftbar.selectItem( 'list-window' );
