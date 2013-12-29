@@ -43,6 +43,7 @@ LeftBar.prototype.init = function() {
 
 LeftBar.prototype.addItem = function( item ) {
         item.icon = typeof item.icon !== "undefined" ? item.icon : ' ';
+        item.cls = typeof item.cls !== "undefined" ? item.cls : 'middle-node';
         item.leaf = typeof item.leaf !== "undefined" ? item.leaf : true;
         this.itemTreePanel.getRootNode().appendChild( item );
 }
