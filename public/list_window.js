@@ -108,29 +108,6 @@ ListWindow.prototype.init = function() {
 		}
 	} );
 
-	// Prepare taskbar button
-	this.taskbarButton = Ext.create( 'Ext.button.Button', {
-		text: Ext.htmlEncode( 'Channel List' )
-		,enableToggle: true
-		,depressed: true
-		,toggleGroup: 'taskList'
-		,autoDestroy: false
-		,handler: function( button ) {
-			// Hide or show the window
-			if ( !button.pressed && this.listWindow.isHidden() === false ) {
-				this.listWindow.hide();
-			} else {
-				this.listWindow.show();
-			}
-		}.bind( this )
-		,listeners: {
-			render: function() {
-				// Toggle button
-				this.taskbarButton.toggle( true );
-			}.bind( this )
-		}
-	} );
-
 	// Prepare the window
 	this.listWindow = Ext.create( 'Ext.window.Window', {
 		title: 'Channel List'
@@ -149,34 +126,34 @@ ListWindow.prototype.init = function() {
 				this._config.parent._channelListWindow = false;
 			}.bind( this )
 			,render: function() {
-				// If a taskbar is configured, add button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.add( this.taskbarButton );
-				}
+                                // If a leftbar is configured, add button
+                                if ( this._config.leftbar ) {
+                                        this._config.leftbar.addItem( {
+                                               text: 'Channel List'
+                                               ,id: 'list-window'
+                                               ,itemclick: function( panel, record, item, index, e, eOpts ) {
+                                                       // Focus
+                                                       this.listWindow.show();
+                                                       this.textField.focus( false, 200 );
+                                               }.bind( this )
+                                        } );
+                                        this._config.leftbar.selectItem( 'list-window' );
+                                }
 			}.bind( this )
 			,activate: function() {
-				// If a taskbar is configured, toggle button
-				if ( this._config.taskbar ) {
-					// Toggle button
-					this.taskbarButton.toggle( true );
-				}
+                                // If a leftbar is configured, select button
+                                if ( this._config.leftbar ) {
+                                        this._config.leftbar.selectItem( 'list-window' );
+                                }
 			}.bind( this )
 			,close: function() {
 				// Remove from parent
 				this._config.parent._channelListWindow = null;
 
-				// If a taskbar is configured, remove button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.remove( this.taskbarButton );
-				}
-			}.bind( this )
-			,minimize: function() {
-				// If a taskbar is configured, un-toggle button
-				if ( this._config.taskbar ) {
-					// Un-toggle button
-					this.taskbarButton.toggle( false );
-					this.listWindow.hide();
-				}
+                                // If a leftbar is configured, remove button
+                                if ( this._config.leftbar ) {
+                                        this._config.leftbar.removeItem( 'list-window' );
+                                }
 			}.bind( this )
 		}
 		,items: [

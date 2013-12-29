@@ -88,31 +88,38 @@ Client.prototype.attachSocketEvents = function() {
 // ...as soon as ExtJS is ready, and right after SocketIO has been loaded
 function init() {
 	Ext.onReady( function() {
-		// Create 'taskbar'
-		this.taskbar = new Taskbar();
+		// Create 'leftBar' and 'rightBar'
+		this.leftBar = new LeftBar();
+                this.rightBar = new RightBar();
 
 		// Create window container
 		this.windowContainer = Ext.create( 'Ext.panel.Panel', {
-			// Nothing
+                        hideHeaders: true
+                        ,layout: 'fit'
+                        ,frame: true
+                        ,border: false
 		} );
 
 		// Create center region, to contain the window container...
 		this.centerRegion = Ext.create( 'Ext.panel.Panel', {
 			region: 'center'
 			,layout: 'fit'
+                        ,frame: false
+                        ,border: false
+                        ,hideHeaders: true
 			,items: [ this.windowContainer ]
-			,dockedItems: [ this.taskbar.toolbar ]
 		} );
 
 		// Create main viewport...
 		this.viewPort = Ext.create( 'Ext.container.Viewport', {
 			layout: 'border'
-			,items: [ this.centerRegion ]
+			,items: [ this.centerRegion, this.leftBar.panel, this.rightBar.panel ]
 		} );
 
 		this.ChatApplication = new jsIRC( {
 			renderTo: this.windowContainer
-			,taskbar: this.taskbar
+			,leftbar: this.leftBar
+			,rightbar: this.rightBar
 		} );
 
 		var jsIRCClient = new Client( {

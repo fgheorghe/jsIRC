@@ -26,20 +26,58 @@
  */
 
 /**
- * Taskbar.
- * @class Provides taskbar functionality.
+ * RightBar.
+ * @class Provides left bar functionality.
  * @constructor
  */
-var Taskbar = function() {
+var RightBar = function() {
 	this.init();
 
 	return this;
 }
 
-Taskbar.prototype.init = function() {
-	this.toolbar = Ext.create( 'Ext.toolbar.Toolbar', {
-		dock: 'bottom'
-		// Objects add themself
-		,items: []
-	} );
+RightBar.prototype.init = function() {
+        this.createEmptyPanel();
+        this.createPanel();
+}
+
+RightBar.prototype.addItem = function( item ) {
+        this.panel.add( item );
+        this.panel.getLayout().setActiveItem( item );
+}
+
+RightBar.prototype.removeItem = function( item ) {
+        this.panel.remove( item );
+}
+
+RightBar.prototype.selectItem = function( item ) {
+        this.panel.getLayout().setActiveItem( item );
+}
+
+RightBar.prototype.selectEmptyPanel = function() {
+        this.selectItem( this.emptyPanel );
+}
+
+RightBar.prototype.createEmptyPanel = function() {
+        this.emptyPanel = Ext.create( 'Ext.panel.Panel', {
+                frame: false
+                ,border: false
+                ,hideHeaders: true
+                ,html: '<div style="padding: 4px;">Select a channel to view friends.</div>'
+        } );
+}
+
+RightBar.prototype.createPanel = function() {
+        this.panel = Ext.create( 'Ext.panel.Panel', {
+                region: 'east'
+                ,width: 200
+                ,frame: false
+                ,border: false
+                ,title: "Friends"
+                ,collapsible: true
+                ,layout: 'card'
+                // Objects add themself
+                // TODO: Add empty text, to notify user to select a channel.
+                ,items: [ this.emptyPanel ]
+        } );
 }

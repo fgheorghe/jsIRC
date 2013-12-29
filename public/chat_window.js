@@ -105,30 +105,6 @@ ChatWindow.prototype.init = function() {
 		}
 	} );
 
-	// Prepare taskbar button
-	this.taskbarButton = Ext.create( 'Ext.button.Button', {
-		text: Ext.htmlEncode( this._config.nickname )
-		,enableToggle: true
-		,depressed: true
-		,toggleGroup: 'taskList'
-		,autoDestroy: false
-		,handler: function( button ) {
-			// Hide or show the window
-			if ( !button.pressed && this.chatWindow.isHidden() === false ) {
-				this.chatWindow.hide();
-			} else {
-				this.chatWindow.show();
-				this.textField.focus( false, 200 );
-			}
-		}.bind( this )
-		,listeners: {
-			render: function() {
-				// Toggle button
-				this.taskbarButton.toggle( true );
-			}.bind( this )
-		}
-	} );
-
 	// Prepare the window
 	this.chatWindow = Ext.create( 'Ext.window.Window', {
 		title: Ext.htmlEncode( this._config.nickname )
@@ -149,33 +125,38 @@ ChatWindow.prototype.init = function() {
 				this._config.parent._lcChatNicknames.splice( queryWindowPosition, 1 );
 				this._config.parent._queryWindows.splice( queryWindowPosition, 1 );
 
-				// If a taskbar is configured, remove button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.remove( this.taskbarButton );
-				}
+                                // If a leftbar is configured, remove button
+                                if ( this._config.leftbar ) {
+                                        this._config.leftbar.removeItem( this._config.nickname );
+                                }
 			}.bind( this )
 			,render: function() {
 				this.textField.focus( false, 200 );
 
-				// If a taskbar is configured, add button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.add( this.taskbarButton );
-				}
+                                // If a leftbar is configured, add button
+                                if ( this._config.leftbar ) {
+                                        this._config.leftbar.addItem( {
+                                               text: this._config.nickname
+                                               ,id: this._config.nickname
+                                               ,itemclick: function( panel, record, item, index, e, eOpts ) {
+                                                       // Focus
+                                                       this.chatWindow.show();
+                                                       this.textField.focus( false, 200 );
+                                               }.bind( this )
+                                        } );
+                                        this._config.leftbar.selectItem( this._config.nickname );
+                                }
 			}.bind( this )
 			,activate: function() {
-				// If a taskbar is configured, toggle button
-				if ( this._config.taskbar ) {
-					// Toggle button
-					this.taskbarButton.toggle( true );
-				}
-			}.bind( this )
-			,minimize: function() {
-				// If a taskbar is configured, un-toggle button
-				if ( this._config.taskbar ) {
-					// Un-toggle button
-					this.taskbarButton.toggle( false );
-					this.chatWindow.hide();
-				}
+                                // Select empty in the rightbar
+                                if ( this._config.rightbar ) {
+                                        this._config.rightbar.selectEmptyPanel();
+                                }
+
+                                // If a leftbar is configured, select button
+                                if ( this._config.leftbar ) {
+                                        this._config.leftbar.selectItem( this._config.nickname );
+                                }
 			}.bind( this )
 		}
 		,items: [

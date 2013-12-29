@@ -136,32 +136,9 @@ var jsIRC = function( config ) {
 		}
 	} );
 
-	// Prepare taskbar button
-	this.taskbarButton = Ext.create( 'Ext.button.Button', {
-		text: 'Status'
-		,enableToggle: true
-		,depressed: true
-		,toggleGroup: 'taskList'
-		,handler: function( button ) {
-			// Hide or show the window
-			if ( !button.pressed && this.chatWindow.isHidden() === false ) {
-				this.chatWindow.hide();
-			} else {
-				this.chatWindow.show();
-				this.textField.focus( false, 200 );
-			}
-		}.bind( this )
-		,listeners: {
-			render: function() {
-				// Toggle button
-				this.taskbarButton.toggle( true );
-			}.bind( this )
-		}
-	} );
-
 	// Prepare the window
 	this.chatWindow = Ext.create( 'Ext.window.Window', {
-		title: 'Status'
+		title: 'Console'
 		,closable: false
 		,maximizable: true
 		,minimizable: true
@@ -176,25 +153,29 @@ var jsIRC = function( config ) {
 		]
 		,listeners: {
 			render: function() {
-				// If a taskbar is configured, add button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.add( this.taskbarButton );
-					this._config.taskbar.toolbar.add( '-' );
+				// If a leftbar is configured, add item
+				if ( this._config.leftbar ) {
+                                        this._config.leftbar.addItem( {
+                                                text: 'Console'
+                                                ,id: 'status-window'
+                                                ,itemclick: function( panel, record, item, index, e, eOpts ) {
+                                                       // Focus
+                                                       this.chatWindow.show();
+                                                       this.textField.focus( false, 200 );
+                                               }.bind( this )
+                                        } );
+                                        this._config.leftbar.selectItem( 'status-window' );
 				}
 			}.bind( this )
 			,activate: function() {
-				// If a taskbar is configured, add button
-				if ( this._config.taskbar ) {
+                                // Select empty in the rightbar
+                                if ( this._config.rightbar ) {
+                                        this._config.rightbar.selectEmptyPanel();
+                                }
+				// If a leftbar is configured, select button
+				if ( this._config.leftbar ) {
 					// Toggle button
-					this.taskbarButton.toggle( true );
-				}
-			}.bind( this )
-			,minimize: function() {
-				// If a taskbar is configured, un-toggle button
-				if ( this._config.taskbar ) {
-					// Un-toggle button
-					this.taskbarButton.toggle( false );
-					this.chatWindow.hide();
+					this._config.leftbar.selectItem( 'status-window' );
 				}
 			}.bind( this )
 		}
@@ -223,7 +204,8 @@ jsIRC.prototype.findOrCreateQueryWindow = function( nickname ) {
 			parent: this
 			,nickname: nickname
 			,renderTo: this._config.renderTo
-			,taskbar: this._config.taskbar
+			,leftbar: this._config.leftbar
+			,rightbar: this._config.rightbar
 		} );
 
 		// Add to list
@@ -661,7 +643,7 @@ jsIRC.prototype.disconnectHandler = function() {
 jsIRC.prototype.createNamePrompt = function() {
 	this.namePrompt = Ext.Msg.show( {
 		title: 'Name'
-		,msg: 'Please enter your name:'
+		,msg: 'Please enter a nickname:'
 		,width: 300
 		,hideMode: 'hide'
 		,buttons: Ext.Msg.OK
@@ -783,7 +765,8 @@ jsIRC.prototype.JOIN = function( data ) {
 			channel: data.channel
 			,parent: this
 			,renderTo: this._config.renderTo
-			,taskbar: this._config.taskbar
+			,leftbar: this._config.leftbar
+			,rightbar: this._config.rightbar
 		} );
 
 		// Show window
@@ -1820,7 +1803,8 @@ jsIRC.prototype.RPL_LIST = function( data ) {
 		this._channelListWindow = new ListWindow( {
 			parent: this
 			,renderTo: this._config.renderTo
-			,taskbar: this._config.taskbar
+			,leftbar: this._config.leftbar
+                        ,rightbar: this._config.rightbar
 		} );
 	}
 

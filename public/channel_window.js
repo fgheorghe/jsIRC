@@ -196,15 +196,12 @@ ChannelWindow.prototype.init = function() {
 		} )
 		,width: 180
 		,minWidth: 180
-		,resizable: true
 		,frame: false
-		,border: true
+		,border: false
 		,lines: false
 		,hideHeaders: true
-		,collapsible: true
 		,rootVisible: false
 		,region: 'east'
-		,title: 'Users'
 		,listeners: {
 			itemcontextmenu: this.userListContextMenu.bind( this )
 			,itemdblclick: this.userListItemDblClick.bind( this )
@@ -469,30 +466,6 @@ ChannelWindow.prototype.init = function() {
 		}
 	} );
 
-	// Prepare taskbar button
-	this.taskbarButton = Ext.create( 'Ext.button.Button', {
-		text: Ext.htmlEncode( this._config.channel )
-		,enableToggle: true
-		,depressed: true
-		,toggleGroup: 'taskList'
-		,autoDestroy: false
-		,handler: function( button ) {
-			// Hide or show the window
-			if ( !button.pressed && this.chatWindow.isHidden() === false ) {
-				this.chatWindow.hide();
-			} else {
-				this.chatWindow.show();
-				this.textField.focus( false, 200 );
-			}
-		}.bind( this )
-		,listeners: {
-			render: function() {
-				// Toggle button
-				this.taskbarButton.toggle( true );
-			}.bind( this )
-		}
-	} );
-
 	// Prepare the window
 	this.chatWindow = Ext.create( 'Ext.window.Window', {
 		title: Ext.htmlEncode( this._config.channel )
@@ -515,38 +488,52 @@ ChannelWindow.prototype.init = function() {
 				// Remove from window array
 				this._config.parent.removeChannelWindow( this._config.channel );
 
-				// If a taskbar is configured, remove button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.remove( this.taskbarButton );
+				// If a leftbar is configured, remove button
+				if ( this._config.leftbar ) {
+					this._config.leftbar.removeItem( this._config.channel );
 				}
+
+                                // If a rightbar is configured, remove this user list.
+                                if ( this._config.rightbar ) {
+                                        this._config.rightbar.removeItem( this.clientList );
+                                }
 			}.bind( this )
 			,render: function() {
 				this.textField.focus( false, 200 );
 
-				// If a taskbar is configured, add button
-				if ( this._config.taskbar ) {
-					this._config.taskbar.toolbar.add( this.taskbarButton );
+                                // If a rightbar is configured, add user list to it.
+                                if ( this._config.rightbar ) {
+                                        this._config.rightbar.addItem( this.clientList );
+                                }
+
+				// If a leftbar is configured, add button
+				if ( this._config.leftbar ) {
+                                        this._config.leftbar.addItem( {
+                                               text: this._config.channel
+                                               ,id: this._config.channel
+                                               ,itemclick: function( panel, record, item, index, e, eOpts ) {
+                                                       // Focus
+                                                       this.chatWindow.show();
+                                                       this.textField.focus( false, 200 );
+                                               }.bind( this )
+                                        } );
+                                        this._config.leftbar.selectItem( this._config.channel );
 				}
 			}.bind( this )
 			,activate: function() {
-				// If a taskbar is configured, toggle button
-				if ( this._config.taskbar ) {
-					// Toggle button
-					this.taskbarButton.toggle( true );
-				}
-			}.bind( this )
-			,minimize: function() {
-				// If a taskbar is configured, un-toggle button
-				if ( this._config.taskbar ) {
-					// Un-toggle button
-					this.taskbarButton.toggle( false );
-					this.chatWindow.hide();
+                                // If a rightbar is configured, select this user list.
+                                if ( this._config.rightbar ) {
+                                        this._config.rightbar.selectItem( this.clientList );
+                                }
+
+				// If a leftbar is configured, select button
+				if ( this._config.leftbar ) {
+                                        this._config.leftbar.selectItem( this._config.channel );
 				}
 			}.bind( this )
 		}
 		,items: [
-			this.clientList
-			,this.textPanel
+			this.textPanel
 		]
 	} );
 }
