@@ -1,0 +1,11 @@
+.middle-node div {
+        height: 40px !important;
+        display: table-row !important;
+        white-space: !important;
+}
+
+.middle-node span {
+        vertical-align: middle !important;
+        height: 36px !important;
+        display: table-cell !important;
+}
