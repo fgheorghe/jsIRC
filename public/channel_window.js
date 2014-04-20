@@ -464,7 +464,7 @@ ChannelWindow.prototype.init = function() {
 
 				// Resize text field
 				this.textField.setWidth(
-					this.textPanel.getWidth() - this.sendButton.getWidth() - 11
+					this.textPanel.getWidth() - this.sendButton.getWidth() - 20
 				);
 
 				// Resize topic field
@@ -483,7 +483,6 @@ ChannelWindow.prototype.init = function() {
 		,minimizable: true
 		,resizable: true
 		,constrain: true
-		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
 		,height: 500
 		,width: 800
 		,layout: 'border'
@@ -542,9 +541,17 @@ ChannelWindow.prototype.init = function() {
                                         this._config.leftbar.selectItem( this._config.channel );
 				}
 			}.bind( this )
+                        ,minimize: function() {
+                                this.chatWindow.hide();
+                        }.bind( this )
 		}
 		,items: [
 			this.textPanel
 		]
 	} );
+
+        // Constrain to configured renderTo object
+        if ( typeof this._config.renderTo !== "undefined" ) {
+                this._config.renderTo.add ( this.chatWindow );
+        }
 }

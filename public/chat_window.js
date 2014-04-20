@@ -41,11 +41,44 @@ var ChatWindow = function( config ) {
 	return this;
 }
 
+ChatWindow.prototype.updateWebcam = function( data ) {
+	this.webcam.updateWebcam.bind( this.webcam )( data );
+}
+
+ChatWindow.prototype.createWebcam = function() {
+        this.webcam = new Webcam( {
+                height: 200
+                ,width: 200
+                ,handler: function( data ) {
+                        this._config.parent.client.emit( 'STREAM', {
+                                type: 'video'
+                                ,data: data
+                                ,target: this._config.nickname
+                        } );
+                }.bind( this )
+        } );
+
+	this.webcamContainer = Ext.create( 'Ext.panel.Panel', {
+		width: 200
+                ,minWidth: 200
+                ,frame: false
+                ,border: false
+                ,region: 'east'
+		,hidden: true
+		,collapsible: true
+		,title: 'Webcam'
+		,items: [ this.webcam.panel ]
+	} );
+}
+
 /**
  * Method used for initiating the chat window.
  * @function
  */
 ChatWindow.prototype.init = function() {
+	// Create webcam component
+	this.createWebcam();
+
 	// Text field
 	this.textField = Ext.create( 'Ext.form.field.Text', {
 		width: 560
@@ -99,10 +132,25 @@ ChatWindow.prototype.init = function() {
 				
 				// Resize text field
 				this.textField.setWidth(
-					this.textPanel.getWidth() - this.sendButton.getWidth() - 11
+					this.textPanel.getWidth() - this.sendButton.getWidth() - 20
 				);
 			}.bind( this )
 		}
+	} );
+
+	this.webcamButton = Ext.create( 'Ext.button.Button', {
+		text: 'Show Webcam'
+		,handler: function() {
+			if ( this.webcamContainer.isHidden() ) {
+                               this.webcam.start();
+                               this.webcamButton.setText( "Close Webcam" );
+				this.webcamContainer.setVisible( true );
+			} else {
+				this.webcamContainer.setVisible( false );
+                               this.webcamButton.setText( "Webcam Invite" );
+				this.webcam.stop.bind( this.webcam )();
+			}
+		}.bind( this )
 	} );
 
 	// Prepare the window
@@ -113,10 +161,10 @@ ChatWindow.prototype.init = function() {
 		,minimizable: true
 		,resizable: true
 		,constrain: true
-		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
 		,height: 500
 		,width: 800
 		,layout: 'border'
+		,tbar: [ this.webcamButton ]
 		,listeners: {
 			close: function() {
 				// Remove from query array
@@ -129,6 +177,11 @@ ChatWindow.prototype.init = function() {
                                 if ( this._config.leftbar ) {
                                         this._config.leftbar.removeItem( this._config.nickname );
                                 }
+				try {
+	                                this.webcam.stop();
+				} catch ( e ) {
+					// Do nothing.
+				}
 			}.bind( this )
 			,render: function() {
 				this.textField.focus( false, 200 );
@@ -160,11 +213,20 @@ ChatWindow.prototype.init = function() {
                                         this._config.leftbar.selectItem( this._config.nickname );
                                 }
 			}.bind( this )
+                        ,minimize: function() {
+                                this.chatWindow.hide();
+                        }.bind( this )
 		}
 		,items: [
 			this.textPanel
+			,this.webcamContainer
 		]
 	} );
+
+        // Constrain to configured renderTo object
+        if ( typeof this._config.renderTo !== "undefined" ) {
+                this._config.renderTo.add ( this.chatWindow );
+        }
 }
 
 /**

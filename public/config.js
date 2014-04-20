@@ -26,17 +26,38 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 var Config = {
         Server: {
-                WEB: {
+                // Configure HTTP server, used for serving the http content.
+                HTTP: {
                         Port: 80
-                        ,Host: 'server.jsirc.net'
+                        ,Host: 'localhost'
+                        ,Secure: false
+                        ,Certificate: {
+                                // TODO: Move this to a separate file - insecure to expose certificate paths.
+                                // NOTE: These are file names.
+                                key: '/path/to/file.key'
+                                ,cert: '/path/to/file.crt'
+                        }
+                        ,DocumentRoot: '/public/'
+                }
+                // Configure Web based IRC server (socket.io that is)
+                ,WEB: {
+                        Port: 81
+                        ,Host: 'localhost'
+                        ,Secure: false
+                        ,Certificate: {
+                                // TODO: Move this to a separate file - insecure to expose certificate paths.
+                                // NOTE: These are file names.
+                                key: '/path/to/file.key'
+                                ,cert: '/path/to/file.crt'
+                        }
                 }
                 ,TCP: {
                         Port: 6667
-                        ,Host: 'server.jsirc.net'
+                        ,Host: 'localhost'
                 }
                 // IRC Protocol configuration
                 ,IRCProtocol: {
-                        ServerName: "localhost"
+                        ServerName: "chatjs.grosan.co.uk"
                         ,ServerInfo: "Oxford, Oxfordshire, UK, EU"
                         ,ServerComments: "Development version."
                         ,AdminInfo: {
@@ -52,7 +73,7 @@ var Config = {
         ,Client: {
                 // Server URL
                 // NOTE: Should be based on http:// + Server.Web.Host + : + Server.Web.Port + /
-                ServerUrl: "http://server.jsirc.net/"
+                ServerUrl: "https://server.grosan.co.uk:443/"
         }
         ,Log: {
                 // Log4js configuration (https://github.com/nomiddlename/log4js-node)
@@ -63,6 +84,11 @@ var Config = {
                                         type: 'file'
                                         ,filename: 'logs/ircd.log'
                                         ,category: 'ircd'
+                                }
+                                ,{
+                                        type: 'file'
+                                        ,filename: 'logs/httpd.log'
+                                        ,category: 'httpd'
                                 }
                         ]
                 }

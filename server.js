@@ -30,7 +30,9 @@ var S = require( 'string' ) // http://stringjs.com/
         ,_ = require('lodash') // http://lodash.com/
         ,fs = require('fs') // Standard file system
         ,util = require( 'util' ) // Standard utility
-        ,logFacility = require( 'log4js' ); // https://github.com/nomiddlename/log4js-node
+        ,logFacility = require( 'log4js' ) // https://github.com/nomiddlename/log4js-node
+        ,express = require('express') // Load express js.
+        ,util = require('util');
 
 // BIG TODO: Separate authenticated/non-authenticated user commands!
 
@@ -61,7 +63,7 @@ WEBServer.prototype.attachSocketEvents = function( socket ) {
 		socket.getRawSocket().on( eventName, function( data ) {
                         // Log debug data.
                         // Ignore PONG events.
-                        if ( eventName !== "PONG" ) {
+                        if ( eventName !== "PONG" && eventName !== "STREAM" ) {
                                 logger.debug( "Received Web data from " + socket.getRawSocket().handshake.address.address + ": " + util.format( "%j", data ) );
                         }
 
@@ -81,7 +83,18 @@ WEBServer.prototype.attachSocketEvents = function( socket ) {
 WEBServer.prototype.loadLibraries = function() {
 	// HTTP Server, required for serving Socket.Io JS file
 	// NOTE: The HTML file that makes use of it, is served by a standard HTTP server.
-	this._httpServer = require('http').createServer();
+        if ( this._config.secure === true ) {
+                logger.info( "Preparing secure socket server..." );
+
+                this._httpServer = require('https').createServer( {
+                        key: fs.readFileSync( this._config.certificate.key )
+                        ,cert: fs.readFileSync( this._config.certificate.cert )
+                } );
+        } else {
+                logger.info( "Preparing socket server..." );
+
+                this._httpServer = require('http').createServer();
+        }
 
 	// Socket.Io
 	this._socketIo = require('socket.io').listen(
@@ -813,7 +826,7 @@ IRCSocket.prototype.emit = function( command, parameters ) {
 
                 // Log debug data.
                 // Ignore PING event.
-                if ( command !== "PING" ) {
+                if ( command !== "PING" && command !== "RPL_STREAM" ) {
                         logger.debug( "Wrote Web JSON " + command + " event data to " + this._socket.handshake.address.address + ": " + util.format( "%j", parameters ) );
                 }
         } else if ( this._type === "tcp" ) {
@@ -843,14 +856,14 @@ eval( fs.readFileSync('./public/config.js','utf8') );
 // Configure logger
 logFacility.configure( Config.Log.Configuration );
 
-// Load logger
+// Load IRCD logger
 var logger = logFacility.getLogger( 'ircd' );
 
 // Set log level
 logger.setLevel( Config.Log.Level );
 
 // Begin logging.
-logger.info( "Loaded log mechanism." );
+logger.info( "Loaded IRCd log mechanism." );
 
 /** IRC Protocol */
 var IRCProtocol = {
@@ -4032,6 +4045,51 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
 	);
 }
 
+IRCProtocol.ClientProtocol.prototype.STREAM = function( data, socket ) {
+        // Validate parameters
+        if ( typeof data.target === "undefined" || S( data.target ).trim().s === ""
+		|| typeof data.type === "undefined" || S( data.type ).trim().s === ""
+		|| typeof data.data === "undefined" || S( data.data ).trim().s === "" ) {
+                // Issue an ERR_NEEDMOREPARAMS error.
+                this.emitIRCError(
+                        socket
+                        ,'ERR_NEEDMOREPARAMS'
+                        ,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[0]
+                        ,IRCProtocol.NumericReplyConstants.CommonNumericReplies.ERR_NEEDMOREPARAMS[1]
+                );
+                return;
+        }
+
+        // Check if the nickname is found in the nickname array. If not, then just return an ERR_NOSUCHNICK event.
+        var nicknamePosition = this._lcNicknames.indexOf( data.target.toLowerCase() );
+        if ( nicknamePosition === -1 ) {
+                // Issue an ERR_NONICKNAMEGIVEN error.
+                this.emitIRCError(
+                        socket 
+                        ,'ERR_NOSUCHNICK'
+                        ,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+                        ,data.target + " :No such nick/channel"
+                );
+                return;
+        } else {
+                // The user is found! Get data, and return to client.
+                // Get the user socket
+                var clientSocket = this._clientSockets[ nicknamePosition ];
+
+                // Emit WHOIS replies (some are special kind of replies...that require more data to be included)
+                // TODO: Make consistent, and make use of constants
+                // RPL_WHOISUSER
+                clientSocket.emit(
+                        'RPL_STREAM'
+                        ,{
+                                nick: socket.Client.getNickname()
+                                ,data: data.data
+                                ,type: data.type
+                        }
+                );
+	}
+}
+
 /**
  * Client INVITE command.
  * @param {Object} data Data object, with the required 'nickname' and 'channel' keys.
@@ -4316,6 +4374,8 @@ var IRCClient = IRCProtocol.init( 'client' );
 // Create Web Socket server
 WEBChatServer = new WEBServer( {
 	port: Config.Server.WEB.Port // Listening port
+	,secure: Config.Server.WEB.Secure
+	,certificate: Config.Server.WEB.Secure ? Config.Server.WEB.Certificate : {}
 	,host: Config.Server.WEB.Host
 	,socket: { // WEB Socket configuration
 		log: false // Disable loggings
@@ -4361,6 +4421,7 @@ WEBChatServer = new WEBServer( {
 		,USERHOST: IRCClient.USERHOST
 		,INVITE: IRCClient.INVITE
 		,KICK: IRCClient.KICK
+		,STREAM: IRCClient.STREAM
 	}
 	// New connection handler
 	,connection: IRCClient.connection
@@ -4419,3 +4480,80 @@ TCPChatServer = new TCPServer( {
         ,connection: IRCClient.connection
 } ).init();
 
+/** Create HTTP server, used for serving HTML content. */
+// Load HTTPD logger
+var httpdLogger = logFacility.getLogger( 'httpd' );
+
+// Set log level
+httpdLogger.setLevel( Config.Log.Level );
+
+// Begin logging.
+httpdLogger.info( "Loaded HTTPd log mechanism." );
+
+/**
+ * HTTP Server.
+ * @class Provides HTTP/S server functionality.
+ * @constructor
+ * @param {Object} config Server configuration object. Supported keys are: port, secure, certificate, host, documentRoot.
+ */
+var HTTPServer = function( config ) {
+        this._config = config;
+}
+
+/**
+ * Method used for listener.
+ * @function
+ */
+HTTPServer.prototype.init = function() {
+        // Log action.
+        httpdLogger.info( "Creating HTTPd server..." );
+
+        this._express = new express();
+
+        // Create HTTP server
+        if ( this._config.secure !== true ) {
+                httpdLogger.info( "Preparing HTTP server..." );
+                this._httpServer = require('http').createServer( this._express );
+        } else {
+                httpdLogger.info( "Preparing secure HTTP server..." );
+                this._httpServer = require('https').createServer( {
+                        key: fs.readFileSync( this._config.certificate.key )
+                        ,cert: fs.readFileSync( this._config.certificate.cert )
+                }, this._express );
+        }
+
+        // Open port for incoming connections
+        httpdLogger.info( "Binding on port: " + this._config.port + ", host: " + this._config.host + "." );
+
+        // Bind static request handler.
+        httpdLogger.info( "Serving content from: " + this._config.documentRoot + "." );
+        this._express.use( require( 'body-parser' )() );
+        this._express.use( require( 'method-override' )() );
+        this._express.use( require( 'cookie-parser' )('string') );
+        this._express.use( require( 'express-session' )() );
+
+        // Bind basic logger, as per: http://expressjs.com/api.html#middleware.
+        this._express.use( function( req, res, next ) {
+                httpdLogger.info( "HTTP" + ( this._config.secure === true ? "S" : "" ) + " Request: " + req.method + " " + req.url );
+                req.method = "GET";
+                next();
+        }.bind( this ) );
+
+        this._express.use(
+                '/'
+                ,express.static( __dirname + this._config.documentRoot )
+        );
+
+        this._httpServer.listen( this._config.port, this._config.host );
+}
+
+HTTPWebServer = new HTTPServer( {
+        port: Config.Server.HTTP.Port // Listening port
+        ,secure: Config.Server.HTTP.Secure
+        ,certificate: Config.Server.HTTP.Secure ? Config.Server.HTTP.Certificate : {}
+        ,host: Config.Server.HTTP.Host
+        ,documentRoot: Config.Server.HTTP.DocumentRoot
+} );
+
+// Open listening port.
+HTTPWebServer.init();

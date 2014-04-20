@@ -74,6 +74,9 @@ RightBar.prototype.createPanel = function() {
                 ,frame: false
                 ,border: false
                 ,title: "Friends"
+                ,header : {
+                        height: 49
+                }
                 ,collapsible: true
                 ,layout: 'card'
                 // Objects add themself

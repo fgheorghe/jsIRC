@@ -116,7 +116,6 @@ ListWindow.prototype.init = function() {
 		,minimizable: true
 		,resizable: true
 		,constrain: true
-		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
 		,layout: 'fit'
 		,height: 500
 		,width: 800
@@ -161,9 +160,17 @@ ListWindow.prototype.init = function() {
                                         this._config.leftbar.removeItem( 'list-window' );
                                 }
 			}.bind( this )
+                        ,minimize: function() {
+                                this.listWindow.hide();
+                        }.bind( this )
 		}
 		,items: [
 			this.channelGrid
 		]
 	} );
+
+        // Constrain to configured renderTo object
+        if ( typeof this._config.renderTo !== "undefined" ) {
+                this._config.renderTo.add ( this.listWindow );
+        }
 }

@@ -11,8 +11,10 @@
          "log4js": "*",
          "underscore": "*",
          "express": "*",
-         "passport": "*",
-         "passport-facebook": "*"
+         "body-parser": "*",
+         "method-override": "*",
+         "cookie-parser": "*",
+         "express-session": "*"
     },
   "license": "BSD"
 }

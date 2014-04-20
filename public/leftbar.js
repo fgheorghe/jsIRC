@@ -91,6 +91,9 @@ LeftBar.prototype.createPanel = function() {
                 ,frame: false
                 ,border: false
                 ,title: "Conversations"
+                ,header : {
+                        height: 49
+                }
                 ,lyout: 'fit'
                 // Objects add themself
                 ,items: [ this.itemTreePanel ]

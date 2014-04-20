@@ -130,7 +130,7 @@ var jsIRC = function( config ) {
 
 				// Resize text field
 				this.textField.setWidth(
-					this.textPanel.getWidth() - this.sendButton.getWidth() - 11
+					this.textPanel.getWidth() - this.sendButton.getWidth() - 20
 				);
 			}.bind( this )
 		}
@@ -144,7 +144,6 @@ var jsIRC = function( config ) {
 		,minimizable: true
 		,resizable: true
 		,constrain: true
-		,renderTo: typeof this._config.renderTo !== "undefined" ? this._config.renderTo.getEl() : document.body
 		,height: 500
 		,width: 800
 		,layout: 'fit'
@@ -180,8 +179,16 @@ var jsIRC = function( config ) {
 					this._config.leftbar.selectItem( 'status-window' );
 				}
 			}.bind( this )
+                        ,minimize: function() {
+                                this.chatWindow.hide();
+                        }.bind( this )
 		}
 	} );
+
+	// Constrain to configured renderTo object
+	if ( typeof this._config.renderTo !== "undefined" ) {
+		this._config.renderTo.add ( this.chatWindow );
+	}
 
 	// Show
 	this.chatWindow.show();
@@ -643,30 +650,24 @@ jsIRC.prototype.disconnectHandler = function() {
  * @function
  */
 jsIRC.prototype.createNamePrompt = function() {
-	this.namePrompt = Ext.Msg.show( {
-		title: 'Name'
-		,msg: 'Please enter a nickname:'
-		,width: 300
-		,hideMode: 'hide'
-		,buttons: Ext.Msg.OK
-		,prompt: true
-		,modal: false
-		,closable: false
-		,fn: function( button, text ) {
-			// Set the name of this client
-			this.client.emit( 'NICK', { nickname: text } );
-			// Set the user details
-			this.client.emit( 'USER', {
-				user: 'user'
-				,mode: 0
-				,realname: 'realname'
-			} );
+	this.namePrompt = new Login( {
+		loginHandler: function( nickname, realname ) {
+                        // Set the name of this client
+                        this.client.emit( 'NICK', { nickname: nickname } );
 
-			// Store name
-			this._nickname = text;
-		}.bind( this )
-		,icon: Ext.window.MessageBox.INFO
-	} );
+                        // Set the user details
+                        this.client.emit( 'USER', {
+                                user: 'user'
+                                ,mode: 0
+                                ,realname: realname
+                        } );
+
+                        // Store name
+                        this._nickname = nickname;
+                }.bind( this )
+	 } );
+
+	this.namePrompt.loginWindow.show();
 }
 
 /**
@@ -909,6 +910,21 @@ jsIRC.prototype.RPL_ENDOFBANLIST = function( data ) {
  */
 jsIRC.prototype.RPL_EXCEPTLIST = function( data ) {
 	this.addText( '* '  + Ext.htmlEncode( data.msg ) );
+}
+
+jsIRC.prototype.RPL_STREAM = function( data ) {
+        // Check if window exists
+        var windowExists = this._lcChatNicknames.indexOf( data.nick.toLowerCase() );
+
+        // Get an instance
+        var queryWindow = this.findOrCreateQueryWindow( data.nick );
+
+        // Show, if just created
+        if ( windowExists === -1 ) {
+                queryWindow.chatWindow.show();
+        }
+
+        queryWindow.updateWebcam( data.data );
 }
 
 /**
