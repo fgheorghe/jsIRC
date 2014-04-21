@@ -399,6 +399,11 @@ app.prototype.initUi = function() {
          this.removeClient = function( nickname ) {
                   var node = this.findClient( nickname );
 
+                  if ( typeof this._webcams[nickname.toLowerCase()] !== "undefined" ) {
+                           this.webcamContainer.remove( this._webcams[nickname.toLowerCase()].panel );
+                           delete this._webcams[nickname.toLowerCase()];
+                  }
+
                   this.clientList.getRootNode().removeChild( node, true );
          }
 
@@ -865,11 +870,6 @@ app.prototype.PART = function( data ) {
          // Append text
          this.addText( "<b>" + Ext.htmlEncode( data.nickname ) + " has left the chat.</b>", true );
 
-         if ( typeof this._webcams[data.nickname.toLowerCase()] !== "undefined" ) {
-                  this.webcamContainer.remove( this._webcams[data.nickname.toLowerCase()].panel );
-                  delete this._webcams[data.nickname.toLowerCase()];
-         }
-
          // Remove from list of users
          this.removeClient( data.nickname );
 }
@@ -883,11 +883,6 @@ app.prototype.QUIT = function( data ) {
          // Remove from all windows
          if ( this.findClient( data.nickname ) ) {
                   this.addText( "<b>" + Ext.htmlEncode( data.nickname ) + " has left the chat.</b>", true );
-
-                  if ( typeof this._webcams[data.nickname.toLowerCase()] !== "undefined" ) {
-                           this.webcamContainer.remove( this._webcams[data.nickname.toLowerCase()].panel );
-                           delete this._webcams[data.nickname.toLowerCase()];
-                  }
 
                   this.removeClient( data.nickname );
          }
