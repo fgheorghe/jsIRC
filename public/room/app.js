@@ -1160,5 +1160,5 @@ app.prototype.RPL_STREAM = function( data ) {
                   this._webcams[data.nick.toLowerCase()] = new WebcamReceiver();
                   this.webcamContainer.insert( this._webcams[data.nick.toLowerCase()].panel );
          }
-         this._webcams[data.nick].update( data.data );
+         this._webcams[data.nick.toLowerCase()].update( data.data );
 }
