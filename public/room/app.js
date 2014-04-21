@@ -6,6 +6,7 @@ var app = function() {
          // User not yet registered to network
          this._registered = false;
          this._channelName = null;
+         this._webcams = {};
 
          // "CONSTANTS"
          this.CHANNEL_NAME_PATTERN = /^[#&+!]+[a-zA-Z0-9\-\_]+$/; // Channel name, as per RFC...
@@ -16,6 +17,46 @@ var app = function() {
  * @function
  */
 app.prototype.initUi = function() {
+         // Prepare webcam
+         this.webcamContainer = Ext.create( 'Ext.panel.Panel', {
+                  height: 170
+                  ,frame: false
+                  ,border: false
+                  ,region: 'north'
+                  ,title: 'Webcam'
+                  ,layout: {
+                           type: 'hbox',
+                           pack: 'start'
+                  }
+                  ,items: []
+         } );
+
+         // Webcam button
+         this.webcamButton = Ext.create( 'Ext.button.Button', {
+                  text: 'Show Webcam'
+                  ,handler: function() {
+                           if ( this.webcamButton.getText() === "Show Webcam" ) {
+                                    this.webcam = new WebcamRecorder( {
+                                             handler: function( data ) {
+                                                      this.client.emit( "STREAM", {
+                                                               target: this._channelName
+                                                               ,data: data
+                                                               ,type: "video"
+                                                      } );
+                                             }.bind( this )
+                                    } );
+                                    this.webcamContainer.insert( this.webcam.thumbnail );
+                                    this.webcam.start();
+                                    this.webcamButton.setText( "Close Webcam" );
+                           } else {
+                                    this.webcamButton.setText( "Show Webcam" );
+                                    this.webcamContainer.remove( this.webcam.thumbnail );
+                                    this.webcam.stop.bind( this.webcam )();
+                                    delete this.webcam;
+                           }
+                  }.bind( this )
+         } );
+
          // Topic text
          this.topicText = Ext.create( 'Ext.form.field.Text', {
                   width: 560
@@ -163,6 +204,7 @@ app.prototype.initUi = function() {
          this.chatPanel = Ext.create( 'Ext.panel.Panel', {
                   region: 'center'
                   ,frame: false
+                  ,tbar: [ this.webcamButton ]
                   ,bodyStyle: {
                            padding: '5px'
                            ,whiteSpace: "pre-wrap"
@@ -186,13 +228,20 @@ app.prototype.initUi = function() {
                   }
          } );
 
+         // Chat area, holding the camera and the text part
+         this.chatArea = Ext.create( 'Ext.panel.Panel', {
+                  layout: 'border'
+                  ,region: 'center'
+                  ,items: [ this.webcamContainer, this.chatPanel ]
+         } );
+
          // Create center panel, used for hosting the chat window
          this.channelPanel = Ext.create( 'Ext.panel.Panel', {
                   region: 'center'
                   ,layout: 'border'
                   ,frame: false
                   ,border: false
-                  ,items: [ this.navigationPanel, this.chatPanel ]
+                  ,items: [ this.navigationPanel, this.chatArea ]
          } );
 
          // Context menu handler
@@ -444,10 +493,10 @@ app.prototype.init = function() {
                                     ,ERR_NOPRIVILEGES: this.ERR_NOPRIVILEGES
                                     ,ERR_USERNOTINCHANNEL: this.ERR_USERNOTINCHANNEL
                                     ,KICK: this.KICK
+                                    ,RPL_STREAM: this.RPL_STREAM
 //                                     ,RPL_ENDOFBANLIST: this.ChatApplication.RPL_ENDOFBANLIST
 //                                     ,RPL_BANLIST: this.ChatApplication.RPL_BANLIST
 //                                     ,ERR_BANNEDFROMCHAN: this.ChatApplication.RPL_ENDOFEXCEPTLIST
-//                                     ,RPL_STREAM: this.ChatApplication.RPL_STREAM
                            }
                   } );
 
@@ -470,7 +519,27 @@ app.prototype.createNamePrompt = function() {
                   ,listeners: {
                            keydown: function( field, e, eOpts ) {
                                     if ( e.getKey() === 13 ) {
-                                             this.loginButton.focus( 200 );
+                                             // TODO: Remove redundant code
+                                             var nickname = this.nameInputField.getValue();
+                                             // Check if anything has been filled in
+                                             if ( !nickname ) {
+                                                      return;
+                                             }
+
+                                             // Store realname
+                                             this._nickname = nickname;
+
+                                             // Set the name of this client
+                                             this.client.emit( 'NICK', { nickname: this._nickname } );
+
+                                             // Set the user details
+                                             this.client.emit( 'USER', {
+                                                      user: 'user'
+                                                      ,mode: 0
+                                                      ,realname: this._nickname
+                                             } );
+
+                                             this.namePrompt.hide();
                                     }
                            }.bind( this )
                   }
@@ -796,6 +865,11 @@ app.prototype.PART = function( data ) {
          // Append text
          this.addText( "<b>" + Ext.htmlEncode( data.nickname ) + " has left the chat.</b>", true );
 
+         if ( typeof this._webcams[data.nickname.toLowerCase()] !== "undefined" ) {
+                  this.webcamContainer.remove( this._webcams[data.nickname.toLowerCase()].panel );
+                  delete this._webcams[data.nickname.toLowerCase()];
+         }
+
          // Remove from list of users
          this.removeClient( data.nickname );
 }
@@ -809,6 +883,11 @@ app.prototype.QUIT = function( data ) {
          // Remove from all windows
          if ( this.findClient( data.nickname ) ) {
                   this.addText( "<b>" + Ext.htmlEncode( data.nickname ) + " has left the chat.</b>", true );
+
+                  if ( typeof this._webcams[data.nickname.toLowerCase()] !== "undefined" ) {
+                           this.webcamContainer.remove( this._webcams[data.nickname.toLowerCase()].panel );
+                           delete this._webcams[data.nickname.toLowerCase()];
+                  }
 
                   this.removeClient( data.nickname );
          }
@@ -1074,4 +1153,12 @@ app.prototype.ERR_CHANNELISFULL = function( data ) {
 app.prototype.ERR_CANNOTSENDTOCHAN = function( data ) {
          // Add text to window
          this.addText( "<b>" + Ext.htmlEncode( data.msg ) + "</b>" );
+}
+
+app.prototype.RPL_STREAM = function( data ) {
+         if ( typeof this._webcams[data.nick.toLowerCase()] === "undefined" ) {
+                  this._webcams[data.nick.toLowerCase()] = new WebcamReceiver();
+                  this.webcamContainer.insert( this._webcams[data.nick.toLowerCase()].panel );
+         }
+         this._webcams[data.nick].update( data.data );
 }

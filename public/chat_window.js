@@ -147,7 +147,7 @@ ChatWindow.prototype.init = function() {
 				this.webcamContainer.setVisible( true );
 			} else {
 				this.webcamContainer.setVisible( false );
-                               this.webcamButton.setText( "Webcam Invite" );
+                                    this.webcamButton.setText( "Show Webcam" );
 				this.webcam.stop.bind( this.webcam )();
 			}
 		}.bind( this )

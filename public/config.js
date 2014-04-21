@@ -73,7 +73,7 @@ var Config = {
         ,Client: {
                 // Server URL
                 // NOTE: Should be based on http:// + Server.Web.Host + : + Server.Web.Port + /
-                ServerUrl: "https://server.grosan.co.uk:443/"
+                ServerUrl: "http://localhost:81/"
         }
         ,Log: {
                 // Log4js configuration (https://github.com/nomiddlename/log4js-node)

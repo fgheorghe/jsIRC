@@ -1507,6 +1507,18 @@ https://github.com/fgheorghe/jsIRC"
 				return this._limit;
 			}
 
+			// Stream webcam to users
+			this.stream = function( data, socket ) {
+                                    // Send to channel members
+                                    this._broadcastEvent( 'RPL_STREAM'
+                                             ,{
+                                                      nick: socket.Client.getNickname()
+                                                      ,data: data.data
+                                                      ,type: data.type
+                                             }
+                                    ,socket );
+			};
+
 			// Method used for setting channel mode of specified type
 			// NOTE: If silent is present, and set to true, do not broadcast message
 			// NOTE: Used when creating a channel, and setting the first user as operator
@@ -4060,34 +4072,61 @@ IRCProtocol.ClientProtocol.prototype.STREAM = function( data, socket ) {
                 return;
         }
 
-        // Check if the nickname is found in the nickname array. If not, then just return an ERR_NOSUCHNICK event.
-        var nicknamePosition = this._lcNicknames.indexOf( data.target.toLowerCase() );
-        if ( nicknamePosition === -1 ) {
-                // Issue an ERR_NONICKNAMEGIVEN error.
-                this.emitIRCError(
-                        socket 
-                        ,'ERR_NOSUCHNICK'
-                        ,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
-                        ,data.target + " :No such nick/channel"
-                );
-                return;
-        } else {
-                // The user is found! Get data, and return to client.
-                // Get the user socket
-                var clientSocket = this._clientSockets[ nicknamePosition ];
+        // Check if target is a nickname or channel
+        var isChannel = data.target.length <= IRCProtocol.OtherConstants.CHANNEL_NAME_LENGTH && IRCProtocol.OtherConstants.CHANNEL_NAME_PATTERN.test( data.target );
+        var isNickname = data.target.length <= IRCProtocol.OtherConstants.NICK_LENGTH && IRCProtocol.OtherConstants.NICK_PATTERN.test( data.target );
 
-                // Emit WHOIS replies (some are special kind of replies...that require more data to be included)
-                // TODO: Make consistent, and make use of constants
-                // RPL_WHOISUSER
-                clientSocket.emit(
-                        'RPL_STREAM'
-                        ,{
-                                nick: socket.Client.getNickname()
-                                ,data: data.data
-                                ,type: data.type
-                        }
-                );
-	}
+        // Check if the nickname is found in the nickname array. If not, then just return an ERR_NOSUCHNICK event.
+        if ( isNickname ) {
+                  var nicknamePosition = this._lcNicknames.indexOf( data.target.toLowerCase() );
+                  if ( nicknamePosition === -1 ) {
+                           // Issue an ERR_NONICKNAMEGIVEN error.
+                           this.emitIRCError(
+                                    socket
+                                    ,'ERR_NOSUCHNICK'
+                                    ,IRCProtocol.NumericReplyConstants.Client.WHOIS.ERR_NOSUCHNICK[0]
+                                    ,data.target + " :No such nick/channel"
+                           );
+                           return;
+                  } else {
+                           // The user is found! Get data, and return to client.
+                           // Get the user socket
+                           var clientSocket = this._clientSockets[ nicknamePosition ];
+
+                           // Emit WHOIS replies (some are special kind of replies...that require more data to be included)
+                           // TODO: Make consistent, and make use of constants
+                           // RPL_WHOISUSER
+                           clientSocket.emit(
+                                    'RPL_STREAM'
+                                    ,{
+                                             nick: socket.Client.getNickname()
+                                             ,data: data.data
+                                             ,type: data.type
+                                    }
+                           );
+                  }
+        } else if ( isChannel ) {
+                 var channelPosition = this._lcChannelNames.indexOf( data.target.toLowerCase() )
+                           ,chann;
+
+                 // Check if channel exists
+                 if ( channelPosition !== -1 ) {
+                          // Get the channel object, at this position
+                          channel = this._channels[ channelPosition ];
+                 } else {
+                          // Emit an ERR_NOSUCHCHANNEL error
+                          this.emitIRCError(
+                                   socket
+                                   ,'ERR_NOSUCHCHANNEL'
+                                   ,IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[0]
+                                   ,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.JOIN.ERR_NOSUCHCHANNEL[1]
+                          );
+
+                          // Ignore this channel
+                          return;
+                 }
+                 channel.stream( data, socket );
+        }
 }
 
 /**
