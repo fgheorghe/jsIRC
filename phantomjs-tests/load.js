@@ -1,8 +1,8 @@
 // Run: phantomjs --web-security=no load.js index.html
 // Requires: phantomjs >= 1.9.0
 var config = {
-	ServerHost: 'chatjs'
-	,ServerPort: 10000
+	ServerHost: 'localhost'
+	,ServerPort: 80
 	,NicknamePrefix: 'test'
 	,Channels: [ '#test' ]
 	,User: 'test'
