@@ -13,7 +13,7 @@ npm install
 Install IRC Web Client
 ======================
 
-Using Apache or NGinx, server content from the public/ folder.
+Using Apache or NGinx, serve content from the public/ folder.
 
 This does not need to live on the same server and domain as the Socket.IO IRC server.
 
