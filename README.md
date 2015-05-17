@@ -10,17 +10,26 @@ Install IRC Web/TCP Server
 
 npm install
 
+sudo npm install -g forever
+
 Install IRC Web Client
 ======================
 
-Using Apache or NGinx, serve content from the public/ folder.
+Using Apache or nginx, serve content from the public/ folder.
 
-This does not need to live on the same server and domain as the Socket.IO IRC server.
+This does not need to live on the same server or domain as the Socket.IO IRC server.
 
 Configuration
 =============
 
 Edit public/config.js to adjust settings.
+
+Start/stop IRC Web/TCP Server
+=============================
+
+sudo npm start
+
+sudo npm stop
 
 Supported Client to Server commands
 ===================================
