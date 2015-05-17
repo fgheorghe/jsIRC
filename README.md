@@ -5,7 +5,25 @@ IRC 2.0 (Json based Web IRC) implementation, using Node.js, Socket.io, Extjs, Ph
 
 Based on RFC2812: http://tools.ietf.org/html/rfc2812.
 
-Supported Client to Server commands:
+Install IRC Web/TCP Server
+==========================
+
+npm install
+
+Install IRC Web Client
+======================
+
+Using Apache or NGinx, server content from the public/ folder.
+
+This does not need to live on the same server and domain as the Socket.IO IRC server.
+
+Configuration
+=============
+
+Edit public/config.js to adjust settings.
+
+Supported Client to Server commands
+===================================
 
 - NICK
 - USER
