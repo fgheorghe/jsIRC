@@ -28,11 +28,11 @@ var Config = {
         Server: {
                 WEB: {
                         Port: 80
-                        ,Host: 'server.jsirc.net'
+                        ,Host: 'localhost'
                 }
                 ,TCP: {
                         Port: 6667
-                        ,Host: 'server.jsirc.net'
+                        ,Host: 'localhost'
                 }
                 // IRC Protocol configuration
                 ,IRCProtocol: {
@@ -52,7 +52,7 @@ var Config = {
         ,Client: {
                 // Server URL
                 // NOTE: Should be based on http:// + Server.Web.Host + : + Server.Web.Port + /
-                ServerUrl: "http://server.jsirc.net/"
+                ServerUrl: "http://localhost/"
         }
         ,Log: {
                 // Log4js configuration (https://github.com/nomiddlename/log4js-node)

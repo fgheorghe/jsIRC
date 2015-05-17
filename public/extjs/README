@@ -1,2 +1,0 @@
-Download ExtJS 4.2.0, and extract in current directoy:
-wget http://cdn.sencha.com/ext/gpl/ext-4.2.0-gpl.zip && unzip ext-4.2.0-gpl.zip && mv ./ext-4.2.0.663/* ./ && rm -rf ./ext-4.2.0.663 && rm ext-4.2.0-gpl.zip
