@@ -47,7 +47,7 @@ var WEBServer = function( config ) {
 	// Store configuation, in a 'private' property
 	this._config = config;
 }
-
+console.log("App starting...");
 /**
  * Method used for attaching socket events and their handlers.
  * NOTE: Event names and functions are stored in the config.events object.
