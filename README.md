@@ -1,6 +1,6 @@
 # jsIRC
 
-A JSON-based Web IRC server and client implementation using Node.js, Socket.IO, ExtJS, and jQuery.
+IRC 2.0 Server (JavaScript Web IRC Server and Client) implementation, using Node.js, Socket.io, Extjs, and jQuery.  
 
 Based on [RFC 2812](http://tools.ietf.org/html/rfc2812).
 
