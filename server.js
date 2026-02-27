@@ -26,8 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 // Load various required libraries:
-var S = require( 'string' ) // http://stringjs.com/
-        ,_ = require('lodash') // http://lodash.com/
+var _ = require('lodash') // http://lodash.com/
         ,fs = require('fs') // Standard file system
         ,util = require( 'util' ) // Standard utility
         ,logFacility = require( 'log4js' ); // https://github.com/nomiddlename/log4js-node
@@ -165,7 +164,7 @@ TCPServer.prototype.init = function() {
 TCPServer.prototype.textToJson = function( name, command ) {
         var responseObject = {}
                 ,temp // Temporary variable, used for splitting a command.
-                ,command = S( command ).trim().s; // Trim command
+                ,command = command.trim(); // Trim command
 
         // Begin constructing parameters
         switch ( name.toUpperCase() ) {
@@ -2143,7 +2142,7 @@ IRCProtocol.ClientProtocol.prototype.disconnect = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	// Verify the nick data is present:
-	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" ) {
+	if ( typeof data.nickname === "undefined" || data.nickname.trim() === "" ) {
 		// Issue an ERR_NONICKNAMEGIVEN error.
 		this.emitIRCError(
 			socket
@@ -2155,7 +2154,7 @@ IRCProtocol.ClientProtocol.prototype.NICK = function( data, socket ) {
 	}
 
 	// Begin nickname validation.
-	var nickname = S( data.nickname ).trim().toString();
+	var nickname = data.nickname.trim();
 
 	// Length or pattern
 	if ( nickname.toLowerCase() === "anonymous" && nickname.length > IRCProtocol.OtherConstants.NICK_LENGTH || !IRCProtocol.OtherConstants.NICK_PATTERN.test( nickname ) ) {
@@ -2704,7 +2703,7 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 	socket.Client.setPingIdle( 0 );
 
 	// Validate the command parameters
-	if ( typeof data.target === "undefined" || !S( data.target ).trim().s ) {
+	if ( typeof data.target === "undefined" || !data.target.trim() ) {
 		// Issue an ERR_NORECIPIENT error.
 		this.emitIRCError(
 			socket
@@ -2714,7 +2713,7 @@ IRCProtocol.ClientProtocol.prototype.PRIVMSG = function( data, socket ) {
 		);
 		return;
 	}
-	if ( typeof data.message === "undefined" || !S( data.message ).trim().s ) {
+	if ( typeof data.message === "undefined" || !data.message.trim() ) {
 		// Issue an ERR_NOTEXTTOSEND error.
 		this.emitIRCError(
 			socket
@@ -2969,7 +2968,7 @@ IRCProtocol.ClientProtocol.prototype.PONG = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.TOPIC = function( data, socket ) {
 	// Validate required properties
-	if ( typeof data.channel === "undefined" || S( data.channel ).trim().s === "" ) {
+	if ( typeof data.channel === "undefined" || data.channel.trim() === "" ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
@@ -3268,7 +3267,7 @@ IRCProtocol.ClientProtocol.prototype.INFO = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.KILL = function( data, socket ) {
 	// Validate required parameters
-	if ( typeof data.comment === "undefined" || S( data.comment ).trim().s === "" || typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" ) {
+	if ( typeof data.comment === "undefined" || data.comment.trim() === "" || typeof data.nickname === "undefined" || data.nickname.trim() === "" ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
@@ -3345,7 +3344,7 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 
 	if ( isNickname ) {
 		// Check if the user is only querying for his/her modes
-		if ( S( data.target ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( typeof data.modes === "undefined" || data.modes.length === 0 ) ) {
+		if ( data.target.trim().toLowerCase() === socket.Client.getNickname().toLowerCase() && ( typeof data.modes === "undefined" || data.modes.length === 0 ) ) {
 			// RPL_UMODEIS
 			this.emitIRCError(
 				socket
@@ -3355,7 +3354,7 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 				,"+" + socket.Client.getSetModesString()
 			);
 			return;
-		} else if ( S( data.target ).trim().s.toLowerCase() !== socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
+		} else if ( data.target.trim().toLowerCase() !== socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
 			// ERR_USERSDONTMATCH if changing modes for others
 			this.emitIRCError(
 				socket
@@ -3364,7 +3363,7 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 				,IRCProtocol.NumericReplyConstants.Client.MODE.ERR_USERSDONTMATCH[1]
 			);
 			return;
-		} else if ( S( data.target ).trim().s.toLowerCase() === socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
+		} else if ( data.target.trim().toLowerCase() === socket.Client.getNickname().toLowerCase() && ( data.modes !== "undefined" || data.modes.length !== 0 ) ) {
 			// Set modes
 			var set = false; // Setting or removing modes
 			var errSent = false; // Prevent from sending ERR_UMODEUNKNOWNFLAG more than once, per query
@@ -3919,7 +3918,7 @@ IRCProtocol.ClientProtocol.prototype.USERS = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.WALLOPS = function( data, socket ) {
 	// Validate required properties
-	if ( typeof data.text === "undefined" || S( data.text ).trim().s === "" ) {
+	if ( typeof data.text === "undefined" || data.text.trim() === "" ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
@@ -4040,7 +4039,7 @@ IRCProtocol.ClientProtocol.prototype.ISON = function( data, socket ) {
  */
 IRCProtocol.ClientProtocol.prototype.INVITE = function( data, socket ) {
 	// Validate parameters
-	if ( typeof data.nickname === "undefined" || S( data.nickname ).trim().s === "" || typeof data.channel === "undefined" || S( data.channel ).trim().s === "" ) {
+	if ( typeof data.nickname === "undefined" || data.nickname.trim() === "" || typeof data.channel === "undefined" || data.channel.trim() === "" ) {
 		// Issue an ERR_NEEDMOREPARAMS error.
 		this.emitIRCError(
 			socket
