@@ -1,0 +1,11 @@
+services:
+  jsirc:
+    build: .
+    # host networking gives the container direct access to the host network stack,
+    # bypassing Docker NAT so the IRC server sees real client IP addresses.
+    # The ports directive is ignored in this mode; services bind directly on the host.
+    # Note: host network mode is only supported on Linux.
+    network_mode: host
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped

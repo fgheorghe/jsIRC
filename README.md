@@ -44,10 +44,11 @@ var Config = {
     Server: {
         WEB: {
             Port: 31337,       // Port the Socket.IO server listens on
-            Host: '127.0.0.1'  // Bind address for the Socket.IO server
+            Host: '0.0.0.0'    // Bind address for the Socket.IO server
         },
         TCP: {
             Port: 6667,        // Port the raw TCP IRC server listens on
+            Host: '0.0.0.0'    // Bind address for the TCP server
             Host: '127.0.0.1'  // Bind address for the TCP server
         },
         IRCProtocol: {
@@ -115,7 +116,61 @@ If the web client is served from a different origin than the Socket.IO server (d
 
 The MOTD is served from the file specified by `MotdFile` in config (default: `motd.txt`), relative to the working directory where `server.js` is run.
 
-## Running the server
+## Running with Docker
+
+Docker Compose is the recommended way to run jsIRC. It starts both the IRC server and the web client HTTP server in a single container, with all ports exposed and logs forwarded to the console.
+
+Build and start:
+
+```
+docker compose up --build
+```
+
+Run in the background:
+
+```
+docker compose up --build -d
+```
+
+View logs:
+
+```
+docker compose logs -f
+```
+
+Stop:
+
+```
+docker compose down
+```
+
+The container uses `network_mode: host`, which bypasses Docker's NAT layer so the IRC server logs real client IP addresses rather than Docker internal IPs. This mode is only supported on Linux. Services bind directly on the host on the following ports:
+
+| Port  | Service                              |
+|-------|--------------------------------------|
+| 8080  | Web client (browser)                 |
+| 31337 | Socket.IO server (used by web client)|
+| 6667  | TCP IRC server (IRC clients)         |
+
+Open `http://localhost:8080` in a browser to use the web client.
+
+IRC log files are written to the `logs/` directory on the host (mounted as a volume).
+
+## Running without Docker
+
+### IRC server
+
+Install dependencies:
+
+```
+npm install
+```
+
+Install `forever` globally for process management:
+
+```
+npm install -g forever
+```
 
 Start the server in the background using `forever`:
 
@@ -135,15 +190,16 @@ To run the server directly in the foreground (useful for development):
 node server.js
 ```
 
-## Serving the web client
+The `logs/` directory must exist before starting the server.
 
-The `public/` directory contains the browser-based IRC client and must be served by an HTTP server. It does not need to be on the same host as the IRC server.
+### Web client
 
-Example using Python (for local development):
+The `public/` directory must be served by an HTTP server. It does not need to be on the same host as the IRC server.
+
+Example using Python:
 
 ```
-cd public
-python3 -m http.server 8080
+python3 -m http.server 8080 --directory public
 ```
 
 Then open `http://localhost:8080` in a browser.
