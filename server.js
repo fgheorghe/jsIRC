@@ -225,6 +225,21 @@ TCPServer.prototype.textToJson = function( name, command ) {
                 case "PONG":
                         responseObject = {};
                         break;
+                case "PING":
+                        // Extract the token after the optional colon.
+                        temp = command.split( ":" );
+                        responseObject = {
+                                token: temp.length > 1 ? temp[1].trim() : ""
+                        };
+                        break;
+                case "CAP":
+                        // Split into subcommand and optional params.
+                        temp = command.split( " " );
+                        responseObject = {
+                                subcommand: temp.length > 1 ? temp[1].toUpperCase() : ""
+                                ,params: temp.length > 2 ? temp.slice( 2 ).join( " " ).replace( /^:/, "" ) : ""
+                        };
+                        break;
                 case "PRIVMSG":
                         // Split by spaces.
                         temp = command.split( " " );
@@ -622,6 +637,12 @@ IRCSocket.prototype.jsonToText = function( command, parameters ) {
                         break;
                 case "PING":
                         response = "PING :" + parameters.source;
+                        break;
+                case "PONG_REPLY":
+                        response = ":" + IRCProtocol.ServerName + " PONG " + IRCProtocol.ServerName + " :" + parameters.token;
+                        break;
+                case "CAP_REPLY":
+                        response = ":" + IRCProtocol.ServerName + " CAP * " + parameters.subcommand + " :" + parameters.params;
                         break;
                 case "PRIVMSG":
                         response = ":" + parameters.nickname + "!" + parameters.user + "@" + parameters.host + " PRIVMSG " + parameters.target + " :" + parameters.message;
@@ -2961,6 +2982,41 @@ IRCProtocol.ClientProtocol.prototype.PONG = function( data, socket ) {
 }
 
 /**
+ * Client PING command. Responds with a PONG so the client knows the server is alive.
+ * @param {Object} data Data object with a 'token' key.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.PING = function( data, socket ) {
+	socket.emit( 'PONG_REPLY', { token: data.token } );
+}
+
+/**
+ * Client CAP (capability negotiation) command.
+ * This server supports no capabilities; CAP LS returns an empty list, CAP REQ is NAK'd.
+ * @param {Object} data Data object with 'subcommand' and 'params' keys.
+ * @param {Object} socket Socket object.
+ * @function
+ */
+IRCProtocol.ClientProtocol.prototype.CAP = function( data, socket ) {
+	switch ( data.subcommand ) {
+		case "LS":
+			// Advertise an empty capability list so clients proceed to NICK/USER.
+			socket.emit( 'CAP_REPLY', { subcommand: 'LS', params: '' } );
+			break;
+		case "REQ":
+			// Reject all capability requests — none are supported.
+			socket.emit( 'CAP_REPLY', { subcommand: 'NAK', params: data.params } );
+			break;
+		case "END":
+			// Client has finished capability negotiation; nothing to do.
+			break;
+		default:
+			break;
+	}
+}
+
+/**
  * Client TOPIC command.
  * @param {Object} data Data object, with the required 'channel' and optional 'topic' keys.
  * @param {Object} socket Socket object.
@@ -4379,6 +4435,9 @@ WEBChatServer = new WEBServer( {
 		,LUSERS: IRCClient.LUSERS
 		// PING? PONG!
 		,PONG: IRCClient.PONG
+		,PING: IRCClient.PING
+		// Capability negotiation (advertise no capabilities so clients proceed)
+		,CAP: IRCClient.CAP
 		,TOPIC: IRCClient.TOPIC
 		,LIST: IRCClient.LIST
 		,OPER: IRCClient.OPER
@@ -4432,6 +4491,9 @@ TCPChatServer = new TCPServer( {
                 ,LUSERS: IRCClient.LUSERS
                 // PING? PONG!
                 ,PONG: IRCClient.PONG
+                ,PING: IRCClient.PING
+                // Capability negotiation (advertise no capabilities so clients proceed)
+                ,CAP: IRCClient.CAP
                 ,TOPIC: IRCClient.TOPIC
                 ,LIST: IRCClient.LIST
                 ,OPER: IRCClient.OPER
