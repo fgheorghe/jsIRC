@@ -1923,6 +1923,7 @@ https://github.com/fgheorghe/jsIRC"
 	}
 	// Other constants
 	,OtherConstants: {
+        // TODO: Prevent users with longer nicknames from registering!
 		NICK_LENGTH: 8 // Max nickname characters (9, since the count starts from 0)
 		,CHANNEL_NAME_LENGTH: 49 // (50)
 		// TODO: Implement proper patterns (these are partially implemented)
