@@ -3696,7 +3696,26 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								param++;
 								break;
 							case "b":
-								// Add to 'ban' list
+								// If no mask is given, list the ban list (RFC 2812)
+								if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
+									var banList = channel.getBanList();
+									for ( var k = 0; k < banList.length; k++ ) {
+										this.emitIRCError(
+											socket
+											,'RPL_BANLIST'
+											,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_BANLIST[0]
+											,data.target + " " + banList[k]
+										);
+									}
+									this.emitIRCError(
+										socket
+										,'RPL_ENDOFBANLIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFBANLIST[0]
+										,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFBANLIST[1]
+									);
+									break;
+								}
+								// Add to / remove from ban list
 								if ( set === true ) {
 									channel.addBan( socket, data.parameters[param] );
 								} else {
@@ -3706,7 +3725,26 @@ IRCProtocol.ClientProtocol.prototype.MODE = function( data, socket ) {
 								param++;
 								break;
 							case "e":
-								// Add to ban 'exception' list
+								// If no mask is given, list the ban exception list (RFC 2812)
+								if ( typeof data.parameters === "undefined" || data.parameters.length === 0 || typeof data.parameters[param] === "undefined" ) {
+									var banExceptionList = channel.getBanExceptionList();
+									for ( var k = 0; k < banExceptionList.length; k++ ) {
+										this.emitIRCError(
+											socket
+											,'RPL_EXCEPTLIST'
+											,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_EXCEPTLIST[0]
+											,data.target + " " + banExceptionList[k]
+										);
+									}
+									this.emitIRCError(
+										socket
+										,'RPL_ENDOFEXCEPTLIST'
+										,IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFEXCEPTLIST[0]
+										,data.target + " :" + IRCProtocol.NumericReplyConstants.Client.MODE.RPL_ENDOFEXCEPTLIST[1]
+									);
+									break;
+								}
+								// Add to / remove from ban exception list
 								if ( set === true ) {
 									channel.addBanException( socket, data.parameters[param] );
 								} else {
