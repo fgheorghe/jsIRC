@@ -95,12 +95,12 @@ ChannelWindow.prototype.init = function() {
 	// Nick name double click event (default to query)
 	this.userListItemDblClick = function( tree, record, item, index, e, eOpts ) {
 		// Issue a 'query' command
-		this._config.parent.parseCommand( "/query " + record.raw.text );
+		this._config.parent.parseCommand( "/query " + record.get('text') );
 	}
 
 	// Context menu handler
 	this.userListContextMenu = function( tree, record, item, index, e, eOpts ) {
-		var node = this.findClient( record.raw.text );
+		var node = this.findClient( record.get('text') );
 		
 		// Create the menu
 		var menu = Ext.create( 'Ext.menu.Menu', {
@@ -109,56 +109,56 @@ ChannelWindow.prototype.init = function() {
 					text: 'Give Ops'
 					,handler: function() {
 						// Issue a 'mode' command
-						this._config.parent.parseCommand( "/mode " + this._config.channel + " +o " + record.raw.text );
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " +o " + record.get('text') );
 					}.bind( this )
-					,hidden: node.raw.operator === true
+					,hidden: node.get('operator') === true
 				}
 				,{
 					text: 'Remove Ops'
 					,handler: function() {
 						// Issue a 'mode' command
-						this._config.parent.parseCommand( "/mode " + this._config.channel + " -o " + record.raw.text );
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " -o " + record.get('text') );
 					}.bind( this )
-					,hidden: node.raw.operator === false
+					,hidden: node.get('operator') === false
 				}
 				,{
 					text: 'Give Voice'
 					,handler: function() {
 						// Issue a 'mode' command
-						this._config.parent.parseCommand( "/mode " + this._config.channel + " +v " + record.raw.text );
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " +v " + record.get('text') );
 					}.bind( this )
-					,hidden: node.raw.voice === true
+					,hidden: node.get('voice') === true
 				}
 				,{
 					text: 'Remove Voice'
 					,handler: function() {
 						// Issue a 'mode' command
-						this._config.parent.parseCommand( "/mode " + this._config.channel + " -v " + record.raw.text );
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " -v " + record.get('text') );
 					}.bind( this )
-					,hidden: node.raw.voice === false
+					,hidden: node.get('voice') === false
 				}
 				,{
 					text: 'Kick'
 					,handler: function() {
 						// Issue a 'kick' command
-						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.raw.text );
+						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.get('text') );
 					}.bind( this )
 				}
 				,{
 					text: 'Ban'
 					,handler: function() {
 						// Issue a 'ban' command, for the nick!user@host mask
-						this._config.parent.parseCommand( "/mode " + this._config.channel + " +b " + record.raw.text + "!" + record.raw.user + "@" + record.raw.host );
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " +b " + record.get('text') + "!" + record.get('user') + "@" + record.get('host') );
 					}.bind( this )
 				}
 				,{
 					text: 'Kick & Ban'
 					,handler: function() {
 						// Issue a 'ban' command, for the nick!user@host mask
-						this._config.parent.parseCommand( "/mode " + this._config.channel + " +b " + record.raw.text + "!" + record.raw.user + "@" + record.raw.host );
+						this._config.parent.parseCommand( "/mode " + this._config.channel + " +b " + record.get('text') + "!" + record.get('user') + "@" + record.get('host') );
 
 						// Issue a 'kick' command
-						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.raw.text );
+						this._config.parent.parseCommand( "/kick " + this._config.channel + " " + record.get('text') );
 					}.bind( this )
 				}
 				,'-'
@@ -166,14 +166,14 @@ ChannelWindow.prototype.init = function() {
 					text: 'Query'
 					,handler: function() {
 						// Issue a 'query' command
-						this._config.parent.parseCommand( "/query " + record.raw.text );
+						this._config.parent.parseCommand( "/query " + record.get('text') );
 					}.bind( this )
 				}
 				,{
 					text: 'Whois'
 					,handler: function() {
 						// Issue a 'whois' command
-						this._config.parent.parseCommand( "/whois " + record.raw.text );
+						this._config.parent.parseCommand( "/whois " + record.get('text') );
 					}.bind( this )
 				}
 			]
@@ -189,10 +189,11 @@ ChannelWindow.prototype.init = function() {
 	// Prepare the client list
 	this.clientList = Ext.create( 'Ext.tree.Panel', {
 		store: Ext.create( 'Ext.data.TreeStore', {
-			data: {
-				children: []
+			root: {
+				expanded: true
+				,children: []
 			}
-			,fields: [ 'text', 'operator', 'voice' ]
+			,fields: [ 'text', 'operator', 'voice', 'user', 'host' ]
 		} )
 		,width: 180
 		,minWidth: 180
@@ -221,8 +222,6 @@ ChannelWindow.prototype.init = function() {
 	this.replaceClient = function( initialNickname, nickname ) {
 		var node = this.findClient( initialNickname );
 		node.set( 'text', Ext.htmlEncode( nickname ) );
-		node.raw.text = Ext.htmlEncode( nickname );
-		node.save();
 		this.sortUsers();
 	}
 
@@ -236,12 +235,7 @@ ChannelWindow.prototype.init = function() {
 	// Set 'node' icon (and sort), based on status (operator, voice or none)
 	this.setNodeIcon = function( node ) {
 		// Set icon
-		node.set( 'icon', node.raw.operator === true ? 'img/face-smile-big.png' : node.raw.voice === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png' );
-
-		// Save node properties
-		node.set( 'voice', node.raw.voice );
-		node.set( 'operator', node.raw.operator );
-		node.save();
+		node.set( 'icon', node.get('operator') === true ? 'img/face-smile-big.png' : node.get('voice') === true ? 'img/face-smile.png' : 'img/face-smile-big-3.png' );
 
 		// Sort
 		this.sortUsers();
@@ -252,7 +246,7 @@ ChannelWindow.prototype.init = function() {
 	this.setOperator = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.raw.operator = true;
+		node.set( 'operator', true );
 		this.setNodeIcon( node );
 	}
 
@@ -260,7 +254,7 @@ ChannelWindow.prototype.init = function() {
 	this.removeOperator = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.raw.operator = false;
+		node.set( 'operator', false );
 		this.setNodeIcon( node );
 	}
 
@@ -268,7 +262,7 @@ ChannelWindow.prototype.init = function() {
 	this.setVoice = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.raw.voice = true;
+		node.set( 'voice', true );
 		this.setNodeIcon( node );
 	}
 	
@@ -276,7 +270,7 @@ ChannelWindow.prototype.init = function() {
 	this.removeVoice = function( nickname ) {
 		var node = this.findClient( nickname );
 		
-		node.raw.voice = false;
+		node.set( 'voice', false );
 		this.setNodeIcon( node );
 	}
 
@@ -443,7 +437,7 @@ ChannelWindow.prototype.init = function() {
 			,fontFamily: "monospace"
 			,fontSize: "11px"
 		}
-		,autoScroll: true
+		,scrollable: 'y'
 		// Start adding text from the bottom
 		,html: '<div style="height: 3000px;">&nbsp;</div>'
 		,bbar: [

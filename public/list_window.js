@@ -58,11 +58,11 @@ ListWindow.prototype.init = function() {
 					text: 'Join Channel'
 					,handler: function() {
 						// Issue a 'join' command if not already on that channel
-						if ( !this._config.parent._channelWindows[record.raw.channel] ) {
-							this._config.parent.parseCommand( "/join " + record.raw.channel );
+						if ( !this._config.parent._channelWindows[record.get('channel')] ) {
+							this._config.parent.parseCommand( "/join " + record.get('channel') );
 						} else {
 							// Just show...
-							this._config.parent._channelWindows[record.raw.channel].chatWindow.show();
+							this._config.parent._channelWindows[record.get('channel')].chatWindow.show();
 						}
 					}.bind( this )
 				}
