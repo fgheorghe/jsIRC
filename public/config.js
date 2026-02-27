@@ -52,7 +52,7 @@ var Config = {
         ,Client: {
                 // Server URL
                 // NOTE: Should be based on http:// + Server.Web.Host + : + Server.Web.Port + /
-                ServerUrl: "http://localhost/"
+                ServerUrl: "http://localhost:31337/"
         }
         ,Log: {
                 // Log4js configuration (https://github.com/log4js-node/log4js-node)

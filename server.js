@@ -4412,6 +4412,10 @@ WEBChatServer = new WEBServer( {
 	,host: Config.Server.WEB.Host
 	,socket: { // WEB Socket configuration
 		log: false // Disable loggings
+		,cors: {
+			origin: "*"
+			,methods: ["GET", "POST"]
+		}
 	}
 	// Set the scope to the instance of 'irc'
 	,scope: IRCClient

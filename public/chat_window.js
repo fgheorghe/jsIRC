@@ -84,7 +84,7 @@ ChatWindow.prototype.init = function() {
 			,fontFamily: "monospace"
 			,fontSize: "11px"
 		}
-		,autoScroll: true
+		,scrollable: 'y'
 		// Start adding text from the bottom
 		,html: '<div style="height: 3000px;">&nbsp;</div>'
 		,bbar: [
