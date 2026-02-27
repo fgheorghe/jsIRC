@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 var Config = {
         Server: {
                 WEB: {
-                        Port: 80
+                        Port: 31337
                         ,Host: 'localhost'
                 }
                 ,TCP: {
@@ -55,16 +55,16 @@ var Config = {
                 ServerUrl: "http://localhost/"
         }
         ,Log: {
-                // Log4js configuration (https://github.com/nomiddlename/log4js-node)
+                // Log4js configuration (https://github.com/log4js-node/log4js-node)
                 Configuration: {
-                        appenders: [
-                                { type: 'console' }
-                                ,{
-                                        type: 'file'
-                                        ,filename: 'logs/ircd.log'
-                                        ,category: 'ircd'
-                                }
-                        ]
+                        appenders: {
+                                console: { type: 'console' }
+                                ,file: { type: 'file', filename: 'logs/ircd.log' }
+                        }
+                        ,categories: {
+                                default: { appenders: ['console'], level: 'DEBUG' }
+                                ,ircd: { appenders: ['console', 'file'], level: 'DEBUG' }
+                        }
                 }
                 ,Level: "DEBUG"
         }

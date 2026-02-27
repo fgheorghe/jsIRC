@@ -10,7 +10,7 @@ Install IRC Web/TCP Server
 
 npm install
 
-sudo npm install -g forever
+npm install -g forever
 
 Install IRC Web Client
 ======================
@@ -27,9 +27,9 @@ Edit public/config.js to adjust settings.
 Start/stop IRC Web/TCP Server
 =============================
 
-sudo npm start
+npm start
 
-sudo npm stop
+npm stop
 
 Supported Client to Server commands
 ===================================

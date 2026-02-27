@@ -62,7 +62,7 @@ WEBServer.prototype.attachSocketEvents = function( socket ) {
                         // Log debug data.
                         // Ignore PONG events.
                         if ( eventName !== "PONG" ) {
-                                logger.debug( "Received Web data from " + socket.getRawSocket().handshake.address.address + ": " + util.format( "%j", data ) );
+                                logger.debug( "Received Web data from " + socket.getRawSocket().handshake.address + ": " + util.format( "%j", data ) );
                         }
 
 			// Determine which scope to bind the event handler to
@@ -84,7 +84,7 @@ WEBServer.prototype.loadLibraries = function() {
 	this._httpServer = require('http').createServer();
 
 	// Socket.Io
-	this._socketIo = require('socket.io').listen(
+	this._socketIo = require('socket.io')(
 		this._httpServer
 		,this._config.socket
 	);
@@ -109,7 +109,7 @@ WEBServer.prototype.init = function() {
 	// This handler in turn will attach application specific event handlers.
 	this._socketIo.sockets.on( 'connection', function ( socket ) {
                 // Log debug data.
-                logger.debug( "Incoming Web connection from: " + socket.handshake.address.address );
+                logger.debug( "Incoming Web connection from: " + socket.handshake.address );
 
                 // Determine which scope to bind the event handler to
                 var scope = typeof this._config.scope !== "undefined" ? this._config.scope : this;
@@ -783,7 +783,7 @@ IRCSocket.prototype.getAddress = function() {
         var result = "";
 
         if ( this._type === "web" ) {
-                result = this._socket.handshake.address.address;
+                result = this._socket.handshake.address;
         } else if ( this._type === "tcp" ) {
                 result = this._socket.remoteAddress;
         }
@@ -814,7 +814,7 @@ IRCSocket.prototype.emit = function( command, parameters ) {
                 // Log debug data.
                 // Ignore PING event.
                 if ( command !== "PING" ) {
-                        logger.debug( "Wrote Web JSON " + command + " event data to " + this._socket.handshake.address.address + ": " + util.format( "%j", parameters ) );
+                        logger.debug( "Wrote Web JSON " + command + " event data to " + this._socket.handshake.address + ": " + util.format( "%j", parameters ) );
                 }
         } else if ( this._type === "tcp" ) {
                 // Log debug data.
@@ -847,7 +847,7 @@ logFacility.configure( Config.Log.Configuration );
 var logger = logFacility.getLogger( 'ircd' );
 
 // Set log level
-logger.setLevel( Config.Log.Level );
+logger.level = Config.Log.Level;
 
 // Begin logging.
 logger.info( "Loaded log mechanism." );
