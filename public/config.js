@@ -28,11 +28,11 @@ var Config = {
         Server: {
                 WEB: {
                         Port: 31337
-                        ,Host: 'localhost'
+                        ,Host: '127.0.0.1'
                 }
                 ,TCP: {
                         Port: 6667
-                        ,Host: 'localhost'
+                        ,Host: '127.0.0.1'
                 }
                 // IRC Protocol configuration
                 ,IRCProtocol: {
