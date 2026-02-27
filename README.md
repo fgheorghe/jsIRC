@@ -1,38 +1,162 @@
-jsIRC
-=====
+# jsIRC
 
-IRC 2.0 (Json based Web IRC) implementation, using Node.js, Socket.io, Extjs, Phantomjs and jQuery.
+A JSON-based Web IRC server and client implementation using Node.js, Socket.IO, ExtJS, and jQuery.
 
-Based on RFC2812: http://tools.ietf.org/html/rfc2812.
+Based on [RFC 2812](http://tools.ietf.org/html/rfc2812).
 
-Install IRC Web/TCP Server
-==========================
+The server is compatible with both browser-based web clients (via Socket.IO) and standard TCP IRC clients such as mIRC, KVirc, HexChat, or any other RFC 2812 compliant client. Both connection types can be used simultaneously.
 
+## Architecture
+
+jsIRC consists of two components:
+
+- **IRC server** (`server.js`): A Node.js process that listens for both WebSocket connections (via Socket.IO) and raw TCP connections (for standard IRC clients). These can be used simultaneously.
+- **Web client** (`public/`): A browser-based IRC client built with ExtJS 6 and Socket.IO. It must be served by a separate HTTP server (Apache, nginx, or any static file server).
+
+## Requirements
+
+- Node.js >= 24.0.0 (use [nvm](https://github.com/nvm-sh/nvm) to manage versions)
+- npm
+- [forever](https://github.com/foreverjs/forever) (for running the server as a background process)
+
+## Installation
+
+Install Node.js dependencies:
+
+```
 npm install
+```
 
+Install `forever` globally for process management:
+
+```
 npm install -g forever
+```
 
-Install IRC Web Client
-======================
+## Configuration
 
-Using Apache or nginx, serve content from the public/ folder.
+All configuration is in a single file: `public/config.js`. This file is loaded both by the Node.js server process and by the web client in the browser.
 
-This does not need to live on the same server or domain as the Socket.IO IRC server.
+### Server settings
 
-Configuration
-=============
+```js
+var Config = {
+    Server: {
+        WEB: {
+            Port: 31337,       // Port the Socket.IO server listens on
+            Host: '127.0.0.1'  // Bind address for the Socket.IO server
+        },
+        TCP: {
+            Port: 6667,        // Port the raw TCP IRC server listens on
+            Host: '127.0.0.1'  // Bind address for the TCP server
+        },
+        IRCProtocol: {
+            ServerName: "localhost",
+            ServerInfo: "City, Country",
+            ServerComments: "Description.",
+            AdminInfo: {
+                Location: "City, Country",
+                Organization: "Your Org",
+                Email: "admin@example.com"
+            },
+            MotdFile: 'motd.txt',       // Path to the MOTD file
+            PingFrequency: 10,          // How often to ping clients, in seconds
+            MaxChannelList: 10          // Maximum channels returned by LIST
+        }
+    },
+```
 
-Edit public/config.js to adjust settings.
+### Client settings
 
-Start/stop IRC Web/TCP Server
-=============================
+```js
+    Client: {
+        // Must match http:// + WEB.Host + : + WEB.Port + /
+        ServerUrl: "http://localhost:31337/"
+    },
+```
 
+The `ServerUrl` value must point to the Socket.IO server. The web client uses this URL to load the Socket.IO library and establish a connection. If the web client is served from a different host or port than the IRC server, update this value accordingly and ensure the IRC server's CORS settings allow the client's origin.
+
+### Log settings
+
+```js
+    Log: {
+        Configuration: {
+            appenders: {
+                console: { type: 'console' },
+                file: { type: 'file', filename: 'logs/ircd.log' }
+            },
+            categories: {
+                default: { appenders: ['console'], level: 'DEBUG' },
+                ircd:    { appenders: ['console', 'file'], level: 'DEBUG' }
+            }
+        },
+        Level: "DEBUG"
+    }
+}
+```
+
+Log output goes to the console and to `logs/ircd.log`. The `logs/` directory must exist before starting the server.
+
+### CORS
+
+If the web client is served from a different origin than the Socket.IO server (different host or port), the browser will block the connection unless CORS is enabled. By default the server allows all origins (`"*"`). To restrict access, edit the `cors.origin` value in `server.js` where `WEBChatServer` is instantiated:
+
+```js
+,socket: {
+    cors: {
+        origin: "http://your-client-host"  // or "*" to allow all
+        ,methods: ["GET", "POST"]
+    }
+}
+```
+
+### Message of the Day
+
+The MOTD is served from the file specified by `MotdFile` in config (default: `motd.txt`), relative to the working directory where `server.js` is run.
+
+## Running the server
+
+Start the server in the background using `forever`:
+
+```
 npm start
+```
 
+Stop the server:
+
+```
 npm stop
+```
 
-Supported Client to Server commands
-===================================
+To run the server directly in the foreground (useful for development):
+
+```
+node server.js
+```
+
+## Serving the web client
+
+The `public/` directory contains the browser-based IRC client and must be served by an HTTP server. It does not need to be on the same host as the IRC server.
+
+Example using Python (for local development):
+
+```
+cd public
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080` in a browser.
+
+For production, configure Apache or nginx to serve the `public/` directory as a static site.
+
+## Connecting with a standard IRC client
+
+The TCP server accepts standard IRC protocol connections on the port configured in `Config.Server.TCP.Port` (default: 6667). Any RFC 2812 compatible IRC client can connect directly to this port.
+
+## Supported commands
+
+### Client to server
 
 - NICK
 - USER
@@ -43,6 +167,8 @@ Supported Client to Server commands
 - MOTD
 - LUSERS
 - PONG
+- PING
+- CAP
 - TOPIC
 - LIST
 - OPER
@@ -56,14 +182,14 @@ Supported Client to Server commands
 - TIME
 - VERSION
 - WHO
-- USERS (Not implemented, returns ERR_USERSDISABLED as per RFC2812)
-- WALLOPS (As per RFC2812, this command can be abused. Limited access to IRC Operators)
+- USERS (not implemented; returns ERR_USERSDISABLED as per RFC 2812)
+- WALLOPS (limited to IRC operators as per RFC 2812)
 - ISON
 - USERHOST
 - INVITE
 - KICK
 
-Supported Server to Client commands:
+### Server to client
 
 - RPL_WELCOME
 - RPL_YOURHOST
@@ -140,3 +266,15 @@ Supported Server to Client commands:
 - RPL_ENDOFEXCEPTLIST
 - RPL_ENDOFBANLIST
 - RPL_BANLIST
+
+## License
+
+Copyright (c) 2013, Grosan Flaviu Gheorghe. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+- Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+- Neither the name of the author nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GROSAN FLAVIU GHEORGHE BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
